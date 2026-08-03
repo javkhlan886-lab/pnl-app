@@ -18,7 +18,7 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { PlusCircle, LogOut, Pencil, Trash2, Download, TrendingUp, TrendingDown, BarChart2, CheckCircle, Users, Box, Receipt, ArrowLeftRight, TableIcon, ChevronDown } from "lucide-react";
+import { PlusCircle, LogOut, Pencil, Trash2, Download, TrendingUp, TrendingDown, BarChart2, CheckCircle, Users, Box, Receipt, ArrowLeftRight, TableIcon, ChevronDown, ShieldCheck } from "lucide-react";
 
 // ── Оруулсан хэрэглэгчийг харуулах туслах функцууд ──────────────────────────
 // owner талбарыг backend зөвхөн Level 1, 2 (admin, manager)-д илгээдэг.
@@ -211,6 +211,7 @@ export default function DashboardPage() {
     { path: "/expenses", label: "Зардал", icon: <Receipt className="w-4 h-4" /> },
     { path: "/receivables", label: "Зээл & Авлага", icon: <ArrowLeftRight className="w-4 h-4" /> },
     { path: "/transactions", label: "Гүйлгээний дэвтэр", icon: <TableIcon className="w-4 h-4" /> },
+    ...(isAdmin ? [{ path: "/admin/users", label: "Админ", icon: <ShieldCheck className="w-4 h-4" /> }] : []),
   ];
 
   return (

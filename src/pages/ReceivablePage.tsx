@@ -18,7 +18,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, ArrowLeftRight, BarChart2, Users, Box, Receipt, Download } from "lucide-react";
+import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, ArrowLeftRight, BarChart2, Users, Box, Receipt, Download, ShieldCheck } from "lucide-react";
 
 const EMPTY = {
   type: "receivable" as "receivable" | "loan",
@@ -38,7 +38,7 @@ const statusMap: Record<string, { label: string; cls: string }> = {
 
 export default function ReceivablePage() {
   const navigate = useNavigate();
-  const { company } = useAuth();
+  const { company, isAdmin } = useAuth();
   const location = useLocation();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,6 +60,7 @@ export default function ReceivablePage() {
     { path: "/expenses", label: "Зардал", icon: <Receipt className="w-4 h-4" /> },
     { path: "/receivables", label: "Зээл & Авлага", icon: <ArrowLeftRight className="w-4 h-4" /> },
     { path: "/transactions", label: "Гүйлгээний дэвтэр", icon: <TableIcon className="w-4 h-4" /> },
+    ...(isAdmin ? [{ path: "/admin/users", label: "Админ", icon: <ShieldCheck className="w-4 h-4" /> }] : []),
   ];
 
   const load = useCallback(async () => {

@@ -3,7 +3,7 @@ import { Sparkles, X, Send, Square, ChevronDown, Brain, AlertTriangle, Trash2 } 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { getPNLList } from "@/lib/pnl";
-import { getUsers, getAuditLogs } from "@/lib/admin";
+import { getCompanyUsers } from "@/lib/admin";
 import { getTransactions } from "@/lib/transaction";
 import { useAiPageContext } from "@/lib/aiPageContext";
 import { PNLRecord } from "@/types";
@@ -13,7 +13,7 @@ import {
   buildSystemInstruction,
   geminiConfigured,
   GEMINI_MODEL,
-  LEVEL_BY_ROLE,
+  resolveLevel,
   AdminContext,
   TxTotals,
   ChatTurn,
@@ -77,9 +77,9 @@ function renderText(text: string) {
 }
 
 export default function ChatSection() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, company, loading: authLoading } = useAuth();
   // Эрх нь тодорхойгүй байвал хамгийн хязгаарлагдмал түвшинг (4) авна.
-  const level = (user?.role ? LEVEL_BY_ROLE[user.role] : undefined) ?? 4;
+  const level = resolveLevel(user);
 
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -118,27 +118,28 @@ export default function ChatSection() {
       getTransactions({ limit: 1 })
         .then((r): TxTotals => ({ total: r.total, ...r.summary }))
         .catch(() => null),
-      // Зөвхөн Level 1 — эдгээр endpoint нь backend дээр requireAdmin-аар
-      // хамгаалагдсан тул бусад түвшин хүсэлт тавьсан ч 403 авна.
-      level === 1
-        ? Promise.all([
-            getUsers().catch(() => []),
-            getAuditLogs({ limit: 30 }).then((r) => r.logs).catch(() => []),
-          ]).then(([users, logs]): AdminContext => ({
-            users: users.map((u) => ({ email: u.email, name: u.name, role: u.role, status: u.status })),
-            logs: logs.map((l) => ({
-              actorEmail: l.actorEmail,
-              action: l.action,
-              entityType: l.entityType,
-              description: l.description,
-              createdAt: l.createdAt,
-            })),
-          }))
+      // Зөвхөн Level 1 (company_admin) — компанийн хэрэглэгчдийн жагсаалт.
+      // Saas Back-ийн audit log нь platform-level (зөвхөн super_admin), тул
+      // энд хоосон logs дамжуулна — buildSystemInstruction энэ хэсгийг
+      // хоосон бол алгасдаг.
+      level === 1 && company
+        ? getCompanyUsers(company.id)
+            .then((users): AdminContext => ({
+              users: users.map((u) => ({
+                email: u.email,
+                name: u.name,
+                role: u.role,
+                level: resolveLevel(u),
+                status: u.status,
+              })),
+              logs: [],
+            }))
+            .catch(() => null)
         : Promise.resolve(null),
     ]).then(([summary, records, txTotals, admin]) =>
       setContext({ summary, records, txTotals, admin })
     );
-  }, [open, context, authLoading, level]);
+  }, [open, context, authLoading, level, company]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });

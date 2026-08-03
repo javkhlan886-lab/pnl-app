@@ -18,7 +18,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, Receipt, BarChart2, Users, Box, ArrowLeftRight, Download } from "lucide-react";
+import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, Receipt, BarChart2, Users, Box, ArrowLeftRight, Download, ShieldCheck } from "lucide-react";
 
 const OFFICE_CATS = ["Оффис", "Тоног төхөөрөмж", "Цахилгаан, интернет", "Тээвэр, шатахуун", "Татвар, хураамж", "Бусад"];
 const OTHER_CATS = ["Маркетинг", "Аялал, томилолт", "Сургалт", "Хуулийн зардал", "Эрүүл мэндийн зардал", "Бусад"];
@@ -40,7 +40,7 @@ const statusMap: Record<string, { label: string; cls: string }> = {
 
 export default function ExpensePage() {
   const navigate = useNavigate();
-  const { company } = useAuth();
+  const { company, isAdmin } = useAuth();
   const location = useLocation();
   const [expenses, setExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,6 +62,7 @@ export default function ExpensePage() {
     { path: "/expenses", label: "Зардал", icon: <Receipt className="w-4 h-4" /> },
     { path: "/receivables", label: "Зээл & Авлага", icon: <ArrowLeftRight className="w-4 h-4" /> },
     { path: "/transactions", label: "Гүйлгээний дэвтэр", icon: <TableIcon className="w-4 h-4" /> },
+    ...(isAdmin ? [{ path: "/admin/users", label: "Админ", icon: <ShieldCheck className="w-4 h-4" /> }] : []),
   ];
 
   const load = useCallback(async () => {

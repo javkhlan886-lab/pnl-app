@@ -10,6 +10,7 @@ import AssetPage from "@/pages/AssetPage";
 import ExpensePage from "@/pages/ExpensePage";
 import ReceivablePage from "@/pages/ReceivablePage";
 import TransactionPage from "@/pages/TransactionPage";
+import AdminUsersPage from "@/pages/AdminUsersPage";
 import ChatSection from "@/components/ai/Chatsection";
 
 // AI ассистентийг route wrapper-т нэг удаа рендерлэснээр нэвтэрсэн бүх
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="/expenses" element={<PrivateRoute><ExpensePage /></PrivateRoute>} />
         <Route path="/receivables" element={<PrivateRoute><ReceivablePage /></PrivateRoute>} />
         <Route path="/transactions" element={<PrivateRoute><TransactionPage /></PrivateRoute>} />
+        <Route path="/admin/users" element={<PrivateRoute><AdminUsersPage /></PrivateRoute>} />
         <Route path="*" element={<Navigate to={isLoggedIn() ? "/dashboard" : "/login"} replace />} />
       </Routes>
     </BrowserRouter>

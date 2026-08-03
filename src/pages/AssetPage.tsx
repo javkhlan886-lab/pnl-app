@@ -19,7 +19,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, Box, BarChart2, Users, Receipt, ArrowLeftRight, Download } from "lucide-react";
+import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, Box, BarChart2, Users, Receipt, ArrowLeftRight, Download, ShieldCheck } from "lucide-react";
 
 const CATEGORIES = [
   "Тоног төхөөрөмж", "Тээврийн хэрэгсэл", "Программ хангамж",
@@ -48,7 +48,7 @@ const statusLabel: Record<string, string> = {
 
 export default function AssetPage() {
   const navigate = useNavigate();
-  const { company } = useAuth();
+  const { company, isAdmin } = useAuth();
   const location = useLocation();
   const [assets, setAssets] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
@@ -70,6 +70,7 @@ export default function AssetPage() {
     { path: "/expenses", label: "Зардал", icon: <Receipt className="w-4 h-4" /> },
     { path: "/receivables", label: "Зээл & Авлага", icon: <ArrowLeftRight className="w-4 h-4" /> },
     { path: "/transactions", label: "Гүйлгээний дэвтэр", icon: <TableIcon className="w-4 h-4" /> },
+    ...(isAdmin ? [{ path: "/admin/users", label: "Админ", icon: <ShieldCheck className="w-4 h-4" /> }] : []),
   ];
 
   const load = useCallback(async () => {

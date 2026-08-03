@@ -70,7 +70,11 @@ export interface User {
   companyId?: string | null;
   role?: UserRole;
   status?: UserStatus;
-  viewableUserIds?: string[];
+  // PnL data-visibility tier, company_user accounts only (company_admin
+  // always has full access). 1/2=full company data, 3=own+assigned,
+  // 4=own data only (default). See Saas Back's src/lib/scope.ts.
+  pnlLevel?: number;
+  pnlViewableUserIds?: string[];
   createdAt?: string;
 }
 

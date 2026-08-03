@@ -25,7 +25,7 @@ import { Label } from "@/components/ui/label";
 import {
   LogOut, ChevronLeft, BarChart2, TableIcon, Upload, Download, Search,
   FileText, TrendingUp, TrendingDown, X, Trash2, Plus, Users, Box, Receipt,
-  ArrowLeftRight, Pencil,
+  ArrowLeftRight, Pencil, ShieldCheck,
 } from "lucide-react";
 
 const fmt = (n: number) => "₮" + Math.round(Math.abs(n)).toLocaleString("mn-MN");
@@ -66,7 +66,7 @@ const EMPTY_TX: NewTx = {
 
 export default function TransactionPage() {
   const navigate = useNavigate();
-  const { company } = useAuth();
+  const { company, isAdmin } = useAuth();
   const location = useLocation();
 
   const [tab, setTab] = useState<Tab>("range");
@@ -106,6 +106,7 @@ export default function TransactionPage() {
     { path: "/expenses", label: "Зардал", icon: <Receipt className="w-4 h-4" /> },
     { path: "/receivables", label: "Зээл & Авлага", icon: <ArrowLeftRight className="w-4 h-4" /> },
     { path: "/transactions", label: "Гүйлгээний дэвтэр", icon: <TableIcon className="w-4 h-4" /> },
+    ...(isAdmin ? [{ path: "/admin/users", label: "Админ", icon: <ShieldCheck className="w-4 h-4" /> }] : []),
   ];
 
   useEffect(() => {

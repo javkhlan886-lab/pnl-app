@@ -106,15 +106,17 @@ export async function streamChat(
 }
 
 // ─── Эрхийн түвшин ─────────────────────────────────────────────────────────
-// Backend-ийн permissions.ts-тэй ижил тайлбар. Дата өөрөө сервер тал дээр
-// (getDataScope) шүүгддэг — доорх нь чатын хариултыг тухайн түвшинд
-// тохируулах, өөрийн хүрээнээс гадуурх зүйлийг таамаглахгүй байлгах зорилготой.
-export const LEVEL_BY_ROLE: Record<string, 1 | 2 | 3 | 4> = {
-  admin: 1,
-  manager: 2,
-  viewer: 3,
-  user: 4,
-};
+// Backend-ийн scope.ts (pnlWhere/assertCanModify)-тэй ижил тайлбар. Дата
+// өөрөө сервер тал дээр шүүгддэг — доорх нь зөвхөн чатын хариултыг тухайн
+// түвшинд тохируулах, өөрийн хүрээнээс гадуурх зүйлийг таамаглахгүй байлгах
+// зорилготой. company_admin үргэлж Level 1; company_user-ийн түвшин нь
+// backend-ийн User.pnlLevel талбараас ирнэ (анхны утга 4).
+export function resolveLevel(user: { role?: string; pnlLevel?: number } | null | undefined): 1 | 2 | 3 | 4 {
+  if (!user) return 4;
+  if (user.role === "company_admin") return 1;
+  const level = user.pnlLevel ?? 4;
+  return level === 1 || level === 2 || level === 3 ? level : 4;
+}
 
 interface LevelProfile {
   label: string;
@@ -153,7 +155,7 @@ const LEVEL_PROFILES: Record<1 | 2 | 3 | 4, LevelProfile> = {
 };
 
 export interface AdminContext {
-  users: { email: string; name?: string; role?: string; status?: string }[];
+  users: { email: string; name?: string; role?: string; level?: number; status?: string }[];
   logs: { actorEmail: string; action: string; entityType: string; description: string; createdAt: string }[];
 }
 
@@ -303,9 +305,8 @@ export function buildSystemInstruction({
     if (admin.users.length > 0) {
       lines.push("", "═══ ХЭРЭГЛЭГЧИД БА ЭРХ (зөвхөн Level 1) ═══");
       admin.users.slice(0, 40).forEach((u) => {
-        const lvl = u.role ? LEVEL_BY_ROLE[u.role] : undefined;
         lines.push(
-          `- ${u.email}${u.name ? ` (${u.name})` : ""} | эрх: ${u.role || "—"}${lvl ? ` (Level ${lvl})` : ""} | статус: ${u.status || "—"}`
+          `- ${u.email}${u.name ? ` (${u.name})` : ""} | эрх: ${u.role || "—"}${u.level ? ` (Level ${u.level})` : ""} | статус: ${u.status || "—"}`
         );
       });
       if (admin.users.length > 40) lines.push(`… мөн бусад ${admin.users.length - 40} хэрэглэгч.`);

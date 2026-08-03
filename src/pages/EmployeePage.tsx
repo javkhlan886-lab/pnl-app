@@ -18,7 +18,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { LogOut, TableIcon, Plus, Pencil, Trash2, Users, ChevronLeft, BarChart2, Box, Receipt, ArrowLeftRight, Download } from "lucide-react";
+import { LogOut, TableIcon, Plus, Pencil, Trash2, Users, ChevronLeft, BarChart2, Box, Receipt, ArrowLeftRight, Download, ShieldCheck } from "lucide-react";
 
 interface Employee {
   _id?: string;
@@ -50,19 +50,20 @@ function fmtInput(v: number) {
   return v === 0 ? "" : v.toLocaleString("mn-MN");
 }
 
-const NAV_ITEMS = [
-  { path: "/dashboard", label: "P&L Тайлан", icon: <BarChart2 className="w-4 h-4" /> },
-  { path: "/employees", label: "Ажилчид & Цалин", icon: <Users className="w-4 h-4" /> },
-  { path: "/assets", label: "Хөрөнгө", icon: <Box className="w-4 h-4" /> },
-  { path: "/expenses", label: "Зардал", icon: <Receipt className="w-4 h-4" /> },
-  { path: "/receivables", label: "Зээл & Авлага", icon: <ArrowLeftRight className="w-4 h-4" /> },
-  { path: "/transactions", label: "Гүйлгээний дэвтэр", icon: <TableIcon className="w-4 h-4" /> },
-];
-
 export default function EmployeePage() {
   const navigate = useNavigate();
-  const { company } = useAuth();
+  const { company, isAdmin } = useAuth();
   const location = useLocation();
+
+  const NAV_ITEMS = [
+    { path: "/dashboard", label: "P&L Тайлан", icon: <BarChart2 className="w-4 h-4" /> },
+    { path: "/employees", label: "Ажилчид & Цалин", icon: <Users className="w-4 h-4" /> },
+    { path: "/assets", label: "Хөрөнгө", icon: <Box className="w-4 h-4" /> },
+    { path: "/expenses", label: "Зардал", icon: <Receipt className="w-4 h-4" /> },
+    { path: "/receivables", label: "Зээл & Авлага", icon: <ArrowLeftRight className="w-4 h-4" /> },
+    { path: "/transactions", label: "Гүйлгээний дэвтэр", icon: <TableIcon className="w-4 h-4" /> },
+    ...(isAdmin ? [{ path: "/admin/users", label: "Админ", icon: <ShieldCheck className="w-4 h-4" /> }] : []),
+  ];
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);

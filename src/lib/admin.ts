@@ -1,35 +1,16 @@
 import api from "./axios";
-import { User, UserRole, AuditLogEntry } from "@/types";
+import { User } from "@/types";
 
-export const getUsers = (status?: "pending" | "approved" | "rejected") =>
-  api.get<User[]>("/admin/users", { params: status ? { status } : {} }).then(r => r.data);
+// Company-scoped user management, backed by Saas Back (not this app's own
+// admin/* routes — those were removed when pnl-react was ported, Saas Front
+// owns onboarding/roles now). This file only covers what's specific to the
+// PnL app: listing a company's users and setting their PnL data-visibility
+// level (company_admin only — see Saas Back's src/lib/scope.ts).
 
-export const approveUser = (id: string, role: UserRole, viewableUserIds?: string[]) =>
-  api.put(`/admin/users/${id}/approve`, { role, viewableUserIds }).then(r => r.data);
+export const getCompanyUsers = (companyId: string) =>
+  api.get<{ users: User[] }>(`/companies/${companyId}/users`).then((r) => r.data.users);
 
-export const rejectUser = (id: string) =>
-  api.put(`/admin/users/${id}/reject`).then(r => r.data);
-
-export const changeUserRole = (id: string, role: UserRole, viewableUserIds?: string[]) =>
-  api.put(`/admin/users/${id}/role`, { role, viewableUserIds }).then(r => r.data);
-
-export const deleteUser = (id: string) =>
-  api.delete(`/admin/users/${id}`).then(r => r.data);
-
-export const updateUserProfile = (id: string, data: { name?: string; password?: string }) =>
-  api.put(`/admin/users/${id}/profile`, data).then(r => r.data);
-
-export const getAuditLogs = (params?: {
-  entityType?: string;
-  action?: string;
-  targetUserId?: string;
-  actorId?: string;
-  page?: number;
-  limit?: number;
-}) =>
+export const changePnlLevel = (userId: string, level: 1 | 2 | 3 | 4, viewableUserIds?: string[]) =>
   api
-    .get<{ logs: AuditLogEntry[]; total: number; page: number; totalPages: number }>(
-      "/admin/logs",
-      { params }
-    )
-    .then(r => r.data);
+    .patch<{ user: User }>(`/users/${userId}/pnl-level`, { level, viewableUserIds })
+    .then((r) => r.data.user);
