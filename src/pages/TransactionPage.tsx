@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import logoUrl from "@/public/logo.png";
+import { CompanyLogo } from "@/components/CompanyLogo";
 import { logout } from "@/lib/auth";
+import { useAuth } from "@/hooks/useAuth";
 import {
   getTransactions, getContractSummary, importTransactions,
   exportTransactions, deleteTransaction, createTransaction, updateTransaction,
@@ -65,6 +66,7 @@ const EMPTY_TX: NewTx = {
 
 export default function TransactionPage() {
   const navigate = useNavigate();
+  const { company } = useAuth();
   const location = useLocation();
 
   const [tab, setTab] = useState<Tab>("range");
@@ -300,7 +302,7 @@ export default function TransactionPage() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border/50 px-6 py-4 flex items-center justify-between sticky top-0 z-10 bg-background/80 backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <img src={logoUrl} className="w-[114px] h-[114px] object-contain cursor-pointer" onClick={() => navigate("/dashboard")} />
+          <CompanyLogo name={company?.name} className="cursor-pointer" onClick={() => navigate("/dashboard")} />
           <button onClick={() => navigate("/dashboard")} className="text-muted-foreground hover:text-foreground">
             <ChevronLeft className="w-5 h-5" />
           </button>

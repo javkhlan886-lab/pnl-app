@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback, useTransition } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import logoUrl from "@/public/logo.png";
+import { CompanyLogo } from "@/components/CompanyLogo";
 import { getReceivables, createReceivable, updateReceivable, deleteReceivable } from "@/lib/receivable";
 import { logout } from "@/lib/auth";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -37,6 +38,7 @@ const statusMap: Record<string, { label: string; cls: string }> = {
 
 export default function ReceivablePage() {
   const navigate = useNavigate();
+  const { company } = useAuth();
   const location = useLocation();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -136,7 +138,7 @@ export default function ReceivablePage() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border/50 px-6 py-4 flex items-center justify-between sticky top-0 z-10 bg-background/80 backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <img src={logoUrl} className="w-[114px] h-[114px] object-contain cursor-pointer" onClick={() => navigate("/dashboard")} />
+          <CompanyLogo name={company?.name} className="cursor-pointer" onClick={() => navigate("/dashboard")} />
           <button onClick={() => navigate("/dashboard")} className="text-muted-foreground hover:text-foreground">
             <ChevronLeft className="w-5 h-5" />
           </button>

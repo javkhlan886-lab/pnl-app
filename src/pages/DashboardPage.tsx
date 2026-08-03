@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import logoUrl from "@/public/logo.png";
+import { CompanyLogo } from "@/components/CompanyLogo";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getPNLList, deletePNL, updatePNL } from "@/lib/pnl";
 import { logout } from "@/lib/auth";
@@ -217,9 +217,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border/50 px-6 py-4 flex items-center justify-between sticky top-0 z-10 bg-background/80 backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <div className="w-[114px] h-[114px] flex items-center justify-center">
-            <img src={logoUrl} className="w-[114px] h-[114px] object-contain" />
-          </div>
+          <CompanyLogo name={company?.name} />
           <div>
             <h1 className="text-lg font-medium flex items-center gap-2">
               P&L Удирдлага

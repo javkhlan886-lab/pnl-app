@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import logoUrl from "@/public/logo.png";
+import { CompanyLogo } from "@/components/CompanyLogo";
 import { getAssets, createAsset, updateAsset, disposeAsset, calcDepreciation } from "@/lib/asset";
 import { getEmployees } from "@/lib/employee";
+import { useAuth } from "@/hooks/useAuth";
 import { logout } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +48,7 @@ const statusLabel: Record<string, string> = {
 
 export default function AssetPage() {
   const navigate = useNavigate();
+  const { company } = useAuth();
   const location = useLocation();
   const [assets, setAssets] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
@@ -157,7 +159,7 @@ export default function AssetPage() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border/50 px-6 py-4 flex items-center justify-between sticky top-0 z-10 bg-background/80 backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <img src={logoUrl} className="w-[114px] h-[114px] object-contain cursor-pointer" onClick={() => navigate("/dashboard")} />
+          <CompanyLogo name={company?.name} className="cursor-pointer" onClick={() => navigate("/dashboard")} />
           <button onClick={() => navigate("/dashboard")} className="text-muted-foreground hover:text-foreground">
             <ChevronLeft className="w-5 h-5" />
           </button>
