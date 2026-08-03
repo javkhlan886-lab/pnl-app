@@ -1,0 +1,193 @@
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/noto-sans";
+@import "@fontsource-variable/playfair-display";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 1 0 0;
+    --foreground: 0.147 0.004 49.3;
+    --card: 1 0 0;
+    --card-foreground: 0.147 0.004 49.3;
+    --popover: 1 0 0;
+    --popover-foreground: 0.147 0.004 49.3;
+    --primary: 0.214 0.009 43.1;
+    --primary-foreground: 0.986 0.002 67.8;
+    --secondary: 0.96 0.002 17.2;
+    --secondary-foreground: 0.214 0.009 43.1;
+    --muted: 0.96 0.002 17.2;
+    --muted-foreground: 0.547 0.021 43.1;
+    --accent: 0.96 0.002 17.2;
+    --accent-foreground: 0.214 0.009 43.1;
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 0.98 0.01 17.2;
+    --border: 0.922 0.005 34.3;
+    --input: 0.922 0.005 34.3;
+    --ring: 0.714 0.014 41.2;
+    --radius: 0.625rem;
+    --chart-1: 0.868 0.007 39.5;
+    --chart-2: 0.547 0.021 43.1;
+    --chart-3: 0.438 0.017 39.3;
+    --chart-4: 0.367 0.016 35.7;
+    --chart-5: 0.268 0.011 36.5;
+    --sidebar: 0.986 0.002 67.8;
+    --sidebar-foreground: 0.147 0.004 49.3;
+    --sidebar-primary: 0.214 0.009 43.1;
+    --sidebar-primary-foreground: 0.986 0.002 67.8;
+    --sidebar-accent: 0.96 0.002 17.2;
+    --sidebar-accent-foreground: 0.214 0.009 43.1;
+    --sidebar-border: 0.922 0.005 34.3;
+    --sidebar-ring: 0.714 0.014 41.2;
+    /* Санхүүгийн семантик өнгө — эерэг/сөрөг утга. Channel утгыг тусад нь
+       хадгална (oklch() functional notation-гүйгээр), ингэснээр Tailwind-ийн
+       bg-positive/15 маягийн opacity modifier зөв ажиллана. */
+    --positive: 0.55 0.16 155;
+    --negative: 0.58 0.21 25;
+    --info: 0.55 0.18 255;
+    --warn: 0.65 0.15 70;
+  }
+  .dark {
+    /* Гүн хар-цэнхэр дэвсгэр — neon glow-той зураач харагдах ёстой */
+    --background: 0.13 0.012 240;
+    --foreground: 0.97 0.005 240;
+    --card: 0.18 0.018 240;
+    --card-foreground: 0.97 0.005 240;
+    --popover: 0.18 0.018 240;
+    --popover-foreground: 0.97 0.005 240;
+    /* Teal/cyan — эерэг утга (орлого, ашиг, идэвхтэй) */
+    --primary: 0.78 0.15 175;
+    --primary-foreground: 0.13 0.012 240;
+    --secondary: 0.24 0.02 240;
+    --secondary-foreground: 0.97 0.005 240;
+    --muted: 0.22 0.02 240;
+    --muted-foreground: 0.65 0.02 240;
+    --accent: 0.24 0.02 240;
+    --accent-foreground: 0.97 0.005 240;
+    /* Coral/pink — сөрөг утга (зарлага, алдагдал) */
+    --destructive: 0.62 0.21 16;
+    --border: 1 0 0 / 8%;
+    --input: 1 0 0 / 10%;
+    --ring: 0.78 0.15 175 / 50%;
+    --chart-1: 0.78 0.15 175;
+    --chart-2: 0.62 0.21 16;
+    --chart-3: 0.65 0.18 250;
+    --chart-4: 0.75 0.15 80;
+    --chart-5: 0.6 0.02 240;
+    --sidebar: 0.16 0.015 240;
+    --sidebar-foreground: 0.97 0.005 240;
+    --sidebar-primary: 0.78 0.15 175;
+    --sidebar-primary-foreground: 0.13 0.012 240;
+    --sidebar-accent: 0.22 0.02 240;
+    --sidebar-accent-foreground: 0.97 0.005 240;
+    --sidebar-border: 1 0 0 / 8%;
+    --sidebar-ring: 0.78 0.15 175 / 50%;
+    /* Зураач-д тусгайлсан нэмэлт токенууд — neon glow эффект, карт хослол */
+    --glow-teal: 0.78 0.15 175;
+    --glow-coral: 0.62 0.21 16;
+    --glass-border: 1 0 0 / 8%;
+    /* Санхүүгийн семантик өнгө — dark mode-д neon teal/coral (channel format) */
+    --positive: 0.78 0.15 175;
+    --negative: 0.62 0.21 16;
+    --info: 0.65 0.18 250;
+    --warn: 0.75 0.15 80;
+  }
+  .theme {
+    --font-sans: 'Noto Sans Variable', sans-serif;
+    --font-heading: 'Playfair Display Variable', serif;
+  }
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DARK NEON DESIGN SYSTEM — Гурвандэлгэр P&L
+   Бүх хуудсанд ашиглагдах glass-card болон glow эффектүүд.
+   ═══════════════════════════════════════════════════════════════ */
+@layer components {
+  /* Үндсэн glass-эффект карт — арын radial glow-той */
+  .glass-card {
+    @apply relative rounded-2xl border bg-card/60 backdrop-blur-sm overflow-hidden;
+    border-color: oklch(var(--glass-border));
+  }
+  /* Эерэг (орлого/ашиг) карт — positive radial glow арын буланд */
+  .glass-card-positive::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 15% 20%, color-mix(in oklch, oklch(var(--positive)) 12%, transparent), transparent 60%);
+    pointer-events: none;
+  }
+  /* Сөрөг (зардал/алдагдал) карт — negative radial glow арын буланд */
+  .glass-card-negative::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 85% 20%, color-mix(in oklch, oklch(var(--negative)) 12%, transparent), transparent 60%);
+    pointer-events: none;
+  }
+  /* Дугуй icon badge — positive/negative glow-той */
+  .icon-badge-positive {
+    @apply flex items-center justify-center rounded-full;
+    background: color-mix(in oklch, oklch(var(--positive)) 15%, transparent);
+    color: oklch(var(--positive));
+    box-shadow: 0 0 16px color-mix(in oklch, oklch(var(--positive)) 25%, transparent);
+  }
+  .icon-badge-negative {
+    @apply flex items-center justify-center rounded-full;
+    background: color-mix(in oklch, oklch(var(--negative)) 15%, transparent);
+    color: oklch(var(--negative));
+    box-shadow: 0 0 16px color-mix(in oklch, oklch(var(--negative)) 25%, transparent);
+  }
+  /* Logo pill — нэвтрэх/header дээрх icon */
+  .logo-pill {
+    @apply flex items-center justify-center rounded-2xl;
+    background: linear-gradient(135deg, oklch(var(--positive)), color-mix(in oklch, oklch(var(--positive)) 70%, oklch(var(--info)) 30%));
+    box-shadow: 0 0 24px color-mix(in oklch, oklch(var(--positive)) 35%, transparent);
+  }
+  /* Тоон утгууд буларсан state */
+  .blurred-values .stat-number,
+  .blurred-values .blur-number {
+    filter: blur(0.25rem);
+    transition: filter 0.2s ease;
+  }
+  .blurred-values .blur-number {
+    display: inline-block;
+  }
+  /* Active nav pill */
+  .nav-pill-active {
+    background: color-mix(in oklch, oklch(var(--positive)) 15%, transparent);
+    color: oklch(var(--positive));
+    box-shadow: 0 0 12px color-mix(in oklch, oklch(var(--positive)) 20%, transparent);
+  }
+  /* LIVE badge — нугалаа цэг анимэйшнтэй */
+  .live-dot {
+    @apply inline-block w-1.5 h-1.5 rounded-full;
+    background: oklch(var(--positive));
+    box-shadow: 0 0 6px color-mix(in oklch, oklch(var(--positive)) 80%, transparent);
+    animation: live-pulse 2s ease-in-out infinite;
+  }
+  @keyframes live-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  /* Тоо — monospace маягтай тод харагдац */
+  .stat-number {
+    font-feature-settings: "tnum";
+    letter-spacing: -0.01em;
+  }
+}
