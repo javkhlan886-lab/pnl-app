@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { logout } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
+import { useLocale, format } from "@/hooks/useLocale";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   getTransactions, getContractSummary, importTransactions,
   exportTransactions, deleteTransaction, createTransaction, updateTransaction,
@@ -39,6 +41,7 @@ const formatAmount = (raw: string): string => {
 const parseAmount = (formatted: string): number =>
   parseFloat(formatted.replace(/[^0-9]/g, "")) || 0;
 
+// Чөлөөт текст утга — backend-д хадгалагддаг тул хэлээр орчуулахгүй.
 const CATEGORIES_INC = ["Борлуулалт", "Зээл буцаалт", "Хүүгийн орлого", "Бусад орлого"];
 const CATEGORIES_EXP = ["Цалин", "НД / Татвар", "Түрээс", "Тээвэр", "Материал", "Татвар", "Зээл", "Эмчилгээ", "Офис", "Бусад"];
 
@@ -68,6 +71,7 @@ export default function TransactionPage() {
   const navigate = useNavigate();
   const { company, isAdmin } = useAuth();
   const location = useLocation();
+  const { t } = useLocale();
 
   const [tab, setTab] = useState<Tab>("range");
   const [txs, setTxs] = useState<Transaction[]>([]);
@@ -100,18 +104,18 @@ export default function TransactionPage() {
   const [contractNotFound, setContractNotFound] = useState(false);
 
   const NAV_ITEMS = [
-    { path: "/dashboard", label: "P&L Тайлан", icon: <BarChart2 className="w-4 h-4" /> },
-    { path: "/employees", label: "Ажилчид & Цалин", icon: <Users className="w-4 h-4" /> },
-    { path: "/assets", label: "Хөрөнгө", icon: <Box className="w-4 h-4" /> },
-    { path: "/expenses", label: "Зардал", icon: <Receipt className="w-4 h-4" /> },
-    { path: "/receivables", label: "Зээл & Авлага", icon: <ArrowLeftRight className="w-4 h-4" /> },
-    { path: "/transactions", label: "Гүйлгээний дэвтэр", icon: <TableIcon className="w-4 h-4" /> },
-    ...(isAdmin ? [{ path: "/admin/users", label: "Админ", icon: <ShieldCheck className="w-4 h-4" /> }] : []),
+    { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
+    { path: "/employees", label: t.common.navEmployees, icon: <Users className="w-4 h-4" /> },
+    { path: "/assets", label: t.common.navAssets, icon: <Box className="w-4 h-4" /> },
+    { path: "/expenses", label: t.common.navExpenses, icon: <Receipt className="w-4 h-4" /> },
+    { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
+    { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
+    ...(isAdmin ? [{ path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> }] : []),
   ];
 
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search), 400);
-    return () => clearTimeout(t);
+    const timeout = setTimeout(() => setDebouncedSearch(search), 400);
+    return () => clearTimeout(timeout);
   }, [search]);
 
   const loadTxs = useCallback(async () => {
@@ -144,8 +148,8 @@ export default function TransactionPage() {
   const filtered = txs;
 
   // ── AI ассистентэд одоо дэлгэц дээр харагдаж байгаа тоог дамжуулна ──
-  // Цэвэр дүн нь шүүлтүүрээс хамаардаг тул шүүлтүүрийг ч хамт бичнэ —
-  // эс бөгөөс модель ямар хугацааны дүн болохыг мэдэхгүй.
+  // Энэ context нь зөвхөн AI загварт зориулагдсан тул хэрэглэгчийн сонгосон
+  // харагдах хэлнээс үл хамааран монгол хэвээр үлдэнэ (загвар өөрөө ойлгоно).
   useEffect(() => {
     const mnt = (n: number) => Math.round(n).toLocaleString("mn-MN") + "₮";
     const lines: string[] = [];
@@ -175,12 +179,12 @@ export default function TransactionPage() {
       lines.push("Сонгосон таб: Гэрээний дугаараар — хэрэглэгч гэрээ хайгаагүй байна.");
     }
 
-    setAiPageContext({ title: "Гүйлгээний дэвтэр", lines });
+    setAiPageContext({ title: t.transactions.pageTitle, lines });
     return () => setAiPageContext(null);
   }, [
     tab, dateFrom, dateTo, typeFilter, debouncedSearch,
     totalCount, totalInc, totalExp, netAmount,
-    summary.incomeCount, summary.expenseCount, contractData,
+    summary.incomeCount, summary.expenseCount, contractData, t,
   ]);
 
   const setQuick = (from: string, to: string) => { setDateFrom(from); setDateTo(to); };
@@ -195,7 +199,7 @@ export default function TransactionPage() {
       setImportResult(result);
       loadTxs();
     } catch {
-      alert("Import алдаа гарлаа");
+      alert(t.transactions.importError);
     } finally {
       setImporting(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -207,7 +211,7 @@ export default function TransactionPage() {
     try {
       await exportTransactions({ dateFrom: dateFrom || undefined, dateTo: dateTo || undefined });
     } catch {
-      alert("Export алдаа гарлаа");
+      alert(t.transactions.exportError);
     } finally {
       setExporting(false);
     }
@@ -220,9 +224,9 @@ export default function TransactionPage() {
 
   const handleSave = async () => {
     setSaveError("");
-    if (!newTx.description.trim()) { setSaveError("Тайлбар оруулна уу"); return; }
+    if (!newTx.description.trim()) { setSaveError(t.transactions.descRequired); return; }
     const amount = parseAmount(newTx.amount);
-    if (!amount || amount <= 0) { setSaveError("Дүн оруулна уу"); return; }
+    if (!amount || amount <= 0) { setSaveError(t.transactions.amountRequired); return; }
     setSaving(true);
     try {
       const payload = {
@@ -247,7 +251,7 @@ export default function TransactionPage() {
       setNewTx(EMPTY_TX);
       loadTxs();
     } catch {
-      setSaveError("Хадгалах үед алдаа гарлаа");
+      setSaveError(t.transactions.saveError);
     } finally {
       setSaving(false);
     }
@@ -294,7 +298,7 @@ export default function TransactionPage() {
   const handleContractExport = async () => {
     if (!contractData) return;
     try { await exportTransactions({ contractNumber: contractData.contractNumber }); }
-    catch { alert("Export алдаа"); }
+    catch { alert(t.transactions.exportError); }
   };
 
   const categories = newTx.type === "income" ? CATEGORIES_INC : CATEGORIES_EXP;
@@ -309,28 +313,29 @@ export default function TransactionPage() {
           </button>
           <div>
             <h1 className="text-lg font-medium flex items-center gap-2">
-              <TableIcon className="w-5 h-5" /> Гүйлгээний дэвтэр
+              <TableIcon className="w-5 h-5" /> {t.transactions.pageTitle}
             </h1>
-            <p className="text-xs text-muted-foreground">Excel import · Гэрээний дугаарын хайлт</p>
+            <p className="text-xs text-muted-foreground">{t.transactions.pageSubtitle}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImport} />
           <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={importing}>
             <Upload className="w-4 h-4 mr-1.5" />
-            {importing ? "Уншиж байна..." : "Excel оруулах"}
+            {importing ? t.transactions.importingLabel : t.transactions.importLabel}
           </Button>
           <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
             <Download className="w-4 h-4 mr-1.5" />
-            {exporting ? "Боловсруулж..." : "Excel татах"}
+            {exporting ? t.common.exportingLabel : t.common.excelExport}
           </Button>
           <Button size="sm" onClick={openModal}
             className="bg-positive text-background hover:bg-positive/90 shadow-[0_0_16px_color-mix(in_oklch,oklch(var(--positive))_35%,transparent)]">
-            <Plus className="w-4 h-4 mr-1.5" /> Шинэ гүйлгээ
+            <Plus className="w-4 h-4 mr-1.5" /> {t.transactions.newTx}
           </Button>
           <Button variant="ghost" size="sm" onClick={logout}>
-            <LogOut className="w-4 h-4 mr-1.5" /> Гарах
+            <LogOut className="w-4 h-4 mr-1.5" /> {t.common.logout}
           </Button>
+          <LanguageSwitcher />
           <ThemeToggle />
         </div>
       </header>
@@ -360,8 +365,8 @@ export default function TransactionPage() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-border/50">
               <h2 className="text-base font-semibold flex items-center gap-2">
                 {editingTxId
-                  ? <><Pencil className="w-5 h-5 text-info" /> Гүйлгээ засах</>
-                  : <><Plus className="w-5 h-5 text-positive" /> Шинэ гүйлгээ нэмэх</>}
+                  ? <><Pencil className="w-5 h-5 text-info" /> {t.transactions.editTxTitle}</>
+                  : <><Plus className="w-5 h-5 text-positive" /> {t.transactions.newTxTitle}</>}
               </h2>
               <button onClick={() => setShowModal(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="w-5 h-5" />
@@ -370,37 +375,37 @@ export default function TransactionPage() {
 
             <div className="px-6 py-5 space-y-4">
               <div className="flex gap-2">
-                {(["income", "expense"] as const).map(t => (
-                  <button key={t} onClick={() => {
+                {(["income", "expense"] as const).map(txType => (
+                  <button key={txType} onClick={() => {
                     setNewTx(prev => ({
                       ...prev,
-                      type: t,
-                      category: t === "income" ? CATEGORIES_INC[0] : CATEGORIES_EXP[0],
+                      type: txType,
+                      category: txType === "income" ? CATEGORIES_INC[0] : CATEGORIES_EXP[0],
                     }));
                   }}
                     className={`flex-1 py-2.5 rounded-xl text-sm font-medium border-2 transition-colors ${
-                      newTx.type === t
-                        ? t === "income"
+                      newTx.type === txType
+                        ? txType === "income"
                           ? "border-positive bg-positive/10 text-positive"
                           : "border-negative bg-negative/10 text-negative"
                         : "border-border text-muted-foreground hover:bg-secondary/50"
                     }`}>
-                    {t === "income"
-                      ? <span className="flex items-center justify-center gap-1.5"><TrendingUp className="w-4 h-4" />Орлого</span>
-                      : <span className="flex items-center justify-center gap-1.5"><TrendingDown className="w-4 h-4" />Зарлага</span>}
+                    {txType === "income"
+                      ? <span className="flex items-center justify-center gap-1.5"><TrendingUp className="w-4 h-4" />{t.transactions.typeIncome}</span>
+                      : <span className="flex items-center justify-center gap-1.5"><TrendingDown className="w-4 h-4" />{t.transactions.typeExpense}</span>}
                   </button>
                 ))}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Огноо *</Label>
+                  <Label className="text-xs">{t.transactions.dateLabel}</Label>
                   <Input type="date" value={newTx.date}
                     onChange={e => setNewTx(p => ({ ...p, date: e.target.value }))}
                     className="h-9 text-sm" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Дүн (₮) *</Label>
+                  <Label className="text-xs">{t.transactions.amountLabel}</Label>
                   <Input
                     value={newTx.amount}
                     onChange={e => setNewTx(p => ({ ...p, amount: formatAmount(e.target.value) }))}
@@ -411,18 +416,18 @@ export default function TransactionPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs">Тайлбар *</Label>
+                <Label className="text-xs">{t.transactions.descriptionLabel}</Label>
                 <Input
                   value={newTx.description}
                   onChange={e => setNewTx(p => ({ ...p, description: e.target.value }))}
-                  placeholder="Гүйлгээний тайлбар..."
+                  placeholder={t.transactions.descriptionPlaceholder}
                   className="h-9 text-sm"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Ангилал</Label>
+                  <Label className="text-xs">{t.transactions.categoryLabel}</Label>
                   <select
                     value={newTx.category}
                     onChange={e => setNewTx(p => ({ ...p, category: e.target.value }))}
@@ -431,22 +436,22 @@ export default function TransactionPage() {
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Гэрээний дугаар</Label>
+                  <Label className="text-xs">{t.transactions.contractNumberLabel}</Label>
                   <Input
                     value={newTx.contractNumber}
                     onChange={e => setNewTx(p => ({ ...p, contractNumber: e.target.value.toUpperCase() }))}
-                    placeholder="GCR-2026-001"
+                    placeholder={t.transactions.contractNumberPlaceholder}
                     className="h-9 text-sm font-mono tracking-wide"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs">Тэмдэглэл</Label>
+                <Label className="text-xs">{t.transactions.noteLabel}</Label>
                 <Input
                   value={newTx.note}
                   onChange={e => setNewTx(p => ({ ...p, note: e.target.value }))}
-                  placeholder="Нэмэлт тэмдэглэл..."
+                  placeholder={t.transactions.notePlaceholder}
                   className="h-9 text-sm"
                 />
               </div>
@@ -459,7 +464,7 @@ export default function TransactionPage() {
 
               {newTx.amount && parseAmount(newTx.amount) > 0 && (
                 <div className={`rounded-xl px-4 py-3 text-center ${newTx.type === "income" ? "bg-positive/10" : "bg-negative/10"}`}>
-                  <p className="text-xs text-muted-foreground mb-1">{newTx.type === "income" ? "Орлого" : "Зарлага"}</p>
+                  <p className="text-xs text-muted-foreground mb-1">{newTx.type === "income" ? t.transactions.typeIncome : t.transactions.typeExpense}</p>
                   <p className={`text-2xl font-semibold ${newTx.type === "income" ? "text-positive" : "text-negative"}`}>
                     {newTx.type === "income" ? "+" : "-"}₮{parseAmount(newTx.amount).toLocaleString("mn-MN")}
                   </p>
@@ -469,13 +474,13 @@ export default function TransactionPage() {
 
             <div className="flex gap-2 px-6 py-4 border-t border-border/50 bg-secondary/30">
               <Button variant="outline" className="flex-1" onClick={() => setShowModal(false)}>
-                Цуцлах
+                {t.common.cancel}
               </Button>
               <Button
                 className={`flex-1 text-background ${newTx.type === "income" ? "bg-positive hover:bg-positive/90" : "bg-info hover:bg-info/90"}`}
                 onClick={handleSave}
                 disabled={saving}>
-                {saving ? "Хадгалж байна..." : "Хадгалах"}
+                {saving ? t.common.saving : t.common.save}
               </Button>
             </div>
           </div>
@@ -486,8 +491,8 @@ export default function TransactionPage() {
         {importResult && (
           <div className="mb-4 flex items-center gap-3 bg-positive/10 border border-positive/30 rounded-lg px-4 py-2.5">
             <span className="text-sm text-positive font-medium">
-              ✓ {importResult.imported} гүйлгээ амжилттай оруулагдлаа
-              {importResult.skipped > 0 && ` · ${importResult.skipped} мөр алгасагдлаа`}
+              {format(t.transactions.importedMsg, { count: String(importResult.imported) })}
+              {importResult.skipped > 0 && format(t.transactions.skippedMsg, { count: String(importResult.skipped) })}
             </span>
             <button onClick={() => setImportResult(null)} className="ml-auto text-positive/70 hover:text-positive">
               <X className="w-4 h-4" />
@@ -496,14 +501,14 @@ export default function TransactionPage() {
         )}
 
         <div className="flex gap-1 bg-secondary/50 rounded-lg p-1 mb-5 w-fit">
-          {(["range", "contract"] as Tab[]).map(t => (
-            <button key={t} onClick={() => setTab(t)}
+          {(["range", "contract"] as Tab[]).map(tabKey => (
+            <button key={tabKey} onClick={() => setTab(tabKey)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-medium transition-colors ${
-                tab === t ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                tab === tabKey ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
               }`}>
-              {t === "range"
-                ? <><BarChart2 className="w-3.5 h-3.5" />Хугацаагаар</>
-                : <><FileText className="w-3.5 h-3.5" />Гэрээний дугаар</>}
+              {tabKey === "range"
+                ? <><BarChart2 className="w-3.5 h-3.5" />{t.transactions.tabRange}</>
+                : <><FileText className="w-3.5 h-3.5" />{t.transactions.tabContract}</>}
             </button>
           ))}
         </div>
@@ -512,10 +517,10 @@ export default function TransactionPage() {
           <>
             <div className="grid grid-cols-4 gap-3 mb-4">
               {[
-                { label: "Нийт гүйлгээ", val: totalCount, sub: `${summary.incomeCount} орлого · ${summary.expenseCount} зарлага`, color: "" },
-                { label: "Орлого", val: fmt(totalInc), sub: summary.incomeCount + " гүйлгээ", color: "text-positive" },
-                { label: "Зарлага", val: fmt(totalExp), sub: summary.expenseCount + " гүйлгээ", color: "text-negative" },
-                { label: "Цэвэр дүн", val: fmtSigned(totalInc - totalExp), sub: totalInc - totalExp >= 0 ? "Ашигтай" : "Алдагдалтай", color: totalInc - totalExp >= 0 ? "text-positive" : "text-negative" },
+                { label: t.transactions.statTotalTx, val: totalCount, sub: format(t.transactions.incExpCount, { inc: String(summary.incomeCount), exp: String(summary.expenseCount) }), color: "" },
+                { label: t.transactions.statIncome, val: fmt(totalInc), sub: format(t.transactions.txCount, { count: String(summary.incomeCount) }), color: "text-positive" },
+                { label: t.transactions.statExpense, val: fmt(totalExp), sub: format(t.transactions.txCount, { count: String(summary.expenseCount) }), color: "text-negative" },
+                { label: t.transactions.statNet, val: fmtSigned(totalInc - totalExp), sub: totalInc - totalExp >= 0 ? t.transactions.profitable : t.transactions.lossMaking, color: totalInc - totalExp >= 0 ? "text-positive" : "text-negative" },
               ].map(c => (
                 <div key={c.label} className="glass-card px-4 py-3">
                   <p className="relative text-xs text-muted-foreground mb-1">{c.label}</p>
@@ -527,7 +532,7 @@ export default function TransactionPage() {
 
             <div className="glass-card px-4 py-3 mb-4">
               <div className="relative flex items-center gap-2 flex-wrap mb-3">
-                <span className="text-xs text-muted-foreground">Хугацаа:</span>
+                <span className="text-xs text-muted-foreground">{t.transactions.dateRangeLabel}</span>
                 <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
                   className="h-8 px-2 text-xs rounded-lg border border-border bg-background" />
                 <span className="text-xs text-muted-foreground">—</span>
@@ -539,7 +544,7 @@ export default function TransactionPage() {
                     { label: "Q2 2026", from: "2026-04-01", to: "2026-06-30" },
                     { label: "Q3 2026", from: "2026-07-01", to: "2026-09-30" },
                     { label: "Q4 2026", from: "2026-10-01", to: "2026-12-31" },
-                    { label: "2026 он",  from: "2026-01-01", to: "2026-12-31" },
+                    { label: format(t.transactions.wholeYear, { year: "2026" }), from: "2026-01-01", to: "2026-12-31" },
                   ].map(q => (
                     <button key={q.label} onClick={() => setQuick(q.from, q.to)}
                       className={`h-7 px-2.5 text-xs rounded-full border transition-colors ${
@@ -550,43 +555,43 @@ export default function TransactionPage() {
                   ))}
                   <button onClick={() => { setDateFrom(""); setDateTo(""); }}
                     className="h-7 px-2.5 text-xs rounded-full border bg-background text-muted-foreground border-border hover:bg-secondary/50">
-                    Бүгд
+                    {t.transactions.allFilter}
                   </button>
                 </div>
               </div>
               <div className="relative flex items-center gap-2">
-                {(["", "income", "expense"] as const).map(t => (
-                  <button key={t} onClick={() => setTypeFilter(t)}
-                    className={`h-7 px-3 text-xs rounded-full border ${typeFilter === t
+                {(["", "income", "expense"] as const).map(f => (
+                  <button key={f} onClick={() => setTypeFilter(f)}
+                    className={`h-7 px-3 text-xs rounded-full border ${typeFilter === f
                       ? "bg-positive/15 text-positive border-positive/30"
                       : "bg-background text-muted-foreground border-border hover:bg-secondary/50"}`}>
-                    {t === "" ? "Бүгд" : t === "income" ? "Орлого" : "Зарлага"}
+                    {f === "" ? t.transactions.allFilter : f === "income" ? t.transactions.typeIncome : t.transactions.typeExpense}
                   </button>
                 ))}
                 <div className="relative ml-2 flex-1 max-w-xs">
                   <Search className="absolute left-2.5 top-1.5 w-3.5 h-3.5 text-muted-foreground" />
                   <input value={search} onChange={e => setSearch(e.target.value)}
-                    placeholder="Хайх — тайлбар, ангилал, гэрээ..."
+                    placeholder={t.transactions.searchPlaceholder}
                     className="h-8 w-full pl-8 pr-3 text-xs rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring" />
                 </div>
                 <button onClick={openModal}
                   className="ml-auto h-8 px-3 text-xs rounded-lg border border-positive/30 bg-positive/10 text-positive hover:bg-positive/15 flex items-center gap-1.5 font-medium">
-                  <Plus className="w-3.5 h-3.5" /> Гүйлгээ нэмэх
+                  <Plus className="w-3.5 h-3.5" /> {t.transactions.addTx}
                 </button>
               </div>
             </div>
 
             {loading ? (
-              <div className="text-center py-16 text-muted-foreground text-sm">Уншиж байна...</div>
+              <div className="text-center py-16 text-muted-foreground text-sm">{t.common.loading}</div>
             ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
                 <div className="w-14 h-14 rounded-full bg-secondary/50 flex items-center justify-center">
                   <TableIcon className="w-6 h-6 text-muted-foreground" />
                 </div>
-                <p className="text-sm text-muted-foreground">Гүйлгээ байхгүй байна</p>
+                <p className="text-sm text-muted-foreground">{t.transactions.noTx}</p>
                 <button onClick={openModal}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-positive text-background text-sm font-medium hover:bg-positive/90">
-                  <Plus className="w-4 h-4" /> Шинэ гүйлгээ нэмэх
+                  <Plus className="w-4 h-4" /> {t.transactions.addFirstTx}
                 </button>
               </div>
             ) : (
@@ -594,46 +599,46 @@ export default function TransactionPage() {
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border/50">
-                      <TableHead style={{ width: "90px" }}>Огноо</TableHead>
-                      <TableHead>Тайлбар</TableHead>
-                      <TableHead style={{ width: "100px" }}>Гэрээ</TableHead>
-                      <TableHead style={{ width: "90px" }}>Ангилал</TableHead>
-                      <TableHead className="text-right" style={{ width: "130px" }}>Дүн</TableHead>
-                      <TableHead style={{ width: "70px" }}>Төрөл</TableHead>
-                      <TableHead className="text-right" style={{ width: "60px" }}>Үйлдэл</TableHead>
+                      <TableHead style={{ width: "90px" }}>{t.transactions.colDate}</TableHead>
+                      <TableHead>{t.transactions.colDescription}</TableHead>
+                      <TableHead style={{ width: "100px" }}>{t.transactions.colContract}</TableHead>
+                      <TableHead style={{ width: "90px" }}>{t.transactions.colCategory}</TableHead>
+                      <TableHead className="text-right" style={{ width: "130px" }}>{t.transactions.colAmount}</TableHead>
+                      <TableHead style={{ width: "70px" }}>{t.transactions.colType}</TableHead>
+                      <TableHead className="text-right" style={{ width: "60px" }}>{t.transactions.colActions}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filtered.map(t => (
-                      <TableRow key={t._id} className="border-border/50 hover:bg-secondary/30">
-                        <TableCell className="text-muted-foreground text-xs">{t.date}</TableCell>
+                    {filtered.map(tx => (
+                      <TableRow key={tx._id} className="border-border/50 hover:bg-secondary/30">
+                        <TableCell className="text-muted-foreground text-xs">{tx.date}</TableCell>
                         <TableCell className="text-sm max-w-0 overflow-hidden">
-                          <div className="truncate">{t.description}</div>
-                          {t.note && <div className="text-xs text-muted-foreground truncate">{t.note}</div>}
+                          <div className="truncate">{tx.description}</div>
+                          {tx.note && <div className="text-xs text-muted-foreground truncate">{tx.note}</div>}
                         </TableCell>
                         <TableCell>
-                          {t.contractNumber ? (
-                            <button onClick={() => { setContractInput(t.contractNumber ?? ""); setTab("contract"); setTimeout(searchContract, 100); }}
-                              className="text-xs text-info hover:underline font-medium">{t.contractNumber}</button>
+                          {tx.contractNumber ? (
+                            <button onClick={() => { setContractInput(tx.contractNumber ?? ""); setTab("contract"); setTimeout(searchContract, 100); }}
+                              className="text-xs text-info hover:underline font-medium">{tx.contractNumber}</button>
                           ) : <span className="text-muted-foreground text-xs">—</span>}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="text-xs">{t.category}</Badge>
+                          <Badge variant="outline" className="text-xs">{tx.category}</Badge>
                         </TableCell>
-                        <TableCell className={`text-right font-medium stat-number ${t.type === "income" ? "text-positive" : "text-negative"}`}>
-                          {t.type === "income" ? "+" : "-"}{fmt(t.amount)}
+                        <TableCell className={`text-right font-medium stat-number ${tx.type === "income" ? "text-positive" : "text-negative"}`}>
+                          {tx.type === "income" ? "+" : "-"}{fmt(tx.amount)}
                         </TableCell>
                         <TableCell>
-                          <Badge className={t.type === "income"
+                          <Badge className={tx.type === "income"
                             ? "bg-positive/15 text-positive hover:bg-positive/15 text-xs"
                             : "bg-negative/15 text-negative hover:bg-negative/15 text-xs"}>
-                            {t.type === "income" ? "Орлого" : "Зарлага"}
+                            {tx.type === "income" ? t.transactions.typeIncome : t.transactions.typeExpense}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-0.5">
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-info"
-                              onClick={() => openEditModal(t)}>
+                              onClick={() => openEditModal(tx)}>
                               <Pencil className="w-3.5 h-3.5" />
                             </Button>
                             <AlertDialog>
@@ -644,14 +649,14 @@ export default function TransactionPage() {
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>Устгах уу?</AlertDialogTitle>
-                                  <AlertDialogDescription>Энэ гүйлгээг устгана.</AlertDialogDescription>
+                                  <AlertDialogTitle>{t.common.deleteConfirmTitle}</AlertDialogTitle>
+                                  <AlertDialogDescription>{t.transactions.deleteConfirmDesc}</AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel>Цуцлах</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDelete(t._id!)}
+                                  <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDelete(tx._id!)}
                                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                    Устгах
+                                    {t.common.delete}
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
@@ -664,7 +669,7 @@ export default function TransactionPage() {
                 </Table>
                 <div className="px-4 py-3 border-t border-border/50 flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">
-                    {totalCount} мөр · Орлого: {fmt(totalInc)} · Зарлага: {fmt(totalExp)} · Цэвэр: {fmtSigned(totalInc - totalExp)}
+                    {format(t.transactions.footerSummary, { count: String(totalCount), inc: fmt(totalInc), exp: fmt(totalExp), net: fmtSigned(totalInc - totalExp) })}
                   </span>
                   {totalPages > 1 && (
                     <div className="flex items-center gap-1">
@@ -691,7 +696,7 @@ export default function TransactionPage() {
                         className="h-7 w-7 rounded-lg border border-border text-xs flex items-center justify-center disabled:opacity-30 hover:bg-secondary/50">›</button>
                       <button onClick={() => setPage(totalPages)} disabled={page === totalPages}
                         className="h-7 w-7 rounded-lg border border-border text-xs flex items-center justify-center disabled:opacity-30 hover:bg-secondary/50">»</button>
-                      <span className="text-xs text-muted-foreground ml-1">{page}/{totalPages} хуудас</span>
+                      <span className="text-xs text-muted-foreground ml-1">{format(t.transactions.pageOf, { page: String(page), total: String(totalPages) })}</span>
                     </div>
                   )}
                 </div>
@@ -703,18 +708,18 @@ export default function TransactionPage() {
         {tab === "contract" && (
           <>
             <div className="glass-card px-5 py-4 mb-4">
-              <p className="relative text-xs font-medium text-muted-foreground mb-3">Гэрээний дугаар оруулах</p>
+              <p className="relative text-xs font-medium text-muted-foreground mb-3">{t.transactions.enterContractNumber}</p>
               <div className="relative flex gap-2">
                 <input
                   value={contractInput}
                   onChange={e => setContractInput(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && searchContract()}
-                  placeholder="contract numer-2026-001"
+                  placeholder={t.transactions.contractPlaceholder}
                   className="flex-1 h-10 px-4 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-ring tracking-wide"
                 />
                 <Button onClick={searchContract} disabled={contractLoading} className="h-10 px-5 bg-positive text-background hover:bg-positive/90">
                   <Search className="w-4 h-4 mr-1.5" />
-                  {contractLoading ? "Хайж байна..." : "Хайх"}
+                  {contractLoading ? t.transactions.searching : t.transactions.search}
                 </Button>
                 <Button variant="outline" onClick={() => { setContractInput(""); setContractData(null); setContractNotFound(false); }} className="h-10 px-3">
                   <X className="w-4 h-4" />
@@ -725,7 +730,7 @@ export default function TransactionPage() {
             {contractNotFound && (
               <div className="glass-card px-5 py-10 text-center text-muted-foreground text-sm">
                 <FileText className="relative w-10 h-10 mx-auto mb-3 text-muted-foreground" />
-                <span className="relative">"{contractInput}" дугаартай гэрээ олдсонгүй.</span>
+                <span className="relative">{format(t.transactions.contractNotFound, { num: contractInput })}</span>
               </div>
             )}
 
@@ -736,39 +741,46 @@ export default function TransactionPage() {
                     <div>
                       <h2 className="text-xl font-semibold text-info mb-1">{contractData.contractNumber}</h2>
                       <p className="text-sm text-muted-foreground">
-                        {contractData.incomeCount} орлого · {contractData.expenseCount} зарлага · нийт {contractData.transactions.length} гүйлгээ
+                        {format(t.transactions.contractTxSummary, {
+                          inc: String(contractData.incomeCount),
+                          exp: String(contractData.expenseCount),
+                          total: String(contractData.transactions.length),
+                        })}
                       </p>
                     </div>
                     <Button variant="outline" size="sm" onClick={handleContractExport}>
-                      <Download className="w-4 h-4 mr-1.5" />Excel татах
+                      <Download className="w-4 h-4 mr-1.5" />{t.common.excelExport}
                     </Button>
                   </div>
 
                   <div className="relative grid grid-cols-3 gap-3 mb-4">
                     <div className="bg-info/10 rounded-xl p-4">
-                      <p className="text-xs font-medium text-info mb-2">Нийт орлого</p>
+                      <p className="text-xs font-medium text-info mb-2">{t.transactions.statContractIncome}</p>
                       <p className="text-2xl font-semibold text-info stat-number">{fmt(contractData.totalIncome)}</p>
-                      <p className="text-xs text-info mt-1">{contractData.incomeCount} гүйлгээ</p>
+                      <p className="text-xs text-info mt-1">{format(t.transactions.txCount, { count: String(contractData.incomeCount) })}</p>
                     </div>
                     <div className="bg-negative/10 rounded-xl p-4">
-                      <p className="text-xs font-medium text-negative mb-2">Нийт зарлага</p>
+                      <p className="text-xs font-medium text-negative mb-2">{t.transactions.statContractExpense}</p>
                       <p className="text-2xl font-semibold text-negative stat-number">{fmt(contractData.totalExpense)}</p>
-                      <p className="text-xs text-negative mt-1">{contractData.expenseCount} гүйлгээ</p>
+                      <p className="text-xs text-negative mt-1">{format(t.transactions.txCount, { count: String(contractData.expenseCount) })}</p>
                     </div>
                     <div className={`rounded-xl p-4 ${contractData.netProfit >= 0 ? "bg-positive/10" : "bg-negative/10"}`}>
-                      <p className={`text-xs font-medium mb-2 ${contractData.netProfit >= 0 ? "text-positive" : "text-negative"}`}>Цэвэр ашиг</p>
+                      <p className={`text-xs font-medium mb-2 ${contractData.netProfit >= 0 ? "text-positive" : "text-negative"}`}>{t.transactions.statContractNet}</p>
                       <p className={`text-2xl font-semibold stat-number ${contractData.netProfit >= 0 ? "text-positive" : "text-negative"}`}>
                         {fmtSigned(contractData.netProfit)}
                       </p>
                       <p className={`text-xs mt-1 ${contractData.netProfit >= 0 ? "text-positive" : "text-negative"}`}>
-                        {contractData.netProfit >= 0 ? "Ашигтай" : "Алдагдалтай"} · маржин {contractData.margin}%
+                        {format(t.transactions.marginLine, {
+                          state: contractData.netProfit >= 0 ? t.transactions.profitable : t.transactions.lossMaking,
+                          margin: String(contractData.margin),
+                        })}
                       </p>
                     </div>
                   </div>
 
                   <div className="relative">
                     <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                      <span>Зарлага / Орлого</span>
+                      <span>{t.transactions.expenseIncomeRatio}</span>
                       <span>{contractData.totalIncome > 0 ? Math.round(contractData.totalExpense / contractData.totalIncome * 100) : 0}%</span>
                     </div>
                     <div className="h-2 bg-secondary rounded-full overflow-hidden">
@@ -784,7 +796,7 @@ export default function TransactionPage() {
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-medium flex items-center gap-1.5 text-positive">
-                      <TrendingUp className="w-4 h-4" />Орлогын гүйлгээ
+                      <TrendingUp className="w-4 h-4" />{t.transactions.incomeTxHeader}
                     </h3>
                     <span className="text-sm font-medium text-positive">{fmt(contractData.totalIncome)}</span>
                   </div>
@@ -792,19 +804,19 @@ export default function TransactionPage() {
                     <Table>
                       <TableHeader>
                         <TableRow className="border-border/50">
-                          <TableHead style={{ width: "90px" }}>Огноо</TableHead>
-                          <TableHead>Тайлбар</TableHead>
-                          <TableHead style={{ width: "90px" }}>Ангилал</TableHead>
-                          <TableHead className="text-right" style={{ width: "130px" }}>Дүн</TableHead>
+                          <TableHead style={{ width: "90px" }}>{t.transactions.colDate}</TableHead>
+                          <TableHead>{t.transactions.colDescription}</TableHead>
+                          <TableHead style={{ width: "90px" }}>{t.transactions.colCategory}</TableHead>
+                          <TableHead className="text-right" style={{ width: "130px" }}>{t.transactions.colAmount}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {contractData.transactions.filter(t => t.type === "income").map(t => (
-                          <TableRow key={t._id} className="border-border/50 hover:bg-secondary/30">
-                            <TableCell className="text-muted-foreground text-xs">{t.date}</TableCell>
-                            <TableCell className="text-sm blur-number">{t.description}</TableCell>
-                            <TableCell><Badge variant="outline" className="text-xs">{t.category}</Badge></TableCell>
-                            <TableCell className="text-right font-medium text-positive stat-number">+{fmt(t.amount)}</TableCell>
+                        {contractData.transactions.filter(tx => tx.type === "income").map(tx => (
+                          <TableRow key={tx._id} className="border-border/50 hover:bg-secondary/30">
+                            <TableCell className="text-muted-foreground text-xs">{tx.date}</TableCell>
+                            <TableCell className="text-sm blur-number">{tx.description}</TableCell>
+                            <TableCell><Badge variant="outline" className="text-xs">{tx.category}</Badge></TableCell>
+                            <TableCell className="text-right font-medium text-positive stat-number">+{fmt(tx.amount)}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -815,7 +827,7 @@ export default function TransactionPage() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-medium flex items-center gap-1.5 text-negative">
-                      <TrendingDown className="w-4 h-4" />Зарлагын гүйлгээ
+                      <TrendingDown className="w-4 h-4" />{t.transactions.expenseTxHeader}
                     </h3>
                     <span className="text-sm font-medium text-negative">{fmt(contractData.totalExpense)}</span>
                   </div>
@@ -823,19 +835,19 @@ export default function TransactionPage() {
                     <Table>
                       <TableHeader>
                         <TableRow className="border-border/50">
-                          <TableHead style={{ width: "90px" }}>Огноо</TableHead>
-                          <TableHead>Тайлбар</TableHead>
-                          <TableHead style={{ width: "90px" }}>Ангилал</TableHead>
-                          <TableHead className="text-right" style={{ width: "130px" }}>Дүн</TableHead>
+                          <TableHead style={{ width: "90px" }}>{t.transactions.colDate}</TableHead>
+                          <TableHead>{t.transactions.colDescription}</TableHead>
+                          <TableHead style={{ width: "90px" }}>{t.transactions.colCategory}</TableHead>
+                          <TableHead className="text-right" style={{ width: "130px" }}>{t.transactions.colAmount}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {contractData.transactions.filter(t => t.type === "expense").map(t => (
-                          <TableRow key={t._id} className="border-border/50 hover:bg-secondary/30">
-                            <TableCell className="text-muted-foreground text-xs">{t.date}</TableCell>
-                            <TableCell className="text-sm blur-number">{t.description}</TableCell>
-                            <TableCell><Badge variant="outline" className="text-xs">{t.category}</Badge></TableCell>
-                            <TableCell className="text-right font-medium text-negative stat-number">-{fmt(t.amount)}</TableCell>
+                        {contractData.transactions.filter(tx => tx.type === "expense").map(tx => (
+                          <TableRow key={tx._id} className="border-border/50 hover:bg-secondary/30">
+                            <TableCell className="text-muted-foreground text-xs">{tx.date}</TableCell>
+                            <TableCell className="text-sm blur-number">{tx.description}</TableCell>
+                            <TableCell><Badge variant="outline" className="text-xs">{tx.category}</Badge></TableCell>
+                            <TableCell className="text-right font-medium text-negative stat-number">-{fmt(tx.amount)}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

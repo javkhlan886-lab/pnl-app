@@ -4,6 +4,8 @@ import { CompanyLogo } from "@/components/CompanyLogo";
 import { useAuth } from "@/hooks/useAuth";
 import { getCompanyUsers, changePnlLevel } from "@/lib/admin";
 import { logout } from "@/lib/auth";
+import { useLocale, format } from "@/hooks/useLocale";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { User } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,17 +20,11 @@ import {
   ArrowLeftRight, TableIcon,
 } from "lucide-react";
 
-const LEVEL_LABEL: Record<1 | 2 | 3 | 4, string> = {
-  1: "Level 1 — Админ түвшин (бүх дата)",
-  2: "Level 2 — Менежер (бүх дата)",
-  3: "Level 3 — Хязгаарлагдмал харагч",
-  4: "Level 4 — Энгийн хэрэглэгч (зөвхөн өөрийн)",
-};
-
 export default function AdminUsersPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { company, isAdmin, loading: authLoading } = useAuth();
+  const { t } = useLocale();
 
   const [users, setUsers] = useState<User[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,22 +32,29 @@ export default function AdminUsersPage() {
   const [assignFor, setAssignFor] = useState<User | null>(null);
   const [assignPicked, setAssignPicked] = useState<Set<string>>(new Set());
 
+  const LEVEL_LABEL: Record<1 | 2 | 3 | 4, string> = {
+    1: t.admin.level1,
+    2: t.admin.level2,
+    3: t.admin.level3,
+    4: t.admin.level4,
+  };
+
   const NAV_ITEMS = [
-    { path: "/dashboard", label: "P&L Тайлан", icon: <BarChart2 className="w-4 h-4" /> },
-    { path: "/employees", label: "Ажилчид & Цалин", icon: <Users className="w-4 h-4" /> },
-    { path: "/assets", label: "Хөрөнгө", icon: <Box className="w-4 h-4" /> },
-    { path: "/expenses", label: "Зардал", icon: <Receipt className="w-4 h-4" /> },
-    { path: "/receivables", label: "Зээл & Авлага", icon: <ArrowLeftRight className="w-4 h-4" /> },
-    { path: "/transactions", label: "Гүйлгээний дэвтэр", icon: <TableIcon className="w-4 h-4" /> },
-    { path: "/admin/users", label: "Админ", icon: <ShieldCheck className="w-4 h-4" /> },
+    { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
+    { path: "/employees", label: t.common.navEmployees, icon: <Users className="w-4 h-4" /> },
+    { path: "/assets", label: t.common.navAssets, icon: <Box className="w-4 h-4" /> },
+    { path: "/expenses", label: t.common.navExpenses, icon: <Receipt className="w-4 h-4" /> },
+    { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
+    { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
+    { path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> },
   ];
 
   useEffect(() => {
     if (!company) return;
     getCompanyUsers(company.id)
       .then(setUsers)
-      .catch(() => setError("Хэрэглэгчдийг ачаалахад алдаа гарлаа."));
-  }, [company]);
+      .catch(() => setError(t.admin.loadError));
+  }, [company, t]);
 
   async function applyLevel(target: User, level: 1 | 2 | 3 | 4, viewableUserIds?: string[]) {
     setSavingId(target.id);
@@ -59,7 +62,7 @@ export default function AdminUsersPage() {
       const updated = await changePnlLevel(target.id, level, viewableUserIds);
       setUsers((prev) => prev?.map((u) => (u.id === updated.id ? updated : u)) ?? prev);
     } catch {
-      setError("Түвшин хадгалахад алдаа гарлаа.");
+      setError(t.admin.saveError);
     } finally {
       setSavingId(null);
     }
@@ -94,15 +97,16 @@ export default function AdminUsersPage() {
           </button>
           <div>
             <h1 className="text-lg font-medium flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5" /> Админ
+              <ShieldCheck className="w-5 h-5" /> {t.admin.title}
             </h1>
-            <p className="text-xs text-muted-foreground">Хэрэглэгчдийн PnL хандах түвшин</p>
+            <p className="text-xs text-muted-foreground">{t.admin.subtitle}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={logout}>
-            <LogOut className="w-4 h-4 mr-1.5" /> Гарах
+            <LogOut className="w-4 h-4 mr-1.5" /> {t.common.logout}
           </Button>
+          <LanguageSwitcher />
           <ThemeToggle />
         </div>
       </header>
@@ -128,26 +132,20 @@ export default function AdminUsersPage() {
 
       <main className="max-w-6xl mx-auto px-6 py-8">
         {!authLoading && !isAdmin ? (
-          <p className="text-sm text-muted-foreground">
-            Танд энэ хуудсанд хандах эрх байхгүй байна. Зөвхөн компанийн админ эрхтэй хэрэглэгч
-            бусдын PnL хандах түвшинг тохируулж болно.
-          </p>
+          <p className="text-sm text-muted-foreground">{t.admin.noAccess}</p>
         ) : (
           <>
-            <p className="text-sm text-muted-foreground mb-4">
-              Компанийн энгийн хэрэглэгч бүрийн PnL дата хандах түвшинг энд тохируулна. Компанийн
-              админ үргэлж бүх датаг хардаг тул доор жагсаагдахгүй.
-            </p>
+            <p className="text-sm text-muted-foreground mb-4">{t.admin.description}</p>
 
             {error && <p className="text-sm text-destructive mb-3">{error}</p>}
 
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Хэрэглэгч</TableHead>
-                  <TableHead>Эрх</TableHead>
-                  <TableHead>PnL түвшин</TableHead>
-                  <TableHead>Харах эрхтэй хэрэглэгчид</TableHead>
+                  <TableHead>{t.admin.colUser}</TableHead>
+                  <TableHead>{t.admin.colRole}</TableHead>
+                  <TableHead>{t.admin.colLevel}</TableHead>
+                  <TableHead>{t.admin.colViewable}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -162,7 +160,7 @@ export default function AdminUsersPage() {
                           <div className="text-xs text-muted-foreground">{u.email}</div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary">Энгийн хэрэглэгч</Badge>
+                          <Badge variant="secondary">{t.admin.roleUser}</Badge>
                         </TableCell>
                         <TableCell>
                           <Select
@@ -185,8 +183,8 @@ export default function AdminUsersPage() {
                         <TableCell className="text-xs text-muted-foreground">
                           {level === 3
                             ? u.pnlViewableUserIds?.length
-                              ? `${u.pnlViewableUserIds.length} хэрэглэгч`
-                              : "Хараахан сонгоогүй"
+                              ? format(t.admin.viewableCount, { count: String(u.pnlViewableUserIds.length) })
+                              : t.admin.viewableNone
                             : "—"}
                         </TableCell>
                       </TableRow>
@@ -195,7 +193,7 @@ export default function AdminUsersPage() {
                 {users && users.filter((u) => u.role === "company_user").length === 0 && (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
-                      Энгийн хэрэглэгч алга байна.
+                      {t.admin.noUsers}
                     </TableCell>
                   </TableRow>
                 )}
@@ -208,11 +206,10 @@ export default function AdminUsersPage() {
       <Dialog open={!!assignFor} onOpenChange={(open) => !open && setAssignFor(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Харах эрхтэй хэрэглэгчид</DialogTitle>
+            <DialogTitle>{t.admin.assignDialogTitle}</DialogTitle>
           </DialogHeader>
           <p className="text-xs text-muted-foreground -mt-2">
-            {assignFor?.name || assignFor?.email} нь өөрийн датагаас гадна доор сонгосон
-            хэрэглэгчдийн PnL датаг харах болно.
+            {format(t.admin.assignDialogDesc, { name: assignFor?.name || assignFor?.email || "" })}
           </p>
           <div className="max-h-64 overflow-y-auto space-y-1.5 border rounded-md p-3">
             {assignFor &&
@@ -235,14 +232,14 @@ export default function AdminUsersPage() {
                 </label>
               ))}
             {assignFor && otherUsers(assignFor).length === 0 && (
-              <p className="text-xs text-muted-foreground">Сонгох боломжтой өөр хэрэглэгч алга.</p>
+              <p className="text-xs text-muted-foreground">{t.admin.noOtherUsers}</p>
             )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAssignFor(null)}>
-              Цуцлах
+              {t.common.cancel}
             </Button>
-            <Button onClick={confirmAssign}>Хадгалах</Button>
+            <Button onClick={confirmAssign}>{t.common.save}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

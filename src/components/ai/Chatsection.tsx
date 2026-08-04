@@ -6,6 +6,7 @@ import { getPNLList } from "@/lib/pnl";
 import { getCompanyUsers } from "@/lib/admin";
 import { getTransactions } from "@/lib/transaction";
 import { useAiPageContext } from "@/lib/aiPageContext";
+import { useLocale, format } from "@/hooks/useLocale";
 import { PNLRecord } from "@/types";
 import api from "@/lib/axios";
 import {
@@ -28,43 +29,6 @@ interface Message {
   error?: boolean;
 }
 
-// Түвшин тус бүрд тохирсон санал — эрхгүй датаг асуухаас сэргийлж,
-// хэрэглэгчид өөрт хэрэгтэй асуултыг шууд үзүүлнэ.
-const SUGGESTIONS: Record<1 | 2 | 3 | 4, string[]> = {
-  1: [
-    "Хамгийн ашигтай гэрээ аль нь вэ? Маржинаар харьцуулж хэлээрэй.",
-    "Хэрэглэгч тус бүр хэдэн тайлан оруулсан, хэн хамгийн их орлого бүртгэсэн бэ?",
-    "Сүүлийн үйлдлүүдэд анхаарал татах зүйл байна уу? Устгал, эрх солилтыг дүгнэ.",
-    "Зөвшөөрөл хүлээж байгаа хэрэглэгч байна уу?",
-  ],
-  2: [
-    "Одоогийн цэвэр ашиг хэр байна, ямар зардал хамгийн их дарамт болж байна?",
-    "Хамгийн ашигтай гэрээ аль нь вэ? Маржинаар харьцуулж хэлээрэй.",
-    "Хэрэглэгч тус бүрийн оруулсан тайлангуудыг харьцуулж дүгнээрэй.",
-    "Алдагдалтай тайлангууд байна уу? Шалтгааныг тоогоор тайлбарлаарай.",
-  ],
-  3: [
-    "Надад харагдаж байгаа тайлангуудыг ашгаар эрэмбэлээрэй.",
-    "Миний харах эрхтэй хүрээний нийт орлого, зардал хэд вэ?",
-    "Алдагдалтай гэрээ байна уу? Шалтгааныг тоогоор тайлбарлаарай.",
-    "Анхаарах шаардлагатай авлага, зээл байна уу?",
-  ],
-  4: [
-    "Миний оруулсан тайлангуудын нийт орлого, ашиг хэд вэ?",
-    "Миний хамгийн ашигтай гэрээ аль нь вэ?",
-    "Алдагдалтай тайлан байна уу? Шалтгааныг тайлбарлаарай.",
-    "Тайлангаа сайжруулахад юуг анхаарах ёстой вэ?",
-  ],
-};
-
-// Панелийн header-т хамрах хүрээг тодоор үзүүлнэ.
-const SCOPE_LABEL: Record<1 | 2 | 3 | 4, string> = {
-  1: "Бүх дата · хэрэглэгч, лог",
-  2: "Бүх хэрэглэгчийн дата",
-  3: "Танд assign хийсэн дата",
-  4: "Зөвхөн таны дата",
-};
-
 // Модель markdown-аар **bold** бичих тул хамгийн бага хэмжээний форматлалт.
 function renderText(text: string) {
   return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
@@ -78,8 +42,11 @@ function renderText(text: string) {
 
 export default function ChatSection() {
   const { user, company, loading: authLoading } = useAuth();
+  const { t } = useLocale();
   // Эрх нь тодорхойгүй байвал хамгийн хязгаарлагдмал түвшинг (4) авна.
   const level = resolveLevel(user);
+  const SUGGESTIONS = t.chat.suggestions;
+  const SCOPE_LABEL = t.chat.scope;
 
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -212,10 +179,10 @@ export default function ChatSection() {
       patch((m) =>
         m.text || controller.signal.aborted
           ? m
-          : { ...m, text: "Хариулт хоосон ирлээ. Асуултаа өөр үгээр оруулж үзээрэй.", error: true }
+          : { ...m, text: t.chat.emptyReplyMsg, error: true }
       );
     } catch (err: any) {
-      const msg = err?.message || "Gemini API-тай холбогдоход алдаа гарлаа";
+      const msg = err?.message || t.chat.genericErrorMsg;
       patch((m) => ({ ...m, text: m.text || msg, error: !m.text }));
     } finally {
       if (abortRef.current === controller) abortRef.current = null;
@@ -227,13 +194,13 @@ export default function ChatSection() {
     return (
       <button
         onClick={() => setOpen(true)}
-        title="P&L Ассистент"
+        title={t.chat.headerTitle}
         className="fixed bottom-6 right-6 z-40 px-4 py-3 rounded-full flex items-center gap-2 text-sm font-medium
                    bg-positive text-background shadow-[0_0_24px_color-mix(in_oklch,oklch(var(--positive))_40%,transparent)]
                    hover:bg-positive/90 transition-colors"
       >
         <Sparkles className="w-4 h-4" />
-        Таны туслах Дэлгэр байна
+        {t.chat.fabLabel}
       </button>
     );
   }
@@ -248,24 +215,24 @@ export default function ChatSection() {
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium leading-tight flex items-center gap-1.5">
-            P&L Ассистент
+            {t.chat.headerTitle}
             <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-info/15 text-info shrink-0">
-              Level {level}
+              {format(t.chat.levelBadge, { level: String(level) })}
             </span>
           </p>
           <p className="text-[10px] text-muted-foreground truncate" title={GEMINI_MODEL}>
             {SCOPE_LABEL[level]}
             {pageContext ? ` · ${pageContext.title}` : ""}
-            {context ? "" : " · уншиж байна…"}
+            {context ? "" : t.chat.loadingSuffix}
           </p>
         </div>
         {messages.length > 0 && (
-          <button onClick={clear} title="Харилцааг цэвэрлэх"
+          <button onClick={clear} title={t.chat.clearTooltip}
             className="text-muted-foreground hover:text-destructive p-1">
             <Trash2 className="w-4 h-4" />
           </button>
         )}
-        <button onClick={() => setOpen(false)} title="Хаах"
+        <button onClick={() => setOpen(false)} title={t.chat.closeTooltip}
           className="text-muted-foreground hover:text-foreground p-1">
           <X className="w-4 h-4" />
         </button>
@@ -277,8 +244,8 @@ export default function ChatSection() {
           <div className="flex gap-2 bg-amber-400/10 border border-amber-400/30 rounded-lg px-3 py-2.5">
             <AlertTriangle className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
             <p className="text-xs text-amber-200/90">
-              <span className="font-medium">VITE_GEMINI_API_KEY</span> тохируулаагүй байна.
-              <code className="mx-1">.env.local</code> файлд key-г нэмээд dev server-ээ дахин ажиллуулна уу.
+              <span className="font-medium">VITE_GEMINI_API_KEY</span> {t.chat.geminiWarningNotSet}
+              <code className="mx-1">.env.local</code> {t.chat.geminiWarningInstructions}
             </p>
           </div>
         )}
@@ -286,19 +253,20 @@ export default function ChatSection() {
         {messages.length === 0 && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Санхүүгийн тоонуудынхаа талаар асууж болно. Ассистент нь{" "}
-              <span className="text-foreground">{SCOPE_LABEL[level].toLowerCase()}</span>-г л
-              харж хариулна — эрхээс гадуурх мэдээллийг хэлэхгүй.
+              {(() => {
+                const [before, after] = t.chat.emptyStateIntro.split("{scope}");
+                return <>{before}<span className="text-foreground">{SCOPE_LABEL[level].toLowerCase()}</span>{after}</>;
+              })()}
             </p>
             <div className="space-y-1.5">
               {/* Одоогийн дэлгэцэд тохирсон санал — эхэнд онцолж үзүүлнэ */}
               {pageContext && (
                 <button
-                  onClick={() => send(`${pageContext.title} дээр одоо харагдаж байгаа цэвэр дүнг тайлбарлаж дүгнээрэй.`)}
+                  onClick={() => send(format(t.chat.pageContextSendMsg, { title: pageContext.title }))}
                   disabled={!geminiConfigured || authLoading}
                   className="w-full text-left text-xs px-3 py-2 rounded-lg border border-info/30 bg-info/10
                              text-info hover:bg-info/15 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                  {pageContext.title} дээрх цэвэр дүнг тайлбарлаж дүгнээрэй
+                  {format(t.chat.pageContextButtonLabel, { title: pageContext.title })}
                 </button>
               )}
               {SUGGESTIONS[level].map((s) => (
@@ -329,7 +297,7 @@ export default function ChatSection() {
                     className="w-full flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-foreground"
                   >
                     <Brain className="w-3 h-3" />
-                    {streaming && !m.text ? "Тунгааж байна…" : "Тунгаалт"}
+                    {streaming && !m.text ? t.chat.thinkingLabel : t.chat.thoughtLabel}
                     <ChevronDown
                       className={`w-3 h-3 ml-auto transition-transform ${openThoughtId === m.id ? "rotate-180" : ""}`}
                     />
@@ -346,7 +314,7 @@ export default function ChatSection() {
                   {renderText(m.text)}
                 </div>
               ) : (
-                !m.thought && <p className="text-xs text-muted-foreground">Бичиж байна…</p>
+                !m.thought && <p className="text-xs text-muted-foreground">{t.chat.typingLabel}</p>
               )}
             </div>
           )
@@ -370,10 +338,10 @@ export default function ChatSection() {
             rows={1}
             placeholder={
               !geminiConfigured
-                ? "API key тохируулаагүй"
+                ? t.chat.placeholderNoKey
                 : authLoading
-                  ? "Эрх шалгаж байна…"
-                  : "Асуултаа бичнэ үү…"
+                  ? t.chat.placeholderAuthLoading
+                  : t.chat.placeholderReady
             }
             disabled={!geminiConfigured || authLoading}
             className="flex-1 max-h-28 resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm
@@ -381,7 +349,7 @@ export default function ChatSection() {
                        focus-visible:ring-ring disabled:opacity-50"
           />
           {streaming ? (
-            <Button size="icon" variant="outline" onClick={stop} title="Зогсоох">
+            <Button size="icon" variant="outline" onClick={stop} title={t.chat.stopTooltip}>
               <Square className="w-4 h-4" />
             </Button>
           ) : (
@@ -390,14 +358,14 @@ export default function ChatSection() {
               onClick={() => send(input)}
               disabled={!input.trim() || !geminiConfigured || authLoading}
               className="bg-positive text-background hover:bg-positive/90"
-              title="Илгээх"
+              title={t.chat.sendTooltip}
             >
               <Send className="w-4 h-4" />
             </Button>
           )}
         </div>
         <p className="mt-1.5 text-[10px] text-muted-foreground">
-          Enter — илгээх · Shift+Enter — шинэ мөр. AI-ийн хариултыг шийдвэр гаргахын өмнө шалгаарай.
+          {t.chat.footerHint}
         </p>
       </div>
     </div>
