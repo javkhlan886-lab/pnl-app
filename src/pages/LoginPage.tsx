@@ -6,12 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useLocale } from "@/hooks/useLocale";
 import logoUrl from "@/public/logo.png";
 
 const SAAS_FRONT_URL = import.meta.env.VITE_SAAS_FRONT_URL || "http://localhost:3000";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { t } = useLocale();
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,7 +27,7 @@ export default function LoginPage() {
       await login(loginForm.email, loginForm.password);
       navigate("/dashboard");
     } catch (err: any) {
-      setError(err.response?.data?.error || "Нэвтрэхэд алдаа гарлаа");
+      setError(err.response?.data?.error || t.login.errorGeneric);
     } finally {
       setLoading(false);
     }
@@ -33,7 +36,8 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4 relative overflow-hidden">
       {/* Theme toggle — баруун дээд буланд */}
-      <div className="absolute top-4 right-4 z-10">
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+        <LanguageSwitcher />
         <ThemeToggle />
       </div>
 
@@ -47,35 +51,35 @@ export default function LoginPage() {
             <img src={logoUrl} className="w-[114px] h-[114px] object-contain" />
           </div>
           <div className="text-center">
-          
-            <p className="text-sm text-muted-foreground">P&L удирдлагын систем</p>
+
+            <p className="text-sm text-muted-foreground">{t.login.subtitle}</p>
           </div>
         </div>
 
         <div className="glass-card px-6 py-6">
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Имэйл</Label>
+              <Label>{t.login.email}</Label>
               <Input type="email" placeholder="example@mail.com" required
                 value={loginForm.email}
                 onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })} />
             </div>
             <div className="space-y-1.5">
-              <Label>Нууц үг</Label>
+              <Label>{t.login.password}</Label>
               <Input type="password" placeholder="••••••••" required
                 value={loginForm.password}
                 onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })} />
             </div>
             {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
             <Button type="submit" className="w-full bg-positive text-background hover:bg-positive/90 shadow-[0_0_16px_color-mix(in_oklch,oklch(var(--positive))_30%,transparent)]" disabled={loading}>
-              {loading ? "Нэвтэрч байна..." : "Нэвтрэх"}
+              {loading ? t.login.submitting : t.login.submit}
             </Button>
           </form>
 
           <p className="mt-4 text-center text-xs text-muted-foreground">
-            Компанийн бүртгэлгүй юу?{" "}
+            {t.login.noAccount}{" "}
             <a href={`${SAAS_FRONT_URL}/signup`} className="font-medium text-foreground underline underline-offset-4">
-              Saas Front дээр бүртгүүлэх
+              {t.login.signupLink}
             </a>
           </p>
         </div>

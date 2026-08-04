@@ -10,6 +10,8 @@ import api from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useLocale, format } from "@/hooks/useLocale";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -35,8 +37,8 @@ const OWNER_COLORS = [
 
 const ownerKey = (r: PNLRecord) => r.owner?.id || r.userId || UNKNOWN_OWNER;
 
-const ownerName = (r: PNLRecord) =>
-  r.owner?.name?.trim() || r.owner?.email?.split("@")[0] || "Тодорхойгүй";
+const ownerName = (r: PNLRecord, unknownLabel: string) =>
+  r.owner?.name?.trim() || r.owner?.email?.split("@")[0] || unknownLabel;
 
 const ownerInitials = (r: PNLRecord) => {
   const src = r.owner?.name?.trim() || r.owner?.email || "?";
@@ -57,6 +59,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAdmin, isManager, user, company } = useAuth();
+  const { t } = useLocale();
   // Level 1 (admin) ба Level 2 (manager) бүх хэрэглэгчийн датаг хардаг тул
   // тэдэнд "Оруулсан" багана болон хэрэглэгчээр шүүх сонголтыг үзүүлнэ.
   const canSeeOwner = isAdmin || isManager;
@@ -89,10 +92,10 @@ export default function DashboardPage() {
       const key = ownerKey(r);
       const existing = map.get(key);
       if (existing) existing.count += 1;
-      else map.set(key, { key, label: ownerName(r), email: r.owner?.email || "", count: 1 });
+      else map.set(key, { key, label: ownerName(r, t.dashboard.unknownOwner), email: r.owner?.email || "", count: 1 });
     });
     return [...map.values()].sort((a, b) => b.count - a.count);
-  }, [records]);
+  }, [records, t]);
 
   const activeOwner = ownerOptions.find((o) => o.key === ownerFilter);
 
@@ -137,7 +140,7 @@ export default function DashboardPage() {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch {
-      alert("Export алдаа гарлаа");
+      alert(t.dashboard.exportErrorAlert);
     } finally {
       setExporting(false);
     }
@@ -146,7 +149,7 @@ export default function DashboardPage() {
   useEffect(() => {
     getPNLList()
       .then(setRecords)
-      .catch(() => setError("Тайлангийн мэдээллийг татаж чадсангүй"))
+      .catch(() => setError(t.dashboard.loadError))
       .finally(() => setLoading(false));
 
     api.get("/summary")
@@ -156,8 +159,9 @@ export default function DashboardPage() {
       })
       .catch(() => {
         setSummary(null);
-        setSummaryError("Нийт дүнгийн мэдээллийг серверээс татаж чадсан тул тайлангаас тооцсон өгөгдлийг харуулж байна.");
+        setSummaryError(t.dashboard.summaryError);
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleDelete = async (id: string) => {
@@ -173,9 +177,9 @@ export default function DashboardPage() {
   };
 
   const statusConfig = {
-    active: { label: "Идэвхтэй", dot: "bg-positive", cls: "bg-positive/15 text-positive" },
-    pending: { label: "Хүлээгдэж буй", dot: "bg-amber-400", cls: "bg-amber-400/15 text-amber-300" },
-    closed: { label: "Хаагдсан", dot: "bg-muted-foreground", cls: "bg-muted text-muted-foreground" },
+    active: { label: t.common.statusActive, dot: "bg-positive", cls: "bg-positive/15 text-positive" },
+    pending: { label: t.common.statusPending, dot: "bg-amber-400", cls: "bg-amber-400/15 text-amber-300" },
+    closed: { label: t.common.statusClosed, dot: "bg-muted-foreground", cls: "bg-muted text-muted-foreground" },
   };
 
   const totalIncome = (r: PNLRecord) =>
@@ -205,13 +209,13 @@ export default function DashboardPage() {
   const displaySummary = summary || computedSummary;
 
   const NAV_ITEMS = [
-    { path: "/dashboard", label: "P&L Тайлан", icon: <BarChart2 className="w-4 h-4" /> },
-    { path: "/employees", label: "Ажилчид & Цалин", icon: <Users className="w-4 h-4" /> },
-    { path: "/assets", label: "Хөрөнгө", icon: <Box className="w-4 h-4" /> },
-    { path: "/expenses", label: "Зардал", icon: <Receipt className="w-4 h-4" /> },
-    { path: "/receivables", label: "Зээл & Авлага", icon: <ArrowLeftRight className="w-4 h-4" /> },
-    { path: "/transactions", label: "Гүйлгээний дэвтэр", icon: <TableIcon className="w-4 h-4" /> },
-    ...(isAdmin ? [{ path: "/admin/users", label: "Админ", icon: <ShieldCheck className="w-4 h-4" /> }] : []),
+    { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
+    { path: "/employees", label: t.common.navEmployees, icon: <Users className="w-4 h-4" /> },
+    { path: "/assets", label: t.common.navAssets, icon: <Box className="w-4 h-4" /> },
+    { path: "/expenses", label: t.common.navExpenses, icon: <Receipt className="w-4 h-4" /> },
+    { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
+    { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
+    ...(isAdmin ? [{ path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> }] : []),
   ];
 
   return (
@@ -221,7 +225,7 @@ export default function DashboardPage() {
           <CompanyLogo name={company?.name} />
           <div>
             <h1 className="text-lg font-medium flex items-center gap-2">
-              P&L Удирдлага
+              {t.common.productName}
               <span className="inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full bg-positive/15 text-positive">
                 <span className="live-dot" /> LIVE
               </span>
@@ -232,17 +236,22 @@ export default function DashboardPage() {
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" onClick={exportExcel} disabled={exporting}>
             <Download className="w-4 h-4 mr-1.5" />
-            {exporting ? "Боловсруулж байна..." : selected.size > 0 ? `Export (${selected.size})` : "Бүгдийн Export"}
+            {exporting
+              ? t.common.exportingLabel
+              : selected.size > 0
+                ? format(t.common.exportSelected, { count: String(selected.size) })
+                : t.common.exportAll}
           </Button>
           <Button onClick={() => navigate("/dashboard/new")} size="sm"
             className="bg-positive text-background hover:bg-positive/90 shadow-[0_0_16px_color-mix(in_oklch,oklch(var(--positive))_35%,transparent)]">
             <PlusCircle className="w-4 h-4 mr-1.5" />
-            Шинэ тайлан
+            {t.common.newReport}
           </Button>
           <Button variant="ghost" size="sm" onClick={logout}>
             <LogOut className="w-4 h-4 mr-1.5" />
-            Гарах
+            {t.common.logout}
           </Button>
+          <LanguageSwitcher />
           <ThemeToggle />
         </div>
       </header>
@@ -271,7 +280,16 @@ export default function DashboardPage() {
         {user && (
           <div className="mb-6">
             <h2 className="text-xl font-semibold">
-              Амжилт Хүсье, <span className="text-positive">{user.name }</span> 👋
+              {(() => {
+                const [before, after] = t.dashboard.greeting.split("{name}");
+                return (
+                  <>
+                    {before}
+                    <span className="text-positive">{user.name}</span>
+                    {after}
+                  </>
+                );
+              })()} 👋
             </h2>
           </div>
         )}
@@ -291,36 +309,40 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <div className="glass-card glass-card-positive px-5 py-4">
                 <div className="relative flex items-start justify-between">
-                  <p className="text-sm text-muted-foreground">Нийт орлого</p>
+                  <p className="text-sm text-muted-foreground">{t.dashboard.statIncome}</p>
                   <span className="icon-badge-positive w-9 h-9"><BarChart2 className="w-4 h-4" /></span>
                 </div>
                 <p className="relative stat-number text-2xl font-bold mt-3">{fmt(displaySummary.pnlIncome, "₮")}</p>
-                <p className="relative text-xs text-muted-foreground mt-1">{displaySummary.pnlCount} тайлан</p>
+                <p className="relative text-xs text-muted-foreground mt-1">
+                  {format(t.dashboard.statIncomeCount, { count: String(displaySummary.pnlCount) })}
+                </p>
               </div>
               <div className="glass-card glass-card-negative px-5 py-4">
                 <div className="relative flex items-start justify-between">
-                  <p className="text-sm text-muted-foreground">Үйл ажиллагааны зардал</p>
+                  <p className="text-sm text-muted-foreground">{t.dashboard.statOpEx}</p>
                   <span className="icon-badge-negative w-9 h-9"><TrendingDown className="w-4 h-4" /></span>
                 </div>
                 <p className="relative stat-number text-2xl font-bold mt-3">{fmt(displaySummary.totalOperatingExpense, "₮")}</p>
-                <p className="relative text-xs text-muted-foreground mt-1">Цалин + НДШ + Бусад</p>
+                <p className="relative text-xs text-muted-foreground mt-1">{t.dashboard.statOpExSub}</p>
               </div>
               <div className={`glass-card ${displaySummary.netProfit >= 0 ? "glass-card-positive" : "glass-card-negative"} px-5 py-4`}>
                 <div className="relative flex items-start justify-between">
-                  <p className="text-sm text-muted-foreground">Цэвэр ашиг</p>
+                  <p className="text-sm text-muted-foreground">{t.dashboard.statNetProfit}</p>
                   <span className={`${displaySummary.netProfit >= 0 ? "icon-badge-positive" : "icon-badge-negative"} w-9 h-9`}><TrendingUp className="w-4 h-4" /></span>
                 </div>
                 <p className="relative stat-number text-2xl font-bold mt-3 blur-number">{fmt(displaySummary.netProfit, "₮")}</p>
-                <p className="relative text-xs text-muted-foreground mt-1">Маржин: {displaySummary.margin}%</p>
+                <p className="relative text-xs text-muted-foreground mt-1">
+                  {format(t.dashboard.statMargin, { margin: String(displaySummary.margin) })}
+                </p>
               </div>
               {displaySummary.netPosition != null && (
                 <div className={`glass-card ${displaySummary.netPosition >= 0 ? "glass-card-positive" : "glass-card-negative"} px-5 py-4`}>
                   <div className="relative flex items-start justify-between">
-                    <p className="text-sm text-muted-foreground">Цэвэр байрлал</p>
+                    <p className="text-sm text-muted-foreground">{t.dashboard.statNetPosition}</p>
                     <span className={`${displaySummary.netPosition >= 0 ? "icon-badge-positive" : "icon-badge-negative"} w-9 h-9`}><CheckCircle className="w-4 h-4" /></span>
                   </div>
                   <p className="relative stat-number text-2xl font-bold mt-3">{fmt(displaySummary.netPosition, "₮")}</p>
-                  <p className="relative text-xs text-muted-foreground mt-1">Авлага — Зээл</p>
+                  <p className="relative text-xs text-muted-foreground mt-1">{t.dashboard.statNetPositionSub}</p>
                 </div>
               )}
             </div>
@@ -328,35 +350,37 @@ export default function DashboardPage() {
               <div className="grid grid-cols-4 gap-4 mb-6">
                 <div className="glass-card glass-card-negative px-5 py-4">
                   <div className="relative flex items-start justify-between">
-                    <p className="text-sm text-muted-foreground">Төслийн зардал</p>
+                    <p className="text-sm text-muted-foreground">{t.dashboard.statProjectExpense}</p>
                     <span className="icon-badge-negative w-9 h-9"><TrendingDown className="w-4 h-4" /></span>
                   </div>
                   <p className="relative stat-number text-2xl font-bold mt-3">{fmt(summary.pnlExpense, "₮")}</p>
-                  <p className="relative text-xs text-muted-foreground mt-1">P&L тайлангийн</p>
+                  <p className="relative text-xs text-muted-foreground mt-1">{t.dashboard.statProjectExpenseSub}</p>
                 </div>
                 <div className="glass-card glass-card-negative px-5 py-4">
                   <div className="relative flex items-start justify-between">
-                    <p className="text-sm text-muted-foreground">Цалин & НД</p>
+                    <p className="text-sm text-muted-foreground">{t.dashboard.statSalary}</p>
                     <span className="icon-badge-negative w-9 h-9"><Users className="w-4 h-4" /></span>
                   </div>
                   <p className="relative stat-number text-2xl font-bold mt-3">{fmt(summary.salaryExpense, "₮")}</p>
-                  <p className="relative text-xs text-muted-foreground mt-1">{summary.employeeCount} ажилтан</p>
+                  <p className="relative text-xs text-muted-foreground mt-1">
+                    {format(t.dashboard.statSalarySub, { count: String(summary.employeeCount) })}
+                  </p>
                 </div>
                 <div className="glass-card glass-card-negative px-5 py-4">
                   <div className="relative flex items-start justify-between">
-                    <p className="text-sm text-muted-foreground">Оффис зардал</p>
+                    <p className="text-sm text-muted-foreground">{t.dashboard.statOffice}</p>
                     <span className="icon-badge-negative w-9 h-9"><Receipt className="w-4 h-4" /></span>
                   </div>
                   <p className="relative stat-number text-2xl font-bold mt-3">{fmt(summary.officeExpense, "₮")}</p>
-                  <p className="relative text-xs text-muted-foreground mt-1">Батлагдсан</p>
+                  <p className="relative text-xs text-muted-foreground mt-1">{t.dashboard.approvedLabel}</p>
                 </div>
                 <div className="glass-card glass-card-negative px-5 py-4">
                   <div className="relative flex items-start justify-between">
-                    <p className="text-sm text-muted-foreground">Бусад зардал</p>
+                    <p className="text-sm text-muted-foreground">{t.dashboard.statOther}</p>
                     <span className="icon-badge-negative w-9 h-9"><Box className="w-4 h-4" /></span>
                   </div>
                   <p className="relative stat-number text-2xl font-bold mt-3">{fmt(summary.otherExpense, "₮")}</p>
-                  <p className="relative text-xs text-muted-foreground mt-1">Батлагдсан</p>
+                  <p className="relative text-xs text-muted-foreground mt-1">{t.dashboard.approvedLabel}</p>
                 </div>
               </div>
             )}
@@ -366,10 +390,10 @@ export default function DashboardPage() {
         {selected.size > 0 && (
           <div className="mb-4 flex items-center gap-3 bg-positive/10 border border-positive/25 rounded-lg px-4 py-2.5">
             <span className="text-sm text-positive font-medium">
-              {selected.size} тайлан сонгогдсон
+              {format(t.dashboard.selectedCount, { count: String(selected.size) })}
             </span>
             <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground ml-auto">
-              Цуцлах
+              {t.dashboard.deselect}
             </button>
           </div>
         )}
@@ -382,7 +406,7 @@ export default function DashboardPage() {
                 ? "bg-positive/15 text-positive border-positive/30"
                 : "bg-card/40 text-muted-foreground border-border/50 hover:bg-secondary/50"}`}>
               {s !== "" && <span className={`w-1.5 h-1.5 rounded-full ${statusConfig[s].dot}`} />}
-              {s === "" ? "Бүгд" : statusConfig[s].label}
+              {s === "" ? t.common.all : statusConfig[s].label}
               <span className="opacity-60">({s === "" ? ownerScoped.length : ownerScoped.filter(r => (r.status || "active") === s).length})</span>
             </button>
           ))}
@@ -395,7 +419,7 @@ export default function DashboardPage() {
                   ? "bg-info/15 text-info border-info/30"
                   : "bg-card/40 text-muted-foreground border-border/50 hover:bg-secondary/50"}`}>
                 <Users className="w-3.5 h-3.5" />
-                Оруулсан: {activeOwner ? activeOwner.label : "Бүгд"}
+                {t.dashboard.ownerFilterLabel}: {activeOwner ? activeOwner.label : t.common.all}
                 <ChevronDown className="w-3 h-3 opacity-60" />
               </button>
               {ownerMenuOpen && (
@@ -404,7 +428,7 @@ export default function DashboardPage() {
                   <div className="absolute top-full right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-30 py-1 min-w-56 max-h-72 overflow-y-auto">
                     <button onClick={() => { setOwnerFilter(""); setOwnerMenuOpen(false); }}
                       className={`w-full flex items-center justify-between gap-3 px-3 py-1.5 text-xs hover:bg-secondary/50 text-left ${!ownerFilter ? "text-info font-medium" : ""}`}>
-                      Бүгд
+                      {t.common.all}
                       <span className="opacity-60">{records.length}</span>
                     </button>
                     <div className="h-px bg-border my-1" />
@@ -426,13 +450,13 @@ export default function DashboardPage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-20 text-muted-foreground text-sm">Уншиж байна...</div>
+          <div className="text-center py-20 text-muted-foreground text-sm">{t.common.loading}</div>
         ) : records.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-muted-foreground mb-4">Тайлан байхгүй байна</p>
+            <p className="text-muted-foreground mb-4">{t.dashboard.noRecords}</p>
             <Button onClick={() => navigate("/dashboard/new")}
               className="bg-positive text-background hover:bg-positive/90">
-              Шинэ тайлан үүсгэх
+              {t.dashboard.createFirstReport}
             </Button>
           </div>
         ) : (
@@ -443,14 +467,14 @@ export default function DashboardPage() {
                   <TableHead className="w-10">
                     <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 cursor-pointer accent-positive" />
                   </TableHead>
-                  <TableHead>Байгууллагын нэр</TableHead>
-                  {canSeeOwner && <TableHead>Оруулсан</TableHead>}
-                  <TableHead>Гэрээний дугаар</TableHead>
-                  <TableHead>Статус</TableHead>
-                  <TableHead className="text-right">Нийт орлого</TableHead>
-                  <TableHead className="text-right">Цэвэр ашиг</TableHead>
-                  <TableHead>Огноо</TableHead>
-                  <TableHead className="text-right">Үйлдэл</TableHead>
+                  <TableHead>{t.dashboard.colOrgName}</TableHead>
+                  {canSeeOwner && <TableHead>{t.dashboard.colOwner}</TableHead>}
+                  <TableHead>{t.dashboard.colContractNumber}</TableHead>
+                  <TableHead>{t.dashboard.colStatus}</TableHead>
+                  <TableHead className="text-right">{t.dashboard.colTotalIncome}</TableHead>
+                  <TableHead className="text-right">{t.dashboard.colNetProfit}</TableHead>
+                  <TableHead>{t.dashboard.colDate}</TableHead>
+                  <TableHead className="text-right">{t.dashboard.colActions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -472,7 +496,7 @@ export default function DashboardPage() {
                               {ownerInitials(r)}
                             </span>
                             <div className="min-w-0">
-                              <p className="text-sm truncate blur-number">{ownerName(r)}</p>
+                              <p className="text-sm truncate blur-number">{ownerName(r, t.dashboard.unknownOwner)}</p>
                               {r.owner?.email && (
                                 <p className="text-xs text-muted-foreground truncate">{r.owner.email}</p>
                               )}
@@ -531,14 +555,14 @@ export default function DashboardPage() {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Устгах уу?</AlertDialogTitle>
-                                <AlertDialogDescription>Энэ тайланг устгавал буцааж сэргээх боломжгүй.</AlertDialogDescription>
+                                <AlertDialogTitle>{t.common.deleteConfirmTitle}</AlertDialogTitle>
+                                <AlertDialogDescription>{t.dashboard.deleteReportDesc}</AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Цуцлах</AlertDialogCancel>
+                                <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
                                 <AlertDialogAction onClick={() => handleDelete(r._id!)}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                  Устгах
+                                  {t.common.delete}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>

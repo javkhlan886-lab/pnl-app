@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Plus, Trash2, Save, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { useLocale, format } from "@/hooks/useLocale";
+import type { Dictionary } from "@/lib/i18n/dictionary-type";
 
 const defaultIncome: Row[] = [
   { name: "Гэрээт ажлын орлого", note: "Угсралт, суурилуулалт", unitPrice: 0, quantity: 1, amount: 0 },
@@ -96,24 +98,25 @@ interface RowSectionProps {
   onUpdate: (i: number, field: keyof Row | "unitPrice" | "quantity", val: string | number) => void;
   onAdd: () => void;
   onDelete: (i: number) => void;
+  t: Dictionary;
 }
 
-const RowSection = ({ type, label, rows, currency, total, onUpdate, onAdd, onDelete }: RowSectionProps) => (
+const RowSection = ({ type, label, rows, currency, total, onUpdate, onAdd, onDelete, t }: RowSectionProps) => (
   <div>
     <div className="flex items-center justify-between mb-3">
       <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{label}</h3>
       <Button variant="outline" size="sm" onClick={onAdd}>
         <Plus className="w-3.5 h-3.5 mr-1" />
-        Нэмэх
+        {t.common.add}
       </Button>
     </div>
     <div className="rounded-lg border overflow-hidden">
       <div className="grid grid-cols-12 gap-0 bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground border-b">
-        <div className="col-span-4">Нэр</div>
-        <div className="col-span-3">Тайлбар</div>
-        <div className="col-span-2 text-right">Нэгж үнэ ({currency})</div>
-        <div className="col-span-1 text-right">Тоо</div>
-        <div className="col-span-1 text-right">Нийт ({currency})</div>
+        <div className="col-span-4">{t.pnlForm.colName}</div>
+        <div className="col-span-3">{t.pnlForm.colNote}</div>
+        <div className="col-span-2 text-right">{format(t.pnlForm.colUnitPrice, { currency })}</div>
+        <div className="col-span-1 text-right">{t.pnlForm.colQuantity}</div>
+        <div className="col-span-1 text-right">{format(t.pnlForm.colTotal, { currency })}</div>
         <div className="col-span-1"></div>
       </div>
       {rows.map((r, i) => (
@@ -121,7 +124,7 @@ const RowSection = ({ type, label, rows, currency, total, onUpdate, onAdd, onDel
           <div className="col-span-4 pr-2">
             <input
               value={r.name}
-              placeholder="Нэр..."
+              placeholder={t.pnlForm.namePlaceholder}
               onChange={(e) => onUpdate(i, "name", e.target.value)}
               onFocus={(e) => e.currentTarget.select()}
               style={{ width: "100%", background: "transparent", border: "none", outline: "none", fontSize: "13px", color: "inherit" }}
@@ -130,7 +133,7 @@ const RowSection = ({ type, label, rows, currency, total, onUpdate, onAdd, onDel
           <div className="col-span-3 pr-2">
             <input
               value={r.note}
-              placeholder="Тайлбар..."
+              placeholder={t.pnlForm.notePlaceholder}
               onChange={(e) => onUpdate(i, "note", e.target.value)}
               onFocus={(e) => e.currentTarget.select()}
               style={{ width: "100%", background: "transparent", border: "none", outline: "none", fontSize: "13px", color: "inherit", opacity: 0.6 }}
@@ -154,7 +157,7 @@ const RowSection = ({ type, label, rows, currency, total, onUpdate, onAdd, onDel
         </div>
       ))}
       <div className="grid grid-cols-12 gap-0 px-3 py-2 bg-muted/40 text-sm font-medium">
-        <div className="col-span-8 text-muted-foreground">Нийт {label.toLowerCase()}</div>
+        <div className="col-span-8 text-muted-foreground">{format(t.pnlForm.totalOf, { label: label.toLowerCase() })}</div>
         <div className={`col-span-3 text-right ${type === "incomeRows" ? "text-green-600" : "text-red-500"}`}>
           {fmt(total, currency)}
         </div>
@@ -171,6 +174,7 @@ interface Props {
 
 export default function PNLForm({ initial, id }: Props) {
   const navigate = useNavigate();
+  const { t } = useLocale();
   const [data, setData] = useState<PNLRecord>(
     initial || {
       company: "",
@@ -258,7 +262,7 @@ export default function PNLForm({ initial, id }: Props) {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch {
-      alert("Хадгалахад алдаа гарлаа");
+      alert(t.pnlForm.saveError);
     } finally {
       setSaving(false);
     }
@@ -268,31 +272,31 @@ export default function PNLForm({ initial, id }: Props) {
     <div className="space-y-6">
       <Card>
         <CardHeader className="pb-4">
-          <CardTitle className="text-base font-medium">Үндсэн мэдээлэл</CardTitle>
+          <CardTitle className="text-base font-medium">{t.pnlForm.basicInfo}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1.5">
-              <Label>Байгууллага</Label>
-              <Input value={data.company} onChange={(e) => setData({ ...data, company: e.target.value })} placeholder="Байгууллагын нэр" />
+              <Label>{t.pnlForm.company}</Label>
+              <Input value={data.company} onChange={(e) => setData({ ...data, company: e.target.value })} placeholder={t.pnlForm.companyPlaceholder} />
             </div>
             <div className="space-y-1.5">
-              <Label>Тайлант үе</Label>
-              <Input value={data.period} onChange={(e) => setData({ ...data, period: e.target.value })} placeholder="2025 оны 1-р улирал" />
+              <Label>{t.pnlForm.period}</Label>
+              <Input value={data.period} onChange={(e) => setData({ ...data, period: e.target.value })} placeholder={t.pnlForm.periodPlaceholder} />
             </div>
             <div className="space-y-1.5">
-              <Label>Огноо</Label>
+              <Label>{t.pnlForm.date}</Label>
               <Input type="date" value={data.date || ""} onChange={(e) => setData({ ...data, date: e.target.value })} />
             </div>
           </div>
 
           <div className="border-t pt-4 mt-4">
-            <p className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wide">Гэрээний мэдээлэл</p>
+            <p className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wide">{t.pnlForm.contractInfo}</p>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="space-y-1.5 md:col-span-2">
                 <Label className="flex items-center gap-1.5">
-                  Гэрээний дугаар
-                  <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-normal">Шинэ</span>
+                  {t.pnlForm.contractNumber}
+                  <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-normal">{t.pnlForm.newBadge}</span>
                 </Label>
                 <Input
                   value={data.contractNumber || ""}
@@ -302,26 +306,26 @@ export default function PNLForm({ initial, id }: Props) {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Гэрээний ангилал</Label>
+                <Label>{t.pnlForm.contractCategory}</Label>
                 <Select value={data.contractCategory || ""} onValueChange={(v) => setData({ ...data, contractCategory: v })}>
-                  <SelectTrigger><SelectValue placeholder="— Сонгох —" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t.pnlForm.selectPlaceholder} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="construction">Барилга / Угсралт</SelectItem>
-                    <SelectItem value="consulting">Зөвлөх үйлчилгээ</SelectItem>
-                    <SelectItem value="supply">Нийлүүлэлт</SelectItem>
-                    <SelectItem value="transport">Тээвэр / Логистик</SelectItem>
-                    <SelectItem value="other">Бусад</SelectItem>
+                    <SelectItem value="construction">{t.pnlForm.categoryConstruction}</SelectItem>
+                    <SelectItem value="consulting">{t.pnlForm.categoryConsulting}</SelectItem>
+                    <SelectItem value="supply">{t.pnlForm.categorySupply}</SelectItem>
+                    <SelectItem value="transport">{t.pnlForm.categoryTransport}</SelectItem>
+                    <SelectItem value="other">{t.pnlForm.categoryOther}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Статус</Label>
+                <Label>{t.pnlForm.status}</Label>
                 <Select value={data.status || "active"} onValueChange={(v) => setData({ ...data, status: v as "active" | "pending" | "closed" })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">✦ Идэвхтэй</SelectItem>
-                    <SelectItem value="pending">◎ Хүлээгдэж буй</SelectItem>
-                    <SelectItem value="closed">✕ Хаагдсан</SelectItem>
+                    <SelectItem value="active">{t.pnlForm.statusActive}</SelectItem>
+                    <SelectItem value="pending">{t.pnlForm.statusPending}</SelectItem>
+                    <SelectItem value="closed">{t.pnlForm.statusClosed}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -331,7 +335,7 @@ export default function PNLForm({ initial, id }: Props) {
           <div className="border-t pt-4 mt-2">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <Label>Валют</Label>
+                <Label>{t.pnlForm.currency}</Label>
                 <Select value={data.currency} onValueChange={(v) => setData({ ...data, currency: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -350,19 +354,21 @@ export default function PNLForm({ initial, id }: Props) {
       <Card>
         <CardContent className="pt-6 space-y-6">
           <RowSection
-            type="incomeRows" label="Орлого"
+            type="incomeRows" label={t.pnlForm.income}
             rows={data.incomeRows} currency={data.currency} total={totalIncome}
             onUpdate={(i, f, v) => updateRow("incomeRows", i, f, v)}
             onAdd={() => addRow("incomeRows")}
             onDelete={(i) => delRow("incomeRows", i)}
+            t={t}
           />
           <Separator />
           <RowSection
-            type="expenseRows" label="Зарлага"
+            type="expenseRows" label={t.pnlForm.expense}
             rows={data.expenseRows} currency={data.currency} total={totalExpense}
             onUpdate={(i, f, v) => updateRow("expenseRows", i, f, v)}
             onAdd={() => addRow("expenseRows")}
             onDelete={(i) => delRow("expenseRows", i)}
+            t={t}
           />
         </CardContent>
       </Card>
@@ -371,10 +377,10 @@ export default function PNLForm({ initial, id }: Props) {
         <CardContent className="pt-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Нийт орлого", val: fmt(totalIncome, data.currency), color: "text-green-600" },
-              { label: "Нийт зарлага", val: fmt(totalExpense, data.currency), color: "text-red-500" },
-              { label: "Цэвэр ашиг/алдагдал", val: fmt(net, data.currency), color: net >= 0 ? "text-green-600" : "text-red-500" },
-              { label: "Ашгийн маржин", val: `${margin}%`, color: Number(margin) >= 0 ? "text-green-600" : "text-red-500" },
+              { label: t.pnlForm.summaryIncome, val: fmt(totalIncome, data.currency), color: "text-green-600" },
+              { label: t.pnlForm.summaryExpense, val: fmt(totalExpense, data.currency), color: "text-red-500" },
+              { label: t.pnlForm.summaryNet, val: fmt(net, data.currency), color: net >= 0 ? "text-green-600" : "text-red-500" },
+              { label: t.pnlForm.summaryMargin, val: `${margin}%`, color: Number(margin) >= 0 ? "text-green-600" : "text-red-500" },
             ].map((c) => (
               <div key={c.label} className="bg-muted/40 rounded-lg p-4">
                 <p className="text-xs text-muted-foreground mb-1">{c.label}</p>
@@ -388,17 +394,17 @@ export default function PNLForm({ initial, id }: Props) {
       <div className="flex items-center gap-3">
         <Button onClick={save} disabled={saving}>
           <Save className="w-4 h-4 mr-1.5" />
-          {saving ? "Хадгалж байна..." : "Хадгалах"}
+          {saving ? t.common.saving : t.common.save}
         </Button>
         {saved && (
           <div className="flex items-center gap-1.5 text-green-600 text-sm">
             <CheckCircle2 className="w-4 h-4" />
-            Амжилттай хадгаллаа
+            {t.pnlForm.savedMessage}
           </div>
         )}
         <Button variant="ghost" className="ml-auto" onClick={() => navigate("/dashboard")}>
           <ArrowLeft className="w-4 h-4 mr-1.5" />
-          Буцах
+          {t.pnlForm.back}
         </Button>
       </div>
     </div>
