@@ -4,6 +4,8 @@ import { CompanyLogo } from "@/components/CompanyLogo";
 import { getEmployees, createEmployee, updateEmployee, deleteEmployee } from "@/lib/employee";
 import { logout } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
+import { useLocale, format } from "@/hooks/useLocale";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -40,12 +42,6 @@ const EMPTY: Employee = {
 
 const fmt = (n: number) => "₮" + Math.round(n).toLocaleString("mn-MN");
 
-const statusLabel: Record<string, { label: string; cls: string }> = {
-  active: { label: "Идэвхтэй", cls: "bg-positive/15 text-positive hover:bg-positive/15" },
-  leave: { label: "Чөлөөтэй", cls: "bg-amber-400/15 text-amber-300 hover:bg-amber-400/15" },
-  inactive: { label: "Гарсан", cls: "bg-muted text-muted-foreground hover:bg-muted" },
-};
-
 function fmtInput(v: number) {
   return v === 0 ? "" : v.toLocaleString("mn-MN");
 }
@@ -54,15 +50,22 @@ export default function EmployeePage() {
   const navigate = useNavigate();
   const { company, isAdmin } = useAuth();
   const location = useLocation();
+  const { t } = useLocale();
+
+  const statusLabel: Record<string, { label: string; cls: string }> = {
+    active: { label: t.employees.statusActive, cls: "bg-positive/15 text-positive hover:bg-positive/15" },
+    leave: { label: t.employees.statusLeave, cls: "bg-amber-400/15 text-amber-300 hover:bg-amber-400/15" },
+    inactive: { label: t.employees.statusInactive, cls: "bg-muted text-muted-foreground hover:bg-muted" },
+  };
 
   const NAV_ITEMS = [
-    { path: "/dashboard", label: "P&L Тайлан", icon: <BarChart2 className="w-4 h-4" /> },
-    { path: "/employees", label: "Ажилчид & Цалин", icon: <Users className="w-4 h-4" /> },
-    { path: "/assets", label: "Хөрөнгө", icon: <Box className="w-4 h-4" /> },
-    { path: "/expenses", label: "Зардал", icon: <Receipt className="w-4 h-4" /> },
-    { path: "/receivables", label: "Зээл & Авлага", icon: <ArrowLeftRight className="w-4 h-4" /> },
-    { path: "/transactions", label: "Гүйлгээний дэвтэр", icon: <TableIcon className="w-4 h-4" /> },
-    ...(isAdmin ? [{ path: "/admin/users", label: "Админ", icon: <ShieldCheck className="w-4 h-4" /> }] : []),
+    { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
+    { path: "/employees", label: t.common.navEmployees, icon: <Users className="w-4 h-4" /> },
+    { path: "/assets", label: t.common.navAssets, icon: <Box className="w-4 h-4" /> },
+    { path: "/expenses", label: t.common.navExpenses, icon: <Receipt className="w-4 h-4" /> },
+    { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
+    { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
+    ...(isAdmin ? [{ path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> }] : []),
   ];
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,7 +133,7 @@ export default function EmployeePage() {
       const res = await fetch(`${apiUrl}/export/employees`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("Export алдаа");
+      if (!res.ok) throw new Error(t.employees.exportError);
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -140,7 +143,7 @@ export default function EmployeePage() {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-    } catch { alert("Export алдаа гарлаа"); }
+    } catch { alert(t.dashboard.exportErrorAlert); }
     finally { setExporting(false); }
   };
 
@@ -155,23 +158,24 @@ export default function EmployeePage() {
           </button>
           <div>
             <h1 className="text-lg font-medium flex items-center gap-2">
-              <Users className="w-5 h-5" /> Ажилчид & Цалин
+              <Users className="w-5 h-5" /> {t.employees.pageTitle}
             </h1>
-            <p className="text-xs text-muted-foreground">Ажилчдын бүртгэл, НД тооцоо</p>
+            <p className="text-xs text-muted-foreground">{t.employees.pageSubtitle}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
             <Download className="w-4 h-4 mr-1.5" />
-            {exporting ? "Боловсруулж байна..." : "Excel татах"}
+            {exporting ? t.common.exportingLabel : t.common.excelExport}
           </Button>
           <Button onClick={openCreate} size="sm"
             className="bg-positive text-background hover:bg-positive/90 shadow-[0_0_16px_color-mix(in_oklch,oklch(var(--positive))_35%,transparent)]">
-            <Plus className="w-4 h-4 mr-1.5" /> Ажилтан нэмэх
+            <Plus className="w-4 h-4 mr-1.5" /> {t.employees.addEmployee}
           </Button>
           <Button variant="ghost" size="sm" onClick={logout}>
-            <LogOut className="w-4 h-4 mr-1.5" /> Гарах
+            <LogOut className="w-4 h-4 mr-1.5" /> {t.common.logout}
           </Button>
+          <LanguageSwitcher />
           <ThemeToggle />
         </div>
       </header>
@@ -196,36 +200,36 @@ export default function EmployeePage() {
       <main className="max-w-6xl mx-auto px-6 py-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="glass-card glass-card-positive px-5 py-4">
-            <p className="relative text-sm text-muted-foreground mb-1">Нийт ажилчид</p>
+            <p className="relative text-sm text-muted-foreground mb-1">{t.employees.statTotalEmployees}</p>
             <p className="relative stat-number text-2xl font-bold">{employees.length}</p>
             <p className="relative text-xs text-muted-foreground mt-1">
-              {engineerCount} engineer, {staffCount} ажилтан
+              {format(t.employees.statCountSub, { engineers: String(engineerCount), staff: String(staffCount) })}
             </p>
           </div>
           <div className="glass-card glass-card-negative px-5 py-4">
-            <p className="relative text-sm text-muted-foreground mb-1">Нийт цалин</p>
+            <p className="relative text-sm text-muted-foreground mb-1">{t.employees.statTotalSalary}</p>
             <p className="relative stat-number text-2xl font-bold">{fmt(totalSalary)}</p>
-            <p className="relative text-xs text-muted-foreground mt-1">Сарын</p>
+            <p className="relative text-xs text-muted-foreground mt-1">{t.employees.monthly}</p>
           </div>
           <div className="glass-card glass-card-negative px-5 py-4">
-            <p className="relative text-sm text-muted-foreground mb-1">НД хувь (10%)</p>
+            <p className="relative text-sm text-muted-foreground mb-1">{t.employees.statNdRate}</p>
             <p className="relative stat-number text-2xl font-bold">{fmt(totalND)}</p>
-            <p className="relative text-xs text-muted-foreground mt-1">Жил дутгад хувь</p>
+            <p className="relative text-xs text-muted-foreground mt-1">{t.employees.yearlyRate}</p>
           </div>
           <div className="glass-card glass-card-negative px-5 py-4">
-            <p className="relative text-sm text-muted-foreground mb-1">Нийт зардал</p>
+            <p className="relative text-sm text-muted-foreground mb-1">{t.employees.statTotalCost}</p>
             <p className="relative stat-number text-2xl font-bold">{fmt(totalCost)}</p>
-            <p className="relative text-xs text-muted-foreground mt-1">Цалин + НД</p>
+            <p className="relative text-xs text-muted-foreground mt-1">{t.employees.salaryPlusNd}</p>
           </div>
         </div>
 
         {loading ? (
-          <div className="text-center py-20 text-muted-foreground text-sm">Уншиж байна...</div>
+          <div className="text-center py-20 text-muted-foreground text-sm">{t.common.loading}</div>
         ) : employees.length === 0 ? (
           <div className="text-center py-20 flex flex-col items-center gap-3">
-            <p className="text-muted-foreground mb-1">Ажилтан бүртгэгдээгүй байна</p>
+            <p className="text-muted-foreground mb-1">{t.employees.noEmployees}</p>
             <Button onClick={openCreate} className="bg-positive text-background hover:bg-positive/90">
-              Шинэ ажилтан нэмэх
+              {t.employees.addFirstEmployee}
             </Button>
           </div>
         ) : (
@@ -233,15 +237,15 @@ export default function EmployeePage() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border/50">
-                  <TableHead>Нэр</TableHead>
-                  <TableHead>Албан тушаал</TableHead>
-                  <TableHead>Ангилал</TableHead>
-                  <TableHead className="text-right">Үндсэн цалин</TableHead>
-                  <TableHead className="text-right">НД (10%)</TableHead>
-                  <TableHead className="text-right">НДШТ (2%)</TableHead>
-                  <TableHead className="text-right">Нийт зардал</TableHead>
-                  <TableHead>Статус</TableHead>
-                  <TableHead className="text-right">Үйлдэл</TableHead>
+                  <TableHead>{t.employees.colName}</TableHead>
+                  <TableHead>{t.employees.colPosition}</TableHead>
+                  <TableHead>{t.employees.colType}</TableHead>
+                  <TableHead className="text-right">{t.employees.colBaseSalary}</TableHead>
+                  <TableHead className="text-right">{t.employees.colNd}</TableHead>
+                  <TableHead className="text-right">{t.employees.colNdsht}</TableHead>
+                  <TableHead className="text-right">{t.employees.colTotalCost}</TableHead>
+                  <TableHead>{t.employees.colStatus}</TableHead>
+                  <TableHead className="text-right">{t.employees.colActions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -258,7 +262,7 @@ export default function EmployeePage() {
                         <Badge className={emp.type === "engineer"
                           ? "bg-info/15 text-info hover:bg-info/15"
                           : "bg-muted text-muted-foreground hover:bg-muted"}>
-                          {emp.type === "engineer" ? "Engineer" : "Ажилтан"}
+                          {emp.type === "engineer" ? t.employees.typeEngineer : t.employees.typeStaff}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right stat-number">{fmt(emp.baseSalary)}</TableCell>
@@ -282,16 +286,16 @@ export default function EmployeePage() {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Устгах уу?</AlertDialogTitle>
+                                <AlertDialogTitle>{t.common.deleteConfirmTitle}</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  {emp.name}-г устгавал буцааж сэргээх боломжгүй.
+                                  {format(t.employees.deleteConfirmDesc, { name: emp.name })}
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Цуцлах</AlertDialogCancel>
+                                <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
                                 <AlertDialogAction onClick={() => handleDelete(emp._id!)}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                  Устгах
+                                  {t.common.delete}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -310,48 +314,48 @@ export default function EmployeePage() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editing ? "Ажилтан засах" : "Ажилтан нэмэх"}</DialogTitle>
+            <DialogTitle>{editing ? t.employees.editEmployee : t.employees.addEmployee}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-3 py-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Нэр *</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.employees.name}</label>
                 <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                   value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  placeholder="Б. Батбаяр" />
+                  placeholder={t.employees.namePlaceholder} />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Албан тушаал</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.employees.position}</label>
                 <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                   value={form.position}
                   onChange={e => setForm(f => ({ ...f, position: e.target.value }))}
-                  placeholder="Senior Engineer" />
+                  placeholder={t.employees.positionPlaceholder} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Ангилал</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.employees.type}</label>
                 <select className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none"
                   value={form.type}
                   onChange={e => setForm(f => ({ ...f, type: e.target.value as any }))}>
-                  <option value="engineer">Engineer</option>
-                  <option value="staff">Ажилтан</option>
+                  <option value="engineer">{t.employees.typeEngineer}</option>
+                  <option value="staff">{t.employees.typeStaff}</option>
                 </select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Статус</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.employees.status}</label>
                 <select className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none"
                   value={form.status}
                   onChange={e => setForm(f => ({ ...f, status: e.target.value as any }))}>
-                  <option value="active">Идэвхтэй</option>
-                  <option value="leave">Чөлөөтэй</option>
-                  <option value="inactive">Гарсан</option>
+                  <option value="active">{t.employees.statusActive}</option>
+                  <option value="leave">{t.employees.statusLeave}</option>
+                  <option value="inactive">{t.employees.statusInactive}</option>
                 </select>
               </div>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Үндсэн цалин *</label>
+              <label className="text-xs font-medium text-muted-foreground">{t.employees.baseSalary}</label>
               <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
                 inputMode="numeric"
                 value={salaryDisplay}
@@ -365,14 +369,14 @@ export default function EmployeePage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">НД хувь (%)</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.employees.ndRatePercent}</label>
                 <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                   type="number" min={0} max={100}
                   value={form.ndRate}
                   onChange={e => setForm(f => ({ ...f, ndRate: Number(e.target.value) }))} />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">НДШТ хувь (%)</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.employees.ndshtRatePercent}</label>
                 <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                   type="number" min={0} max={100}
                   value={form.ndshtRate}
@@ -380,7 +384,7 @@ export default function EmployeePage() {
               </div>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Ажилд орсон огноо</label>
+              <label className="text-xs font-medium text-muted-foreground">{t.employees.startDate}</label>
               <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                 type="date"
                 value={form.startDate}
@@ -389,29 +393,29 @@ export default function EmployeePage() {
             {form.baseSalary > 0 && (
               <div className="bg-secondary/50 rounded-lg px-4 py-3 text-sm">
                 <div className="flex justify-between py-1">
-                  <span className="text-muted-foreground">Үндсэн цалин</span>
+                  <span className="text-muted-foreground">{t.employees.baseSalary.replace(" *", "")}</span>
                   <span className="blur-number">{fmt(form.baseSalary)}</span>
                 </div>
                 <div className="flex justify-between py-1">
-                  <span className="text-muted-foreground">НД ({form.ndRate}%)</span>
+                  <span className="text-muted-foreground">{format(t.employees.ndLabel, { rate: String(form.ndRate) })}</span>
                   <span className="text-negative blur-number">{fmt(nd)}</span>
                 </div>
                 <div className="flex justify-between py-1">
-                  <span className="text-muted-foreground">НДШТ ({form.ndshtRate}%)</span>
+                  <span className="text-muted-foreground">{format(t.employees.ndshtLabel, { rate: String(form.ndshtRate) })}</span>
                   <span className="text-negative blur-number">{fmt(ndsht)}</span>
                 </div>
                 <div className="flex justify-between py-1 font-medium border-t border-border mt-1 pt-2">
-                  <span>Нийт зардал</span>
+                  <span>{t.employees.totalCost}</span>
                   <span className="text-negative blur-number">{fmt(totalFormCost)}</span>
                 </div>
               </div>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Цуцлах</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>{t.common.cancel}</Button>
             <Button onClick={handleSave} disabled={saving || !form.name.trim()}
               className="bg-positive text-background hover:bg-positive/90">
-              {saving ? "Хадгалж байна..." : editing ? "Хадгалах" : "Нэмэх"}
+              {saving ? t.common.saving : editing ? t.common.save : t.common.add}
             </Button>
           </DialogFooter>
         </DialogContent>

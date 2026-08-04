@@ -5,6 +5,8 @@ import { getAssets, createAsset, updateAsset, disposeAsset, calcDepreciation } f
 import { getEmployees } from "@/lib/employee";
 import { useAuth } from "@/hooks/useAuth";
 import { logout } from "@/lib/auth";
+import { useLocale, format } from "@/hooks/useLocale";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -21,6 +23,8 @@ import {
 } from "@/components/ui/dialog";
 import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, Box, BarChart2, Users, Receipt, ArrowLeftRight, Download, ShieldCheck } from "lucide-react";
 
+// Чөлөөт текст утга — backend-д хадгалагддаг тул хэлээр орчуулахгүй
+// (өгөгдлийн бодит утга өөрчлөгдөх эрсдэлтэй).
 const CATEGORIES = [
   "Тоног төхөөрөмж", "Тээврийн хэрэгсэл", "Программ хангамж",
   "Тавилга, эд хогшил", "Барилга, байгууламж", "Цахилгаан хэрэгсэл",
@@ -42,14 +46,17 @@ const statusCls: Record<string, string> = {
   disposed: "bg-muted text-muted-foreground hover:bg-muted",
   maintenance: "bg-amber-400/15 text-amber-300 hover:bg-amber-400/15",
 };
-const statusLabel: Record<string, string> = {
-  active: "Идэвхтэй", disposed: "Хасагдсан", maintenance: "Засвар",
-};
 
 export default function AssetPage() {
   const navigate = useNavigate();
   const { company, isAdmin } = useAuth();
   const location = useLocation();
+  const { t } = useLocale();
+
+  const statusLabel: Record<string, string> = {
+    active: t.assets.statusActive, disposed: t.assets.statusDisposed, maintenance: t.assets.statusMaintenance,
+  };
+
   const [assets, setAssets] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,13 +71,13 @@ export default function AssetPage() {
   const [residualDisplay, setResidualDisplay] = useState("");
 
   const NAV_ITEMS = [
-    { path: "/dashboard", label: "P&L Тайлан", icon: <BarChart2 className="w-4 h-4" /> },
-    { path: "/employees", label: "Ажилчид & Цалин", icon: <Users className="w-4 h-4" /> },
-    { path: "/assets", label: "Хөрөнгө", icon: <Box className="w-4 h-4" /> },
-    { path: "/expenses", label: "Зардал", icon: <Receipt className="w-4 h-4" /> },
-    { path: "/receivables", label: "Зээл & Авлага", icon: <ArrowLeftRight className="w-4 h-4" /> },
-    { path: "/transactions", label: "Гүйлгээний дэвтэр", icon: <TableIcon className="w-4 h-4" /> },
-    ...(isAdmin ? [{ path: "/admin/users", label: "Админ", icon: <ShieldCheck className="w-4 h-4" /> }] : []),
+    { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
+    { path: "/employees", label: t.common.navEmployees, icon: <Users className="w-4 h-4" /> },
+    { path: "/assets", label: t.common.navAssets, icon: <Box className="w-4 h-4" /> },
+    { path: "/expenses", label: t.common.navExpenses, icon: <Receipt className="w-4 h-4" /> },
+    { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
+    { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
+    ...(isAdmin ? [{ path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> }] : []),
   ];
 
   const load = useCallback(async () => {
@@ -142,7 +149,7 @@ export default function AssetPage() {
       const res = await fetch(`${apiUrl}/export/assets`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("Export алдаа");
+      if (!res.ok) throw new Error(t.assets.exportError);
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -152,7 +159,7 @@ export default function AssetPage() {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-    } catch { alert("Export алдаа гарлаа"); }
+    } catch { alert(t.dashboard.exportErrorAlert); }
     finally { setExporting(false); }
   };
 
@@ -166,21 +173,22 @@ export default function AssetPage() {
           </button>
           <div>
             <h1 className="text-lg font-medium flex items-center gap-2">
-              <Box className="w-5 h-5" /> Хөрөнгийн бүртгэл
+              <Box className="w-5 h-5" /> {t.assets.pageTitle}
             </h1>
-            <p className="text-xs text-muted-foreground">Компанийн хөрөнгө, элэгдлийн тооцоо</p>
+            <p className="text-xs text-muted-foreground">{t.assets.pageSubtitle}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
             <Download className="w-4 h-4 mr-1.5" />
-            {exporting ? "Боловсруулж байна..." : "Excel татах"}
+            {exporting ? t.common.exportingLabel : t.common.excelExport}
           </Button>
           <Button onClick={openCreate} size="sm"
             className="bg-positive text-background hover:bg-positive/90 shadow-[0_0_16px_color-mix(in_oklch,oklch(var(--positive))_35%,transparent)]">
-            <Plus className="w-4 h-4 mr-1.5" /> Хөрөнгө нэмэх
+            <Plus className="w-4 h-4 mr-1.5" /> {t.assets.addAsset}
           </Button>
-          <Button variant="ghost" size="sm" onClick={logout}><LogOut className="w-4 h-4 mr-1.5" /> Гарах</Button>
+          <Button variant="ghost" size="sm" onClick={logout}><LogOut className="w-4 h-4 mr-1.5" /> {t.common.logout}</Button>
+          <LanguageSwitcher />
           <ThemeToggle />
         </div>
       </header>
@@ -208,24 +216,26 @@ export default function AssetPage() {
       <main className="max-w-6xl mx-auto px-6 py-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <div className="glass-card px-4 py-3">
-            <p className="relative text-xs text-muted-foreground mb-1">Нийт хөрөнгө</p>
+            <p className="relative text-xs text-muted-foreground mb-1">{t.assets.statTotal}</p>
             <p className="relative text-xl font-semibold stat-number">{assets.length}</p>
-            <p className="relative text-xs text-muted-foreground mt-1">{activeAssets.length} идэвхтэй</p>
+            <p className="relative text-xs text-muted-foreground mt-1">
+              {format(t.assets.statActiveSub, { count: String(activeAssets.length) })}
+            </p>
           </div>
           <div className="glass-card glass-card-positive px-4 py-3">
-            <p className="relative text-xs text-muted-foreground mb-1">Анхны үнэ</p>
+            <p className="relative text-xs text-muted-foreground mb-1">{t.assets.statInitialValue}</p>
             <p className="relative text-xl font-semibold text-info stat-number">{fmt(totalValue)}</p>
-            <p className="relative text-xs text-muted-foreground mt-1">нийт</p>
+            <p className="relative text-xs text-muted-foreground mt-1">{t.assets.total}</p>
           </div>
           <div className="glass-card glass-card-negative px-4 py-3">
-            <p className="relative text-xs text-muted-foreground mb-1">Хуримтлагдсан элэгдэл</p>
+            <p className="relative text-xs text-muted-foreground mb-1">{t.assets.statAccumDep}</p>
             <p className="relative text-xl font-semibold text-negative stat-number">{fmt(totalAccumDep)}</p>
-            <p className="relative text-xs text-muted-foreground mt-1">нийт</p>
+            <p className="relative text-xs text-muted-foreground mt-1">{t.assets.total}</p>
           </div>
           <div className="glass-card glass-card-positive px-4 py-3">
-            <p className="relative text-xs text-muted-foreground mb-1">Дансны үнэ</p>
+            <p className="relative text-xs text-muted-foreground mb-1">{t.assets.statBookValue}</p>
             <p className="relative text-xl font-semibold text-positive stat-number">{fmt(totalCurrentValue)}</p>
-            <p className="relative text-xs text-muted-foreground mt-1">өнөөдрийн байдлаар</p>
+            <p className="relative text-xs text-muted-foreground mt-1">{t.assets.asOfToday}</p>
           </div>
         </div>
 
@@ -236,22 +246,22 @@ export default function AssetPage() {
               className={`h-8 px-3 text-xs rounded-lg border ${catFilter === c
                 ? "bg-positive/15 text-positive border-positive/30"
                 : "bg-background text-muted-foreground border-border hover:bg-secondary/50"}`}>
-              {c || "Бүгд"}
+              {c || t.common.all}
             </button>
           ))}
         </div>
 
         {loading ? (
-          <div className="text-center py-20 text-muted-foreground text-sm">Уншиж байна...</div>
+          <div className="text-center py-20 text-muted-foreground text-sm">{t.common.loading}</div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20 flex flex-col items-center gap-3">
-            <p className="text-muted-foreground mb-1">Хөрөнгө бүртгэгдээгүй байна</p>
+            <p className="text-muted-foreground mb-1">{t.assets.noAssets}</p>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
                 <Download className="w-4 h-4 mr-1.5" />
-                {exporting ? "Боловсруулж байна..." : "Excel татах"}
+                {exporting ? t.common.exportingLabel : t.common.excelExport}
               </Button>
-              <Button onClick={openCreate} className="bg-positive text-background hover:bg-positive/90">Шинэ хөрөнгө нэмэх</Button>
+              <Button onClick={openCreate} className="bg-positive text-background hover:bg-positive/90">{t.assets.addFirstAsset}</Button>
             </div>
           </div>
         ) : (
@@ -259,17 +269,17 @@ export default function AssetPage() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border/50">
-                  <TableHead>Нэр</TableHead>
-                  <TableHead>Ангилал</TableHead>
-                  <TableHead className="text-right">Нэгж үнэ</TableHead>
-                  <TableHead className="text-right">Тоо</TableHead>
-                  <TableHead className="text-right">Нийт үнэ</TableHead>
-                  <TableHead className="text-right">Сарын элэгдэл</TableHead>
-                  <TableHead className="text-right">Дансны үнэ</TableHead>
-                  <TableHead>Элэгдэл %</TableHead>
-                  <TableHead>Хариуцагч</TableHead>
-                  <TableHead>Статус</TableHead>
-                  <TableHead className="text-right">Үйлдэл</TableHead>
+                  <TableHead>{t.assets.colName}</TableHead>
+                  <TableHead>{t.assets.colCategory}</TableHead>
+                  <TableHead className="text-right">{t.assets.colUnitPrice}</TableHead>
+                  <TableHead className="text-right">{t.assets.colQuantity}</TableHead>
+                  <TableHead className="text-right">{t.assets.colTotalPrice}</TableHead>
+                  <TableHead className="text-right">{t.assets.colMonthlyDep}</TableHead>
+                  <TableHead className="text-right">{t.assets.colBookValue}</TableHead>
+                  <TableHead>{t.assets.colDepPct}</TableHead>
+                  <TableHead>{t.assets.colAssignee}</TableHead>
+                  <TableHead>{t.assets.colStatus}</TableHead>
+                  <TableHead className="text-right">{t.assets.colActions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -316,16 +326,16 @@ export default function AssetPage() {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Хасах уу?</AlertDialogTitle>
+                                <AlertDialogTitle>{t.assets.disposeConfirmTitle}</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  {a.name}-г хасагдсан болгоно. Бүртгэлд үлдэнэ.
+                                  {format(t.assets.disposeConfirmDesc, { name: a.name })}
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Цуцлах</AlertDialogCancel>
+                                <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
                                 <AlertDialogAction onClick={() => handleDispose(a._id)}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                  Хасах
+                                  {t.assets.dispose}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -344,30 +354,30 @@ export default function AssetPage() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editing ? "Хөрөнгө засах" : "Хөрөнгө нэмэх"}</DialogTitle>
+            <DialogTitle>{editing ? t.assets.editAsset : t.assets.addAsset}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-3 py-2 max-h-[60vh] overflow-y-auto pr-1">
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Нэр *</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.assets.name}</label>
                 <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                   value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  placeholder="MacBook Pro 16&quot;" />
+                  placeholder={t.assets.namePlaceholder} />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Ангилал</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.assets.category}</label>
                 <select className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none"
                   value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
                   {CATEGORIES.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Худалдаж авсан огноо</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.assets.purchaseDate}</label>
                 <input type="date" className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                   value={form.purchaseDate} onChange={e => setForm(f => ({ ...f, purchaseDate: e.target.value }))} />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Нэгж үнэ</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.assets.unitPrice}</label>
                 <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
                   inputMode="numeric" value={unitPriceDisplay}
                   onChange={e => {
@@ -382,7 +392,7 @@ export default function AssetPage() {
                   }} placeholder="0" />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Тоо ширхэг</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.assets.quantity}</label>
                 <input type="number" min={1} className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
                   value={quantityInput}
                   onChange={e => {
@@ -396,12 +406,12 @@ export default function AssetPage() {
                   }} />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Нийт үнэ</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.assets.totalPrice}</label>
                 <input readOnly className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right text-muted-foreground"
                   value={form.price ? form.price.toLocaleString("mn-MN") : ""} placeholder="0" />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Үлдэгдэл үнэ</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.assets.residualValue}</label>
                 <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
                   inputMode="numeric" value={residualDisplay}
                   onChange={e => {
@@ -412,63 +422,63 @@ export default function AssetPage() {
                   }} placeholder="0" />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Ашиглалтын хугацаа (жил)</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.assets.lifespan}</label>
                 <input type="number" min={1} max={50}
                   className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                   value={form.lifespan} onChange={e => setForm(f => ({ ...f, lifespan: Number(e.target.value) }))} />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Элэгдлийн арга</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.assets.depMethod}</label>
                 <select className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none"
                   value={form.depMethod} onChange={e => setForm(f => ({ ...f, depMethod: e.target.value as any }))}>
-                  <option value="straight">Шулуун шугаман</option>
-                  <option value="declining">Буурах элэгдлийн</option>
+                  <option value="straight">{t.assets.methodStraight}</option>
+                  <option value="declining">{t.assets.methodDeclining}</option>
                 </select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Хариуцагч ажилтан</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.assets.assignedEmployee}</label>
                 <select className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none"
                   value={form.assignedTo} onChange={e => setForm(f => ({ ...f, assignedTo: e.target.value }))}>
-                  <option value="">— Сонгоогүй —</option>
+                  <option value="">{t.assets.notSelected}</option>
                   {employees.map(e => <option key={e._id} value={e.name}>{e.name}</option>)}
                 </select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Байрлал</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.assets.location}</label>
                 <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                   value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
-                  placeholder="Оффис 301" />
+                  placeholder={t.assets.locationPlaceholder} />
               </div>
             </div>
             {dep && (
               <div className="bg-secondary/50 rounded-lg px-4 py-3 text-sm">
-                <p className="text-xs font-medium text-muted-foreground mb-2">Элэгдлийн тооцоо</p>
+                <p className="text-xs font-medium text-muted-foreground mb-2">{t.assets.depCalcTitle}</p>
                 <div className="flex justify-between py-1">
-                  <span className="text-muted-foreground">Сарын элэгдэл</span>
+                  <span className="text-muted-foreground">{t.assets.monthlyDep}</span>
                   <span className="text-negative blur-number">{fmt(dep.monthly)}</span>
                 </div>
                 <div className="flex justify-between py-1">
-                  <span className="text-muted-foreground">Жилийн элэгдэл</span>
+                  <span className="text-muted-foreground">{t.assets.yearlyDep}</span>
                   <span className="text-negative blur-number">{fmt(dep.yearly)}</span>
                 </div>
                 <div className="flex justify-between py-1 font-medium">
-                  <span>Өнөөдрийн дансны үнэ</span>
+                  <span>{t.assets.currentBookValue}</span>
                   <span className="text-positive blur-number">{fmt(dep.currentValue)}</span>
                 </div>
                 <div className="flex items-center gap-2 mt-2">
                   <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
                     <div className="h-full bg-info rounded-full" style={{ width: `${dep.depreciatedPct}%` }} />
                   </div>
-                  <span className="text-xs text-muted-foreground">{dep.depreciatedPct}% элэгдсэн</span>
+                  <span className="text-xs text-muted-foreground">{format(t.assets.depreciatedPct, { pct: String(dep.depreciatedPct) })}</span>
                 </div>
               </div>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Цуцлах</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>{t.common.cancel}</Button>
             <Button onClick={handleSave} disabled={saving || !form.name.trim()}
               className="bg-positive text-background hover:bg-positive/90">
-              {saving ? "Хадгалж байна..." : editing ? "Хадгалах" : "Нэмэх"}
+              {saving ? t.common.saving : editing ? t.common.save : t.common.add}
             </Button>
           </DialogFooter>
         </DialogContent>
