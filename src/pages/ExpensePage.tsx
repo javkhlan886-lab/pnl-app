@@ -4,6 +4,8 @@ import { CompanyLogo } from "@/components/CompanyLogo";
 import { getExpenses, createExpense, updateExpense, deleteExpense } from "@/lib/expense";
 import { logout } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
+import { useLocale, format } from "@/hooks/useLocale";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -20,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, Receipt, BarChart2, Users, Box, ArrowLeftRight, Download, ShieldCheck } from "lucide-react";
 
+// Чөлөөт текст утга — backend-д хадгалагддаг тул хэлээр орчуулахгүй.
 const OFFICE_CATS = ["Оффис", "Тоног төхөөрөмж", "Цахилгаан, интернет", "Тээвэр, шатахуун", "Татвар, хураамж", "Бусад"];
 const OTHER_CATS = ["Маркетинг", "Аялал, томилолт", "Сургалт", "Хуулийн зардал", "Эрүүл мэндийн зардал", "Бусад"];
 
@@ -32,16 +35,18 @@ const EMPTY = {
 
 const fmt = (n: number) => "₮" + Math.round(n).toLocaleString("mn-MN");
 
-const statusMap: Record<string, { label: string; cls: string }> = {
-  approved: { label: "Батлагдсан", cls: "bg-positive/15 text-positive hover:bg-positive/15" },
-  pending: { label: "Хүлээгдэж буй", cls: "bg-amber-400/15 text-amber-300 hover:bg-amber-400/15" },
-  rejected: { label: "Татгалзсан", cls: "bg-negative/15 text-negative hover:bg-negative/15" },
-};
-
 export default function ExpensePage() {
   const navigate = useNavigate();
   const { company, isAdmin } = useAuth();
   const location = useLocation();
+  const { t } = useLocale();
+
+  const statusMap: Record<string, { label: string; cls: string }> = {
+    approved: { label: t.expenses.statusApproved, cls: "bg-positive/15 text-positive hover:bg-positive/15" },
+    pending: { label: t.expenses.statusPending, cls: "bg-amber-400/15 text-amber-300 hover:bg-amber-400/15" },
+    rejected: { label: t.expenses.statusRejected, cls: "bg-negative/15 text-negative hover:bg-negative/15" },
+  };
+
   const [expenses, setExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -56,13 +61,13 @@ export default function ExpensePage() {
   const [, startTransition] = useTransition();
 
   const NAV_ITEMS = [
-    { path: "/dashboard", label: "P&L Тайлан", icon: <BarChart2 className="w-4 h-4" /> },
-    { path: "/employees", label: "Ажилчид & Цалин", icon: <Users className="w-4 h-4" /> },
-    { path: "/assets", label: "Хөрөнгө", icon: <Box className="w-4 h-4" /> },
-    { path: "/expenses", label: "Зардал", icon: <Receipt className="w-4 h-4" /> },
-    { path: "/receivables", label: "Зээл & Авлага", icon: <ArrowLeftRight className="w-4 h-4" /> },
-    { path: "/transactions", label: "Гүйлгээний дэвтэр", icon: <TableIcon className="w-4 h-4" /> },
-    ...(isAdmin ? [{ path: "/admin/users", label: "Админ", icon: <ShieldCheck className="w-4 h-4" /> }] : []),
+    { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
+    { path: "/employees", label: t.common.navEmployees, icon: <Users className="w-4 h-4" /> },
+    { path: "/assets", label: t.common.navAssets, icon: <Box className="w-4 h-4" /> },
+    { path: "/expenses", label: t.common.navExpenses, icon: <Receipt className="w-4 h-4" /> },
+    { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
+    { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
+    ...(isAdmin ? [{ path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> }] : []),
   ];
 
   const load = useCallback(async () => {
@@ -124,7 +129,7 @@ export default function ExpensePage() {
       const res = await fetch(`${apiUrl}/export/expenses`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("Export алдаа");
+      if (!res.ok) throw new Error(t.dashboard.exportErrorAlert);
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -134,7 +139,7 @@ export default function ExpensePage() {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-    } catch { alert("Export алдаа гарлаа"); }
+    } catch { alert(t.dashboard.exportErrorAlert); }
     finally { setExporting(false); }
   };
 
@@ -148,21 +153,22 @@ export default function ExpensePage() {
           </button>
           <div>
             <h1 className="text-lg font-medium flex items-center gap-2">
-              <Receipt className="w-5 h-5" /> Зардлын бүртгэл
+              <Receipt className="w-5 h-5" /> {t.expenses.pageTitle}
             </h1>
-            <p className="text-xs text-muted-foreground">Оффис болон бусад зардал</p>
+            <p className="text-xs text-muted-foreground">{t.expenses.pageSubtitle}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
             <Download className="w-4 h-4 mr-1.5" />
-            {exporting ? "Боловсруулж байна..." : "Excel татах"}
+            {exporting ? t.common.exportingLabel : t.common.excelExport}
           </Button>
           <Button onClick={openCreate} size="sm"
             className="bg-positive text-background hover:bg-positive/90 shadow-[0_0_16px_color-mix(in_oklch,oklch(var(--positive))_35%,transparent)]">
-            <Plus className="w-4 h-4 mr-1.5" /> Зардал нэмэх
+            <Plus className="w-4 h-4 mr-1.5" /> {t.expenses.addExpense}
           </Button>
-          <Button variant="ghost" size="sm" onClick={logout}><LogOut className="w-4 h-4 mr-1.5" /> Гарах</Button>
+          <Button variant="ghost" size="sm" onClick={logout}><LogOut className="w-4 h-4 mr-1.5" /> {t.common.logout}</Button>
+          <LanguageSwitcher />
           <ThemeToggle />
         </div>
       </header>
@@ -190,49 +196,53 @@ export default function ExpensePage() {
       <main className="max-w-6xl mx-auto px-6 py-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <div className="glass-card glass-card-negative px-4 py-3">
-            <p className="relative text-xs text-muted-foreground mb-1">Батлагдсан нийт</p>
+            <p className="relative text-xs text-muted-foreground mb-1">{t.expenses.statApprovedTotal}</p>
             <p className="relative text-xl font-semibold text-negative stat-number">{fmt(totalApproved)}</p>
-            <p className="relative text-xs text-muted-foreground mt-1">{filtered.filter(e => e.status === "approved").length} зардал</p>
+            <p className="relative text-xs text-muted-foreground mt-1">
+              {format(t.expenses.expenseCount, { count: String(filtered.filter(e => e.status === "approved").length) })}
+            </p>
           </div>
           <div className="glass-card px-4 py-3">
-            <p className="relative text-xs text-muted-foreground mb-1">Хүлээгдэж буй</p>
+            <p className="relative text-xs text-muted-foreground mb-1">{t.expenses.statPending}</p>
             <p className="relative text-xl font-semibold text-warn stat-number">{fmt(totalPending)}</p>
-            <p className="relative text-xs text-muted-foreground mt-1">{filtered.filter(e => e.status === "pending").length} зардал</p>
+            <p className="relative text-xs text-muted-foreground mt-1">
+              {format(t.expenses.expenseCount, { count: String(filtered.filter(e => e.status === "pending").length) })}
+            </p>
           </div>
           <div className="glass-card px-4 py-3">
-            <p className="relative text-xs text-muted-foreground mb-1">Оффис зардал</p>
+            <p className="relative text-xs text-muted-foreground mb-1">{t.expenses.statOffice}</p>
             <p className="relative text-xl font-semibold stat-number">{fmt(officeTotal)}</p>
-            <p className="relative text-xs text-muted-foreground mt-1">Батлагдсан</p>
+            <p className="relative text-xs text-muted-foreground mt-1">{t.expenses.approved}</p>
           </div>
           <div className="glass-card px-4 py-3">
-            <p className="relative text-xs text-muted-foreground mb-1">Бусад зардал</p>
+            <p className="relative text-xs text-muted-foreground mb-1">{t.expenses.statOther}</p>
             <p className="relative text-xl font-semibold stat-number">{fmt(otherTotal)}</p>
-            <p className="relative text-xs text-muted-foreground mt-1">Батлагдсан</p>
+            <p className="relative text-xs text-muted-foreground mt-1">{t.expenses.approved}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 mb-4">
-          {(["", "office", "other"] as const).map(t => (
-            <button key={t} onClick={() => startTransition(() => setTypeFilter(t))}
-              className={`h-8 px-3 text-xs rounded-lg border ${typeFilter === t
+          {(["", "office", "other"] as const).map(f => (
+            <button key={f} onClick={() => startTransition(() => setTypeFilter(f))}
+              className={`h-8 px-3 text-xs rounded-lg border ${typeFilter === f
                 ? "bg-positive/15 text-positive border-positive/30"
                 : "bg-background text-muted-foreground border-border hover:bg-secondary/50"}`}>
-              {t === "" ? "Бүгд" : t === "office" ? "Оффис" : "Бусад"}
+              {f === "" ? t.common.all : f === "office" ? t.expenses.typeOffice : t.expenses.typeOther}
             </button>
           ))}
         </div>
 
         {loading ? (
-          <div className="text-center py-20 text-muted-foreground text-sm">Уншиж байна...</div>
+          <div className="text-center py-20 text-muted-foreground text-sm">{t.common.loading}</div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20 flex flex-col items-center gap-3">
-            <p className="text-muted-foreground mb-1">Зардал бүртгэгдээгүй байна</p>
+            <p className="text-muted-foreground mb-1">{t.expenses.noExpenses}</p>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
                 <Download className="w-4 h-4 mr-1.5" />
-                {exporting ? "Боловсруулж байна..." : "Excel татах"}
+                {exporting ? t.common.exportingLabel : t.common.excelExport}
               </Button>
-              <Button onClick={openCreate} className="bg-positive text-background hover:bg-positive/90">Шинэ зардал нэмэх</Button>
+              <Button onClick={openCreate} className="bg-positive text-background hover:bg-positive/90">{t.expenses.addFirstExpense}</Button>
             </div>
           </div>
         ) : (
@@ -240,13 +250,13 @@ export default function ExpensePage() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border/50">
-                  <TableHead>Огноо</TableHead>
-                  <TableHead>Төрөл</TableHead>
-                  <TableHead>Ангилал</TableHead>
-                  <TableHead>Тайлбар</TableHead>
-                  <TableHead className="text-right">Дүн</TableHead>
-                  <TableHead>Статус</TableHead>
-                  <TableHead className="text-right">Үйлдэл</TableHead>
+                  <TableHead>{t.expenses.colDate}</TableHead>
+                  <TableHead>{t.expenses.colType}</TableHead>
+                  <TableHead>{t.expenses.colCategory}</TableHead>
+                  <TableHead>{t.expenses.colDescription}</TableHead>
+                  <TableHead className="text-right">{t.expenses.colAmount}</TableHead>
+                  <TableHead>{t.expenses.colStatus}</TableHead>
+                  <TableHead className="text-right">{t.expenses.colActions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -257,7 +267,7 @@ export default function ExpensePage() {
                       <Badge className={exp.type === "office"
                         ? "bg-info/15 text-info hover:bg-info/15"
                         : "bg-[oklch(0.6_0.18_300)]/15 text-[oklch(0.6_0.18_300)] hover:bg-[oklch(0.6_0.18_300)]/15"}>
-                        {exp.type === "office" ? "Оффис" : "Бусад"}
+                        {exp.type === "office" ? t.expenses.typeOffice : t.expenses.typeOther}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">{exp.category}</TableCell>
@@ -279,14 +289,14 @@ export default function ExpensePage() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Устгах уу?</AlertDialogTitle>
-                              <AlertDialogDescription>Энэ зардлыг устгана.</AlertDialogDescription>
+                              <AlertDialogTitle>{t.common.deleteConfirmTitle}</AlertDialogTitle>
+                              <AlertDialogDescription>{t.expenses.deleteConfirmDesc}</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Цуцлах</AlertDialogCancel>
+                              <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
                               <AlertDialogAction onClick={() => handleDelete(exp._id)}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                Устгах
+                                {t.common.delete}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -304,34 +314,34 @@ export default function ExpensePage() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editing ? "Зардал засах" : "Зардал нэмэх"}</DialogTitle>
+            <DialogTitle>{editing ? t.expenses.editExpense : t.expenses.addExpense}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-3 py-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Төрөл</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.expenses.type}</label>
                 <select className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none"
                   value={form.type}
                   onChange={e => setForm(f => ({ ...f, type: e.target.value as any, category: e.target.value === "office" ? OFFICE_CATS[0] : OTHER_CATS[0] }))}>
-                  <option value="office">Оффис</option>
-                  <option value="other">Бусад</option>
+                  <option value="office">{t.expenses.typeOffice}</option>
+                  <option value="other">{t.expenses.typeOther}</option>
                 </select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Ангилал</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.expenses.category}</label>
                 <select className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none"
                   value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
                   {cats.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
               <div className="col-span-2 flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Тайлбар *</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.expenses.description}</label>
                 <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                   value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                  placeholder="Зардлын тайлбар" />
+                  placeholder={t.expenses.descriptionPlaceholder} />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Нэгж үнэ</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.expenses.unitPrice}</label>
                 <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
                   inputMode="numeric" value={unitPriceDisplay}
                   onChange={e => {
@@ -351,7 +361,7 @@ export default function ExpensePage() {
                   }} placeholder="0" />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Тоо ширхэг</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.expenses.quantity}</label>
                 <input type="number" min={1} className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
                   value={quantityInput}
                   onChange={e => {
@@ -371,31 +381,31 @@ export default function ExpensePage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Нийт дүн</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.expenses.totalAmount}</label>
                 <input readOnly className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right text-muted-foreground"
                   value={amountDisplay} placeholder="0" />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Огноо</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.expenses.date}</label>
                 <input type="date" className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                   value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Статус</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.expenses.status}</label>
                 <select className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none"
                   value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value as any }))}>
-                  <option value="pending">Хүлээгдэж буй</option>
-                  <option value="approved">Батлагдсан</option>
-                  <option value="rejected">Татгалзсан</option>
+                  <option value="pending">{t.expenses.statusPending}</option>
+                  <option value="approved">{t.expenses.statusApproved}</option>
+                  <option value="rejected">{t.expenses.statusRejected}</option>
                 </select>
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Цуцлах</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>{t.common.cancel}</Button>
             <Button onClick={handleSave} disabled={saving || !form.description.trim() || form.amount === 0}
               className="bg-positive text-background hover:bg-positive/90">
-              {saving ? "Хадгалж байна..." : editing ? "Хадгалах" : "Нэмэх"}
+              {saving ? t.common.saving : editing ? t.common.save : t.common.add}
             </Button>
           </DialogFooter>
         </DialogContent>
