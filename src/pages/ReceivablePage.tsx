@@ -4,6 +4,8 @@ import { CompanyLogo } from "@/components/CompanyLogo";
 import { getReceivables, createReceivable, updateReceivable, deleteReceivable } from "@/lib/receivable";
 import { logout } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
+import { useLocale, format } from "@/hooks/useLocale";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -29,17 +31,19 @@ const EMPTY = {
 
 const fmt = (n: number) => "₮" + Math.round(n).toLocaleString("mn-MN");
 
-const statusMap: Record<string, { label: string; cls: string }> = {
-  current: { label: "Хугацаандаа", cls: "bg-positive/15 text-positive hover:bg-positive/15" },
-  near: { label: "Ойртсон", cls: "bg-amber-400/15 text-amber-300 hover:bg-amber-400/15" },
-  overdue: { label: "Хэтэрсэн", cls: "bg-negative/15 text-negative hover:bg-negative/15" },
-  paid: { label: "Төлөгдсөн", cls: "bg-muted text-muted-foreground hover:bg-muted" },
-};
-
 export default function ReceivablePage() {
   const navigate = useNavigate();
   const { company, isAdmin } = useAuth();
   const location = useLocation();
+  const { t } = useLocale();
+
+  const statusMap: Record<string, { label: string; cls: string }> = {
+    current: { label: t.receivables.statusCurrent, cls: "bg-positive/15 text-positive hover:bg-positive/15" },
+    near: { label: t.receivables.statusNear, cls: "bg-amber-400/15 text-amber-300 hover:bg-amber-400/15" },
+    overdue: { label: t.receivables.statusOverdue, cls: "bg-negative/15 text-negative hover:bg-negative/15" },
+    paid: { label: t.receivables.statusPaid, cls: "bg-muted text-muted-foreground hover:bg-muted" },
+  };
+
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -54,13 +58,13 @@ export default function ReceivablePage() {
   const [, startTransition] = useTransition();
 
   const NAV_ITEMS = [
-    { path: "/dashboard", label: "P&L Тайлан", icon: <BarChart2 className="w-4 h-4" /> },
-    { path: "/employees", label: "Ажилчид & Цалин", icon: <Users className="w-4 h-4" /> },
-    { path: "/assets", label: "Хөрөнгө", icon: <Box className="w-4 h-4" /> },
-    { path: "/expenses", label: "Зардал", icon: <Receipt className="w-4 h-4" /> },
-    { path: "/receivables", label: "Зээл & Авлага", icon: <ArrowLeftRight className="w-4 h-4" /> },
-    { path: "/transactions", label: "Гүйлгээний дэвтэр", icon: <TableIcon className="w-4 h-4" /> },
-    ...(isAdmin ? [{ path: "/admin/users", label: "Админ", icon: <ShieldCheck className="w-4 h-4" /> }] : []),
+    { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
+    { path: "/employees", label: t.common.navEmployees, icon: <Users className="w-4 h-4" /> },
+    { path: "/assets", label: t.common.navAssets, icon: <Box className="w-4 h-4" /> },
+    { path: "/expenses", label: t.common.navExpenses, icon: <Receipt className="w-4 h-4" /> },
+    { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
+    { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
+    ...(isAdmin ? [{ path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> }] : []),
   ];
 
   const load = useCallback(async () => {
@@ -121,7 +125,7 @@ export default function ReceivablePage() {
       const res = await fetch(`${apiUrl}/export/receivables`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("Export алдаа");
+      if (!res.ok) throw new Error(t.dashboard.exportErrorAlert);
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -131,7 +135,7 @@ export default function ReceivablePage() {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-    } catch { alert("Export алдаа гарлаа"); }
+    } catch { alert(t.dashboard.exportErrorAlert); }
     finally { setExporting(false); }
   };
 
@@ -145,21 +149,22 @@ export default function ReceivablePage() {
           </button>
           <div>
             <h1 className="text-lg font-medium flex items-center gap-2">
-              <ArrowLeftRight className="w-5 h-5" /> Зээл & Авлага
+              <ArrowLeftRight className="w-5 h-5" /> {t.receivables.pageTitle}
             </h1>
-            <p className="text-xs text-muted-foreground">Авлага болон зээлийн бүртгэл</p>
+            <p className="text-xs text-muted-foreground">{t.receivables.pageSubtitle}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
             <Download className="w-4 h-4 mr-1.5" />
-            {exporting ? "Боловсруулж байна..." : "Excel татах"}
+            {exporting ? t.common.exportingLabel : t.common.excelExport}
           </Button>
           <Button onClick={openCreate} size="sm"
             className="bg-positive text-background hover:bg-positive/90 shadow-[0_0_16px_color-mix(in_oklch,oklch(var(--positive))_35%,transparent)]">
-            <Plus className="w-4 h-4 mr-1.5" /> Нэмэх
+            <Plus className="w-4 h-4 mr-1.5" /> {t.receivables.add}
           </Button>
-          <Button variant="ghost" size="sm" onClick={logout}><LogOut className="w-4 h-4 mr-1.5" /> Гарах</Button>
+          <Button variant="ghost" size="sm" onClick={logout}><LogOut className="w-4 h-4 mr-1.5" /> {t.common.logout}</Button>
+          <LanguageSwitcher />
           <ThemeToggle />
         </div>
       </header>
@@ -183,53 +188,57 @@ export default function ReceivablePage() {
       <main className="max-w-6xl mx-auto px-6 py-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <div className="glass-card glass-card-positive px-4 py-3">
-            <p className="relative text-xs text-muted-foreground mb-1">Нийт авлага</p>
+            <p className="relative text-xs text-muted-foreground mb-1">{t.receivables.statTotalReceivable}</p>
             <p className="relative text-xl font-semibold text-positive stat-number">{fmt(totalReceivable)}</p>
-            <p className="relative text-xs text-muted-foreground mt-1">{receivables.length} харилцагч</p>
+            <p className="relative text-xs text-muted-foreground mt-1">
+              {format(t.receivables.counterpartyCount, { count: String(receivables.length) })}
+            </p>
           </div>
           <div className="glass-card glass-card-negative px-4 py-3">
-            <p className="relative text-xs text-muted-foreground mb-1">Нийт зээл</p>
+            <p className="relative text-xs text-muted-foreground mb-1">{t.receivables.statTotalLoan}</p>
             <p className="relative text-xl font-semibold text-negative stat-number">{fmt(totalLoan)}</p>
-            <p className="relative text-xs text-muted-foreground mt-1">{loans.length} зээл</p>
+            <p className="relative text-xs text-muted-foreground mt-1">
+              {format(t.receivables.loanCount, { count: String(loans.length) })}
+            </p>
           </div>
           <div className="glass-card glass-card-negative px-4 py-3">
-            <p className="relative text-xs text-muted-foreground mb-1">Хугацаа хэтэрсэн</p>
+            <p className="relative text-xs text-muted-foreground mb-1">{t.receivables.statOverdue}</p>
             <p className="relative text-xl font-semibold text-negative stat-number">{overdueItems.length}</p>
             <p className="relative text-xs text-muted-foreground mt-1 blur-number">
               {fmt(overdueItems.reduce((s, i) => s + i.amount, 0))}
             </p>
           </div>
           <div className={`glass-card ${totalReceivable - totalLoan >= 0 ? "glass-card-positive" : "glass-card-negative"} px-4 py-3`}>
-            <p className="relative text-xs text-muted-foreground mb-1">Цэвэр байрлал</p>
+            <p className="relative text-xs text-muted-foreground mb-1">{t.receivables.statNetPosition}</p>
             <p className={`relative text-xl font-semibold stat-number ${totalReceivable - totalLoan >= 0 ? "text-positive" : "text-negative"}`}>
               {fmt(totalReceivable - totalLoan)}
             </p>
-            <p className="relative text-xs text-muted-foreground mt-1">Авлага - Зээл</p>
+            <p className="relative text-xs text-muted-foreground mt-1">{t.receivables.netPositionSub}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 mb-4">
-          {(["", "receivable", "loan"] as const).map(t => (
-            <button key={t} onClick={() => startTransition(() => setTypeFilter(t))}
-              className={`h-8 px-3 text-xs rounded-lg border ${typeFilter === t
+          {(["", "receivable", "loan"] as const).map(f => (
+            <button key={f} onClick={() => startTransition(() => setTypeFilter(f))}
+              className={`h-8 px-3 text-xs rounded-lg border ${typeFilter === f
                 ? "bg-positive/15 text-positive border-positive/30"
                 : "bg-background text-muted-foreground border-border hover:bg-secondary/50"}`}>
-              {t === "" ? "Бүгд" : t === "receivable" ? "Авлага" : "Зээл"}
+              {f === "" ? t.common.all : f === "receivable" ? t.receivables.typeReceivable : t.receivables.typeLoan}
             </button>
           ))}
         </div>
 
         {loading ? (
-          <div className="text-center py-20 text-muted-foreground text-sm">Уншиж байна...</div>
+          <div className="text-center py-20 text-muted-foreground text-sm">{t.common.loading}</div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20 flex flex-col items-center gap-3">
-            <p className="text-muted-foreground mb-1">Бүртгэл байхгүй байна</p>
+            <p className="text-muted-foreground mb-1">{t.receivables.noRecords}</p>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
                 <Download className="w-4 h-4 mr-1.5" />
-                {exporting ? "Боловсруулж байна..." : "Excel татах"}
+                {exporting ? t.common.exportingLabel : t.common.excelExport}
               </Button>
-              <Button onClick={openCreate} className="bg-positive text-background hover:bg-positive/90">Шинэ бүртгэл нэмэх</Button>
+              <Button onClick={openCreate} className="bg-positive text-background hover:bg-positive/90">{t.receivables.addFirstRecord}</Button>
             </div>
           </div>
         ) : (
@@ -237,13 +246,13 @@ export default function ReceivablePage() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border/50">
-                  <TableHead>Харилцагч</TableHead>
-                  <TableHead>Төрөл</TableHead>
-                  <TableHead className="text-right">Дүн</TableHead>
-                  <TableHead className="text-right">Хүү (%)</TableHead>
-                  <TableHead>Хугацаа</TableHead>
-                  <TableHead>Статус</TableHead>
-                  <TableHead className="text-right">Үйлдэл</TableHead>
+                  <TableHead>{t.receivables.colCounterparty}</TableHead>
+                  <TableHead>{t.receivables.colType}</TableHead>
+                  <TableHead className="text-right">{t.receivables.colAmount}</TableHead>
+                  <TableHead className="text-right">{t.receivables.colInterestRate}</TableHead>
+                  <TableHead>{t.receivables.colDueDate}</TableHead>
+                  <TableHead>{t.receivables.colStatus}</TableHead>
+                  <TableHead className="text-right">{t.receivables.colActions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -254,7 +263,7 @@ export default function ReceivablePage() {
                       <Badge className={item.type === "receivable"
                         ? "bg-positive/15 text-positive hover:bg-positive/15"
                         : "bg-negative/15 text-negative hover:bg-negative/15"}>
-                        {item.type === "receivable" ? "Авлага" : "Зээл"}
+                        {item.type === "receivable" ? t.receivables.typeReceivable : t.receivables.typeLoan}
                       </Badge>
                     </TableCell>
                     <TableCell className={`text-right font-medium stat-number ${item.type === "receivable" ? "text-positive" : "text-negative"}`}>
@@ -280,14 +289,14 @@ export default function ReceivablePage() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Устгах уу?</AlertDialogTitle>
-                              <AlertDialogDescription>Энэ бүртгэлийг устгана.</AlertDialogDescription>
+                              <AlertDialogTitle>{t.common.deleteConfirmTitle}</AlertDialogTitle>
+                              <AlertDialogDescription>{t.receivables.deleteConfirmDesc}</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Цуцлах</AlertDialogCancel>
+                              <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
                               <AlertDialogAction onClick={() => handleDelete(item._id)}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                Устгах
+                                {t.common.delete}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -305,38 +314,38 @@ export default function ReceivablePage() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editing ? "Засах" : "Шинэ бүртгэл"}</DialogTitle>
+            <DialogTitle>{editing ? t.receivables.editTitle : t.receivables.newTitle}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-3 py-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Төрөл</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.receivables.type}</label>
                 <select className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none"
                   value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value as any }))}>
-                  <option value="receivable">Авлага</option>
-                  <option value="loan">Зээл</option>
+                  <option value="receivable">{t.receivables.typeReceivable}</option>
+                  <option value="loan">{t.receivables.typeLoan}</option>
                 </select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Статус</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.receivables.status}</label>
                 <select className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none"
                   value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value as any }))}>
-                  <option value="current">Хугацаандаа</option>
-                  <option value="near">Ойртсон</option>
-                  <option value="overdue">Хэтэрсэн</option>
-                  <option value="paid">Төлөгдсөн</option>
+                  <option value="current">{t.receivables.statusCurrent}</option>
+                  <option value="near">{t.receivables.statusNear}</option>
+                  <option value="overdue">{t.receivables.statusOverdue}</option>
+                  <option value="paid">{t.receivables.statusPaid}</option>
                 </select>
               </div>
               <div className="col-span-2 flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">
-                  {form.type === "receivable" ? "Харилцагч байгууллага *" : "Банк / Зээлдэгч *"}
+                  {form.type === "receivable" ? t.receivables.counterpartyReceivable : t.receivables.counterpartyLoan}
                 </label>
                 <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                   value={form.counterparty} onChange={e => setForm(f => ({ ...f, counterparty: e.target.value }))}
-                  placeholder={form.type === "receivable" ? "Голомт ХХК" : "Голомт банк"} />
+                  placeholder={form.type === "receivable" ? t.receivables.counterpartyPlaceholderReceivable : t.receivables.counterpartyPlaceholderLoan} />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Нэгж үнэ</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.receivables.unitPrice}</label>
                 <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
                   inputMode="numeric" value={unitPriceDisplay}
                   onChange={e => {
@@ -356,7 +365,7 @@ export default function ReceivablePage() {
                   }} placeholder="0" />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Тоо ширхэг</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.receivables.quantity}</label>
                 <input type="number" min={1} className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
                   value={quantityInput}
                   onChange={e => {
@@ -376,28 +385,28 @@ export default function ReceivablePage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Нийт дүн</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.receivables.totalAmount}</label>
                 <input readOnly className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right text-muted-foreground"
                   value={amountDisplay} placeholder="0" />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Хүү (%)</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.receivables.interestRate}</label>
                 <input type="number" min={0} step={0.1}
                   className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                   value={form.interestRate} onChange={e => setForm(f => ({ ...f, interestRate: Number(e.target.value) }))} />
               </div>
               <div className="col-span-2 flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Хугацаа дуусах огноо</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.receivables.dueDate}</label>
                 <input type="date" className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                   value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Цуцлах</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>{t.common.cancel}</Button>
             <Button onClick={handleSave} disabled={saving || !form.counterparty.trim() || form.amount === 0}
               className="bg-positive text-background hover:bg-positive/90">
-              {saving ? "Хадгалж байна..." : editing ? "Хадгалах" : "Нэмэх"}
+              {saving ? t.common.saving : editing ? t.common.save : t.common.add}
             </Button>
           </DialogFooter>
         </DialogContent>
