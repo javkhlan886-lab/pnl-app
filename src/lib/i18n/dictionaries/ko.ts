@@ -386,7 +386,7 @@ export const ko: Dictionary = {
     noOtherUsers: "선택 가능한 다른 사용자가 없습니다.",
   },
   chat: {
-    fabLabel: "당신의 도우미 델게르입니다",
+    fabLabel: "당신의 도우미가 있습니다",
     headerTitle: "P&L 어시스턴트",
     levelBadge: "Level {level}",
     loadingSuffix: " · 불러오는 중…",

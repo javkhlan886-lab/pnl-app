@@ -387,7 +387,7 @@ export const mn = {
     noOtherUsers: "Сонгох боломжтой өөр хэрэглэгч алга.",
   },
   chat: {
-    fabLabel: "Таны туслах Дэлгэр байна",
+    fabLabel: "Таны туслах байна",
     headerTitle: "P&L Ассистент",
     levelBadge: "Level {level}",
     loadingSuffix: " · уншиж байна…",

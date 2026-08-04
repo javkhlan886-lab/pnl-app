@@ -386,7 +386,7 @@ export const en: Dictionary = {
     noOtherUsers: "No other users to select.",
   },
   chat: {
-    fabLabel: "Meet Delger, your assistant",
+    fabLabel: "Your assistant is here",
     headerTitle: "P&L Assistant",
     levelBadge: "Level {level}",
     loadingSuffix: " · loading…",
