@@ -21,7 +21,7 @@ export const logout = () => {
   localStorage.removeItem("token");
   // Dynamic import ашиглах нь circular import-ээс сэргийлнэ (useAuth -> auth -> useAuth)
   import("@/hooks/useAuth").then(({ clearAuthCache }) => clearAuthCache());
-  window.location.href = `${SAAS_FRONT_URL}/login`;
+  window.location.href = SAAS_FRONT_URL;
 };
 
 export const getToken = () => localStorage.getItem("token");
