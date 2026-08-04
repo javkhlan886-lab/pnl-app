@@ -129,7 +129,7 @@ export const mn = {
     statTotalSalary: "Нийт цалин",
     monthly: "Сарын",
     statNdRate: "НД хувь (10%)",
-    yearlyRate: "Жил дутгад хувь",
+    yearlyRate: "Жил төлдөг хувь",
     statTotalCost: "Нийт зардал",
     salaryPlusNd: "Цалин + НД",
     noEmployees: "Ажилтан бүртгэгдээгүй байна",
