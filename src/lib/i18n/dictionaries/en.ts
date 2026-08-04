@@ -15,6 +15,7 @@ export const en: Dictionary = {
     exportingLabel: "Processing...",
     newReport: "New report",
     logout: "Log out",
+    logoutConfirm: "Are you sure you want to log out?",
     loading: "Loading...",
     cancel: "Cancel",
     delete: "Delete",

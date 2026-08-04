@@ -10,7 +10,9 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useLocale } from "@/hooks/useLocale";
 import logoUrl from "@/public/logo.png";
 
-const SAAS_FRONT_URL = import.meta.env.VITE_SAAS_FRONT_URL || "http://localhost:3000";
+// Hardcoded (not read from VITE_SAAS_FRONT_URL): that env var has repeatedly
+// drifted out of sync on Vercel, silently breaking this link.
+const SAAS_FRONT_URL = "https://product.gurvandelger.com";
 
 export default function LoginPage() {
   const navigate = useNavigate();

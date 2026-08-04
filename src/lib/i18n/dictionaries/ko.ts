@@ -15,6 +15,7 @@ export const ko: Dictionary = {
     exportingLabel: "처리 중...",
     newReport: "새 보고서",
     logout: "로그아웃",
+    logoutConfirm: "정말 로그아웃하시겠습니까?",
     loading: "불러오는 중...",
     cancel: "취소",
     delete: "삭제",

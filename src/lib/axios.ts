@@ -14,8 +14,10 @@ api.interceptors.request.use((config) => {
 });
 
 // Auth now lives in Saas Front — bounce an expired/invalid session back
-// there instead of to this app's own (unused) /login page.
-const SAAS_FRONT_URL = import.meta.env.VITE_SAAS_FRONT_URL || "http://localhost:3000";
+// there instead of to this app's own (unused) /login page. Hardcoded (not
+// read from VITE_SAAS_FRONT_URL): that env var has repeatedly drifted out of
+// sync on Vercel, silently breaking this redirect.
+const SAAS_FRONT_URL = "https://product.gurvandelger.com";
 
 api.interceptors.response.use(
   (res) => res,

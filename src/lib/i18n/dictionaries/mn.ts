@@ -16,6 +16,7 @@ export const mn = {
     exportingLabel: "Боловсруулж байна...",
     newReport: "Шинэ тайлан",
     logout: "Гарах",
+    logoutConfirm: "Та системээс гарахдаа итгэлтэй байна уу?",
     loading: "Уншиж байна...",
     cancel: "Цуцлах",
     delete: "Устгах",

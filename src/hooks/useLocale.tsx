@@ -45,6 +45,11 @@ export function useLocale() {
   return { locale, setLocale, t: DICTIONARIES[locale] };
 }
 
+/** Reads the current dictionary outside a component (e.g. plain lib functions like logout()). */
+export function getCurrentDictionary(): Dictionary {
+  return DICTIONARIES[currentLocale];
+}
+
 /** Interpolates `{placeholder}` tokens, e.g. format(t.foo.bar, { name }). */
 export function format(template: string, vars: Record<string, string>): string {
   return template.replace(/\{(\w+)\}/g, (_, key) => vars[key] ?? "");
