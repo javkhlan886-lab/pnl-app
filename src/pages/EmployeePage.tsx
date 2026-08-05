@@ -50,7 +50,7 @@ export default function EmployeePage() {
   const navigate = useNavigate();
   const { company, isAdmin } = useAuth();
   const location = useLocation();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
 
   const statusLabel: Record<string, { label: string; cls: string }> = {
     active: { label: t.employees.statusActive, cls: "bg-positive/15 text-positive hover:bg-positive/15" },
@@ -130,7 +130,7 @@ export default function EmployeePage() {
     try {
       const token = localStorage.getItem("token");
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
-      const res = await fetch(`${apiUrl}/employees/export`, {
+      const res = await fetch(`${apiUrl}/employees/export?locale=${locale}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(t.employees.exportError);

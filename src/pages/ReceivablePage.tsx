@@ -35,7 +35,7 @@ export default function ReceivablePage() {
   const navigate = useNavigate();
   const { company, isAdmin } = useAuth();
   const location = useLocation();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
 
   const statusMap: Record<string, { label: string; cls: string }> = {
     current: { label: t.receivables.statusCurrent, cls: "bg-positive/15 text-positive hover:bg-positive/15" },
@@ -122,7 +122,7 @@ export default function ReceivablePage() {
     try {
       const token = localStorage.getItem("token");
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
-      const res = await fetch(`${apiUrl}/receivables/export`, {
+      const res = await fetch(`${apiUrl}/receivables/export?locale=${locale}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(t.dashboard.exportErrorAlert);

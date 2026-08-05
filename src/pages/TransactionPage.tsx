@@ -71,7 +71,7 @@ export default function TransactionPage() {
   const navigate = useNavigate();
   const { company, isAdmin } = useAuth();
   const location = useLocation();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
 
   const [tab, setTab] = useState<Tab>("range");
   const [txs, setTxs] = useState<Transaction[]>([]);
@@ -209,7 +209,7 @@ export default function TransactionPage() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      await exportTransactions({ dateFrom: dateFrom || undefined, dateTo: dateTo || undefined });
+      await exportTransactions({ dateFrom: dateFrom || undefined, dateTo: dateTo || undefined, locale });
     } catch {
       alert(t.transactions.exportError);
     } finally {
@@ -297,7 +297,7 @@ export default function TransactionPage() {
 
   const handleContractExport = async () => {
     if (!contractData) return;
-    try { await exportTransactions({ contractNumber: contractData.contractNumber }); }
+    try { await exportTransactions({ contractNumber: contractData.contractNumber, locale }); }
     catch { alert(t.transactions.exportError); }
   };
 

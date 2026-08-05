@@ -39,7 +39,7 @@ export default function ExpensePage() {
   const navigate = useNavigate();
   const { company, isAdmin } = useAuth();
   const location = useLocation();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
 
   const statusMap: Record<string, { label: string; cls: string }> = {
     approved: { label: t.expenses.statusApproved, cls: "bg-positive/15 text-positive hover:bg-positive/15" },
@@ -126,7 +126,7 @@ export default function ExpensePage() {
     try {
       const token = localStorage.getItem("token");
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
-      const res = await fetch(`${apiUrl}/expenses/export`, {
+      const res = await fetch(`${apiUrl}/expenses/export?locale=${locale}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(t.dashboard.exportErrorAlert);

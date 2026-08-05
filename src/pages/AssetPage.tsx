@@ -51,7 +51,7 @@ export default function AssetPage() {
   const navigate = useNavigate();
   const { company, isAdmin } = useAuth();
   const location = useLocation();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
 
   const statusLabel: Record<string, string> = {
     active: t.assets.statusActive, disposed: t.assets.statusDisposed, maintenance: t.assets.statusMaintenance,
@@ -146,7 +146,7 @@ export default function AssetPage() {
     try {
       const token = localStorage.getItem("token");
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
-      const res = await fetch(`${apiUrl}/assets/export`, {
+      const res = await fetch(`${apiUrl}/assets/export?locale=${locale}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(t.assets.exportError);

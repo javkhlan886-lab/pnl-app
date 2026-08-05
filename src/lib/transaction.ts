@@ -43,6 +43,7 @@ export const exportTransactions = async (params?: {
   contractNumber?: string;
   dateFrom?: string;
   dateTo?: string;
+  locale?: string;
 }) => {
   const token = localStorage.getItem("token");
   const clean = Object.fromEntries(
