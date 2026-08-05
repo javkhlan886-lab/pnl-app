@@ -220,7 +220,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border/50 px-6 py-4 flex items-center justify-between sticky top-0 z-10 bg-background/80 backdrop-blur-md">
+      <header className="border-b border-border/50 px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-10 bg-background/80 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <CompanyLogo name={company?.name} />
           <div>
@@ -233,7 +233,7 @@ export default function DashboardPage() {
             <p className="text-xs text-muted-foreground">{company?.name ?? ""}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <Button variant="outline" size="sm" onClick={exportExcel} disabled={exporting}>
             <Download className="w-4 h-4 mr-1.5" />
             {exporting
@@ -257,7 +257,7 @@ export default function DashboardPage() {
       </header>
 
       {/* Module navigation */}
-      <nav className="border-b border-border/50 px-6 overflow-x-auto">
+      <nav className="border-b border-border/50 px-4 sm:px-6 overflow-x-auto">
         <div className="max-w-6xl mx-auto flex items-center gap-1">
           {NAV_ITEMS.map(item => {
             const active = location.pathname === item.path;
@@ -276,7 +276,7 @@ export default function DashboardPage() {
         </div>
       </nav>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {user && (
           <div className="mb-6">
             <h2 className="text-xl font-semibold">
@@ -347,7 +347,7 @@ export default function DashboardPage() {
               )}
             </div>
             {summary && (
-              <div className="grid grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div className="glass-card glass-card-negative px-5 py-4">
                   <div className="relative flex items-start justify-between">
                     <p className="text-sm text-muted-foreground">{t.dashboard.statProjectExpense}</p>
@@ -460,7 +460,7 @@ export default function DashboardPage() {
             </Button>
           </div>
         ) : (
-          <div className="glass-card overflow-hidden">
+          <div className="glass-card overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="border-border/50">

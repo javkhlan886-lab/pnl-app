@@ -28,7 +28,7 @@ export default function EditPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <h1 className="text-xl font-medium mb-6">{t.pnlForm.editTitle}</h1>
         {record && <PNLForm initial={record} id={id} />}
       </div>

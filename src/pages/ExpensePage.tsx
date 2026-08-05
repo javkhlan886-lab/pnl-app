@@ -145,7 +145,7 @@ export default function ExpensePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border/50 px-6 py-4 flex items-center justify-between sticky top-0 z-10 bg-background/80 backdrop-blur-md">
+      <header className="border-b border-border/50 px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-10 bg-background/80 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <CompanyLogo name={company?.name} className="cursor-pointer" onClick={() => navigate("/dashboard")} />
           <button onClick={() => navigate("/dashboard")} className="text-muted-foreground hover:text-foreground">
@@ -158,7 +158,7 @@ export default function ExpensePage() {
             <p className="text-xs text-muted-foreground">{t.expenses.pageSubtitle}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
             <Download className="w-4 h-4 mr-1.5" />
             {exporting ? t.common.exportingLabel : t.common.excelExport}
@@ -174,7 +174,7 @@ export default function ExpensePage() {
       </header>
 
       {/* Module navigation */}
-      <nav className="border-b border-border/50 px-6 overflow-x-auto">
+      <nav className="border-b border-border/50 px-4 sm:px-6 overflow-x-auto">
         <div className="max-w-6xl mx-auto flex items-center gap-1">
           {NAV_ITEMS.map(item => {
             const active = location.pathname === item.path;
@@ -193,7 +193,7 @@ export default function ExpensePage() {
         </div>
       </nav>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <div className="glass-card glass-card-negative px-4 py-3">
             <p className="relative text-xs text-muted-foreground mb-1">{t.expenses.statApprovedTotal}</p>
@@ -221,7 +221,7 @@ export default function ExpensePage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
           {(["", "office", "other"] as const).map(f => (
             <button key={f} onClick={() => startTransition(() => setTypeFilter(f))}
               className={`h-8 px-3 text-xs rounded-lg border ${typeFilter === f
@@ -246,7 +246,7 @@ export default function ExpensePage() {
             </div>
           </div>
         ) : (
-          <div className="glass-card overflow-hidden">
+          <div className="glass-card overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="border-border/50">
@@ -317,7 +317,7 @@ export default function ExpensePage() {
             <DialogTitle>{editing ? t.expenses.editExpense : t.expenses.addExpense}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-3 py-2">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.expenses.type}</label>
                 <select className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none"
@@ -334,7 +334,7 @@ export default function ExpensePage() {
                   {cats.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
-              <div className="col-span-2 flex flex-col gap-1.5">
+              <div className="sm:col-span-2 flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.expenses.description}</label>
                 <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                   value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}

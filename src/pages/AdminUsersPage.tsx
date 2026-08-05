@@ -89,7 +89,7 @@ export default function AdminUsersPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border/50 px-6 py-4 flex items-center justify-between sticky top-0 z-10 bg-background/80 backdrop-blur-md">
+      <header className="border-b border-border/50 px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-10 bg-background/80 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <CompanyLogo name={company?.name} className="cursor-pointer" onClick={() => navigate("/dashboard")} />
           <button onClick={() => navigate("/dashboard")} className="text-muted-foreground hover:text-foreground">
@@ -102,7 +102,7 @@ export default function AdminUsersPage() {
             <p className="text-xs text-muted-foreground">{t.admin.subtitle}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <Button variant="ghost" size="sm" onClick={logout}>
             <LogOut className="w-4 h-4 mr-1.5" /> {t.common.logout}
           </Button>
@@ -111,7 +111,7 @@ export default function AdminUsersPage() {
         </div>
       </header>
 
-      <nav className="border-b border-border/50 px-6 overflow-x-auto">
+      <nav className="border-b border-border/50 px-4 sm:px-6 overflow-x-auto">
         <div className="max-w-6xl mx-auto flex items-center gap-1">
           {NAV_ITEMS.map((item) => (
             <button
@@ -130,7 +130,7 @@ export default function AdminUsersPage() {
         </div>
       </nav>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {!authLoading && !isAdmin ? (
           <p className="text-sm text-muted-foreground">{t.admin.noAccess}</p>
         ) : (
@@ -139,6 +139,7 @@ export default function AdminUsersPage() {
 
             {error && <p className="text-sm text-destructive mb-3">{error}</p>}
 
+            <div className="glass-card overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -199,6 +200,7 @@ export default function AdminUsersPage() {
                 )}
               </TableBody>
             </Table>
+            </div>
           </>
         )}
       </main>

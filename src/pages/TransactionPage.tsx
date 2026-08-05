@@ -305,7 +305,7 @@ export default function TransactionPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border/50 px-6 py-4 flex items-center justify-between sticky top-0 z-10 bg-background/80 backdrop-blur-md">
+      <header className="border-b border-border/50 px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-10 bg-background/80 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <CompanyLogo name={company?.name} className="cursor-pointer" onClick={() => navigate("/dashboard")} />
           <button onClick={() => navigate("/dashboard")} className="text-muted-foreground hover:text-foreground">
@@ -318,7 +318,7 @@ export default function TransactionPage() {
             <p className="text-xs text-muted-foreground">{t.transactions.pageSubtitle}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImport} />
           <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={importing}>
             <Upload className="w-4 h-4 mr-1.5" />
@@ -340,7 +340,7 @@ export default function TransactionPage() {
         </div>
       </header>
 
-      <nav className="border-b border-border/50 px-6 overflow-x-auto">
+      <nav className="border-b border-border/50 px-4 sm:px-6 overflow-x-auto">
         <div className="max-w-6xl mx-auto flex items-center gap-1">
           {NAV_ITEMS.map(item => {
             const active = location.pathname === item.path;
@@ -397,7 +397,7 @@ export default function TransactionPage() {
                 ))}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">{t.transactions.dateLabel}</Label>
                   <Input type="date" value={newTx.date}
@@ -425,7 +425,7 @@ export default function TransactionPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">{t.transactions.categoryLabel}</Label>
                   <select
@@ -487,7 +487,7 @@ export default function TransactionPage() {
         </div>
       )}
 
-      <main className="max-w-6xl mx-auto px-6 py-6">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
         {importResult && (
           <div className="mb-4 flex items-center gap-3 bg-positive/10 border border-positive/30 rounded-lg px-4 py-2.5">
             <span className="text-sm text-positive font-medium">
@@ -515,7 +515,7 @@ export default function TransactionPage() {
 
         {tab === "range" && (
           <>
-            <div className="grid grid-cols-4 gap-3 mb-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
               {[
                 { label: t.transactions.statTotalTx, val: totalCount, sub: format(t.transactions.incExpCount, { inc: String(summary.incomeCount), exp: String(summary.expenseCount) }), color: "" },
                 { label: t.transactions.statIncome, val: fmt(totalInc), sub: format(t.transactions.txCount, { count: String(summary.incomeCount) }), color: "text-positive" },
@@ -559,7 +559,7 @@ export default function TransactionPage() {
                   </button>
                 </div>
               </div>
-              <div className="relative flex items-center gap-2">
+              <div className="relative flex items-center gap-2 flex-wrap">
                 {(["", "income", "expense"] as const).map(f => (
                   <button key={f} onClick={() => setTypeFilter(f)}
                     className={`h-7 px-3 text-xs rounded-full border ${typeFilter === f
@@ -595,7 +595,7 @@ export default function TransactionPage() {
                 </button>
               </div>
             ) : (
-              <div className="glass-card overflow-hidden">
+              <div className="glass-card overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border/50">
@@ -667,7 +667,7 @@ export default function TransactionPage() {
                     ))}
                   </TableBody>
                 </Table>
-                <div className="px-4 py-3 border-t border-border/50 flex items-center justify-between">
+                <div className="px-4 py-3 border-t border-border/50 flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs text-muted-foreground">
                     {format(t.transactions.footerSummary, { count: String(totalCount), inc: fmt(totalInc), exp: fmt(totalExp), net: fmtSigned(totalInc - totalExp) })}
                   </span>
@@ -753,7 +753,7 @@ export default function TransactionPage() {
                     </Button>
                   </div>
 
-                  <div className="relative grid grid-cols-3 gap-3 mb-4">
+                  <div className="relative grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                     <div className="bg-info/10 rounded-xl p-4">
                       <p className="text-xs font-medium text-info mb-2">{t.transactions.statContractIncome}</p>
                       <p className="text-2xl font-semibold text-info stat-number">{fmt(contractData.totalIncome)}</p>
@@ -800,7 +800,7 @@ export default function TransactionPage() {
                     </h3>
                     <span className="text-sm font-medium text-positive">{fmt(contractData.totalIncome)}</span>
                   </div>
-                  <div className="glass-card overflow-hidden">
+                  <div className="glass-card overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow className="border-border/50">
@@ -831,7 +831,7 @@ export default function TransactionPage() {
                     </h3>
                     <span className="text-sm font-medium text-negative">{fmt(contractData.totalExpense)}</span>
                   </div>
-                  <div className="glass-card overflow-hidden">
+                  <div className="glass-card overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow className="border-border/50">
