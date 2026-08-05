@@ -146,7 +146,7 @@ export default function AssetPage() {
     try {
       const token = localStorage.getItem("token");
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
-      const res = await fetch(`${apiUrl}/export/assets`, {
+      const res = await fetch(`${apiUrl}/assets/export`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(t.assets.exportError);

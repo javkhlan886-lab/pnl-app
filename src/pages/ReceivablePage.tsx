@@ -122,7 +122,7 @@ export default function ReceivablePage() {
     try {
       const token = localStorage.getItem("token");
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
-      const res = await fetch(`${apiUrl}/export/receivables`, {
+      const res = await fetch(`${apiUrl}/receivables/export`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(t.dashboard.exportErrorAlert);
