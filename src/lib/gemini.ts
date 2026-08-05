@@ -178,7 +178,15 @@ export interface SystemInstructionInput {
   txTotals?: TxTotals | null;
   /** Хэрэглэгчийн одоо харж байгаа дэлгэц (шүүлтүүрийн дараах дүн гэх мэт) */
   pageContext?: AiPageContext | null;
+  /** UI дээр сонгосон хэл — хариултын хэлийг үүгээр тодорхойлно (анхны утга mn). */
+  locale?: "mn" | "en" | "ko";
 }
+
+const RESPONSE_LANGUAGE_INSTRUCTION: Record<"mn" | "en" | "ko", string> = {
+  mn: "- Үргэлж монгол хэлээр, тодорхой бөгөөд хэрэгцээтэй хариул.",
+  en: "- Always answer in English, clearly and concisely.",
+  ko: "- 항상 한국어로 명확하고 간결하게 답변하세요.",
+};
 
 // ─── Системийн заавар ───────────────────────────────────────────────────────
 // Компанийн бодит тоонуудыг prompt-д шингээж, ерөнхий чатбот биш P&L
@@ -192,6 +200,7 @@ export function buildSystemInstruction({
   admin,
   txTotals,
   pageContext,
+  locale = "mn",
 }: SystemInstructionInput): string {
   const profile = LEVEL_PROFILES[level];
   const isAllData = level <= 2;
@@ -220,7 +229,7 @@ export function buildSystemInstruction({
         "бүх нийтийн дүнг асуувал өөрт харагдахгүйг шууд хэл.",
     "",
     "═══ ХАРИУЛТЫН ХЭЛБЭР ═══",
-    "- Үргэлж монгол хэлээр, тодорхой бөгөөд хэрэгцээтэй хариул.",
+    RESPONSE_LANGUAGE_INSTRUCTION[locale],
     "- Зөвхөн доор өгөгдсөн тоон дээр тулгуурла. Байхгүй тоог хэзээ ч зохиож бичиж болохгүй.",
     "- Хэрэв асуултад хариулах өгөгдөл дутуу байвал ямар мэдээлэл хэрэгтэйг шууд хэл.",
     "- Дүнг мянгатын тусгаарлагчтай, ₮ тэмдэгтэй бич. Тооцоолол хийвэл хэрхэн гаргасныг эсээр тайлбарла.",

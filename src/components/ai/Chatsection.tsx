@@ -42,7 +42,7 @@ function renderText(text: string) {
 
 export default function ChatSection() {
   const { user, company, loading: authLoading } = useAuth();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   // Эрх нь тодорхойгүй байвал хамгийн хязгаарлагдмал түвшинг (4) авна.
   const level = resolveLevel(user);
   const SUGGESTIONS = t.chat.suggestions;
@@ -167,6 +167,7 @@ export default function ChatSection() {
           admin: level === 1 ? context?.admin ?? null : null,
           txTotals: context?.txTotals ?? null,
           pageContext,
+          locale,
         }),
         {
           onThought: (chunk) => patch((m) => ({ ...m, thought: (m.thought || "") + chunk })),
