@@ -67,7 +67,12 @@ export default function LoginPage() {
                 onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })} />
             </div>
             <div className="space-y-1.5">
-              <Label>{t.login.password}</Label>
+              <div className="flex items-center justify-between">
+                <Label>{t.login.password}</Label>
+                <a href={`${SAAS_FRONT_URL}/forgot-password`} className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground">
+                  {t.login.forgotPasswordLink}
+                </a>
+              </div>
               <Input type="password" placeholder="••••••••" required
                 value={loginForm.password}
                 onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })} />

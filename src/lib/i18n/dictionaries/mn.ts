@@ -77,6 +77,7 @@ export const mn = {
     errorGeneric: "Нэвтрэхэд алдаа гарлаа",
     noAccount: "Компанийн бүртгэлгүй юу?",
     signupLink: "Saas Front дээр бүртгүүлэх",
+    forgotPasswordLink: "Нууц үгээ мартсан уу?",
   },
   pnlForm: {
     newTitle: "Шинэ P&L тайлан",

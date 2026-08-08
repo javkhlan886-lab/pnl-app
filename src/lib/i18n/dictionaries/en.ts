@@ -76,6 +76,7 @@ export const en: Dictionary = {
     errorGeneric: "Something went wrong logging in",
     noAccount: "Don't have a company account?",
     signupLink: "Sign up on Saas Front",
+    forgotPasswordLink: "Forgot your password?",
   },
   pnlForm: {
     newTitle: "New P&L report",

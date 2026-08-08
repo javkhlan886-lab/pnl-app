@@ -76,6 +76,7 @@ export const ko: Dictionary = {
     errorGeneric: "로그인 중 오류가 발생했습니다",
     noAccount: "회사 계정이 없으신가요?",
     signupLink: "Saas Front에서 가입하기",
+    forgotPasswordLink: "비밀번호를 잊으셨나요?",
   },
   pnlForm: {
     newTitle: "새 P&L 보고서",
