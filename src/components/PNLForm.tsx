@@ -280,8 +280,8 @@ export default function PNLForm({ initial, id }: Props) {
         // жагсаалтаа шинээр татдаг тул шинэ тайлан нэн даруй харагдана.
         navigate("/dashboard", { replace: true });
       }
-    } catch {
-      alert(t.pnlForm.saveError);
+    } catch (err: any) {
+      alert(err.response?.data?.error || t.pnlForm.saveError);
       setSaving(false);
     }
   };
