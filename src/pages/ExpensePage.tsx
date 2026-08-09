@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useTransition } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { getExpenses, createExpense, updateExpense, deleteExpense } from "@/lib/expense";
+import { fmtDate, toDateInputValue } from "@/lib/utils";
 import { logout } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocale, format } from "@/hooks/useLocale";
@@ -90,7 +91,7 @@ export default function ExpensePage() {
     setForm({ ...EMPTY }); setEditing(null); setUnitPriceDisplay(""); setQuantityInput(1); setAmountDisplay(""); setOpen(true);
   };
   const openEdit = (exp: any) => {
-    setForm(exp); setEditing(exp._id);
+    setForm({ ...exp, date: toDateInputValue(exp.date) }); setEditing(exp._id);
     setUnitPriceDisplay(exp.unitPrice ? Number(exp.unitPrice).toLocaleString("mn-MN") : "");
     setQuantityInput(exp.quantity || 1);
     setAmountDisplay(exp.amount === 0 ? "" : exp.amount.toLocaleString("mn-MN"));
@@ -269,7 +270,7 @@ export default function ExpensePage() {
               <TableBody>
                 {filtered.map(exp => (
                   <TableRow key={exp._id} className="border-border/50 hover:bg-secondary/30">
-                    <TableCell className="text-muted-foreground text-sm">{exp.date}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{fmtDate(exp.date)}</TableCell>
                     <TableCell>
                       <Badge className={exp.type === "office"
                         ? "bg-info/15 text-info hover:bg-info/15"

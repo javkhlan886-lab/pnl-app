@@ -11,6 +11,7 @@ import {
 } from "@/lib/transaction";
 import { getPNLList } from "@/lib/pnl";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
+import { fmtDate, toDateInputValue } from "@/lib/utils";
 import { Transaction, ContractSummary } from "@/types";
 import { setAiPageContext } from "@/lib/aiPageContext";
 import { Button } from "@/components/ui/button";
@@ -287,7 +288,7 @@ export default function TransactionPage() {
   const openEditModal = (tx: Transaction) => {
     setEditingTxId(tx._id!);
     setNewTx({
-      date: tx.date,
+      date: toDateInputValue(tx.date),
       description: tx.description,
       amount: formatAmount(String(tx.amount)),
       type: tx.type,
@@ -567,13 +568,19 @@ export default function TransactionPage() {
                 <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
                   className="h-8 px-2 text-xs rounded-lg border border-border bg-background" />
                 <div className="flex gap-1.5 ml-1 flex-wrap">
-                  {[
-                    { label: "Q1 2026", from: "2026-01-01", to: "2026-03-31" },
-                    { label: "Q2 2026", from: "2026-04-01", to: "2026-06-30" },
-                    { label: "Q3 2026", from: "2026-07-01", to: "2026-09-30" },
-                    { label: "Q4 2026", from: "2026-10-01", to: "2026-12-31" },
-                    { label: format(t.transactions.wholeYear, { year: "2026" }), from: "2026-01-01", to: "2026-12-31" },
-                  ].map(q => (
+                  {(() => {
+                    // Улирлын товчнуудыг одоогийн он дээр тулгуурлан динамикаар
+                    // тооцно — өмнө нь 2026 он гэж hardcode хийсэн байсан тул
+                    // жил бүр хуучирдаг байлаа.
+                    const y = new Date().getFullYear();
+                    return [
+                      { label: `Q1 ${y}`, from: `${y}-01-01`, to: `${y}-03-31` },
+                      { label: `Q2 ${y}`, from: `${y}-04-01`, to: `${y}-06-30` },
+                      { label: `Q3 ${y}`, from: `${y}-07-01`, to: `${y}-09-30` },
+                      { label: `Q4 ${y}`, from: `${y}-10-01`, to: `${y}-12-31` },
+                      { label: format(t.transactions.wholeYear, { year: String(y) }), from: `${y}-01-01`, to: `${y}-12-31` },
+                    ];
+                  })().map(q => (
                     <button key={q.label} onClick={() => setQuick(q.from, q.to)}
                       className={`h-7 px-2.5 text-xs rounded-full border transition-colors ${
                         dateFrom === q.from && dateTo === q.to
@@ -639,7 +646,7 @@ export default function TransactionPage() {
                   <TableBody>
                     {filtered.map(tx => (
                       <TableRow key={tx._id} className="border-border/50 hover:bg-secondary/30">
-                        <TableCell className="text-muted-foreground text-xs whitespace-nowrap">{tx.date}</TableCell>
+                        <TableCell className="text-muted-foreground text-xs whitespace-nowrap">{fmtDate(tx.date)}</TableCell>
                         <TableCell className="text-sm max-w-0 overflow-hidden">
                           <div className="truncate">{tx.description}</div>
                           {tx.note && <div className="text-xs text-muted-foreground truncate">{tx.note}</div>}
@@ -841,7 +848,7 @@ export default function TransactionPage() {
                       <TableBody>
                         {contractData.transactions.filter(tx => tx.type === "income").map(tx => (
                           <TableRow key={tx._id} className="border-border/50 hover:bg-secondary/30">
-                            <TableCell className="text-muted-foreground text-xs">{tx.date}</TableCell>
+                            <TableCell className="text-muted-foreground text-xs">{fmtDate(tx.date)}</TableCell>
                             <TableCell className="text-sm blur-number">{tx.description}</TableCell>
                             <TableCell><Badge variant="outline" className="text-xs">{tx.category}</Badge></TableCell>
                             <TableCell className="text-right font-medium text-positive stat-number">+{fmt(tx.amount)}</TableCell>
@@ -872,7 +879,7 @@ export default function TransactionPage() {
                       <TableBody>
                         {contractData.transactions.filter(tx => tx.type === "expense").map(tx => (
                           <TableRow key={tx._id} className="border-border/50 hover:bg-secondary/30">
-                            <TableCell className="text-muted-foreground text-xs">{tx.date}</TableCell>
+                            <TableCell className="text-muted-foreground text-xs">{fmtDate(tx.date)}</TableCell>
                             <TableCell className="text-sm blur-number">{tx.description}</TableCell>
                             <TableCell><Badge variant="outline" className="text-xs">{tx.category}</Badge></TableCell>
                             <TableCell className="text-right font-medium text-negative stat-number">-{fmt(tx.amount)}</TableCell>

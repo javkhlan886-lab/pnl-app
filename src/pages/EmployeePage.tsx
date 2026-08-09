@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { getEmployees, createEmployee, updateEmployee, deleteEmployee } from "@/lib/employee";
+import { toDateInputValue } from "@/lib/utils";
 import { logout } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocale, format } from "@/hooks/useLocale";
@@ -99,7 +100,7 @@ export default function EmployeePage() {
   };
 
   const openEdit = (emp: Employee) => {
-    setForm(emp); setEditing(emp._id!);
+    setForm({ ...emp, startDate: toDateInputValue(emp.startDate) }); setEditing(emp._id!);
     setSalaryDisplay(fmtInput(emp.baseSalary)); setOpen(true);
   };
 

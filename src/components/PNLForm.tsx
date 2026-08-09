@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPNL, updatePNL } from "@/lib/pnl";
 import { PNLRecord, Row } from "@/types";
-import { fmt } from "@/lib/utils";
+import { fmt, toDateInputValue } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -308,7 +308,7 @@ export default function PNLForm({ initial, id }: Props) {
             </div>
             <div className="space-y-1.5">
               <Label>{t.pnlForm.date}</Label>
-              <Input type="date" value={data.date || ""} onChange={(e) => setData({ ...data, date: e.target.value })} />
+              <Input type="date" value={toDateInputValue(data.date)} onChange={(e) => setData({ ...data, date: e.target.value })} />
             </div>
           </div>
 

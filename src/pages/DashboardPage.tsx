@@ -6,7 +6,7 @@ import { getTransactions } from "@/lib/transaction";
 import { logout } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { PNLRecord } from "@/types";
-import { fmt } from "@/lib/utils";
+import { fmt, fmtDate } from "@/lib/utils";
 import { toMnt } from "@/lib/exchangeRates";
 import api from "@/lib/axios";
 import { Button } from "@/components/ui/button";
@@ -638,7 +638,7 @@ export default function DashboardPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {r.updatedAt ? new Date(r.updatedAt).toLocaleDateString("mn-MN") : "—"}
+                        {fmtDate(r.updatedAt)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">

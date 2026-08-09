@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useTransition } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { getReceivables, createReceivable, updateReceivable, deleteReceivable } from "@/lib/receivable";
+import { fmtDate, toDateInputValue } from "@/lib/utils";
 import { logout } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocale, format } from "@/hooks/useLocale";
@@ -97,16 +98,19 @@ export default function ReceivablePage() {
   const receivables = items.filter(i => i.type === "receivable" && i.status !== "paid");
   const loans = items.filter(i => i.type === "loan" && i.status !== "paid");
   const overdueItems = items.filter(i => i.status === "overdue");
-  // Хуримтлагдсан хүүг тухайн зүйлийн үндсэн дүн дээр нэмж авлага/өглөгийн
-  // харьцаанд тооцно.
-  const totalReceivable = receivables.reduce((s, i) => s + i.amount + accruedInterest(i), 0);
-  const totalLoan = loans.reduce((s, i) => s + i.amount + accruedInterest(i), 0);
+  // "Нийт авлага/зээл" — үндсэн дүн (хүүгүй). "Нийт эцсийн дүн" — үндсэн
+  // дүн дээр хуримтлагдсан хүүг нэмсэн бодит эцсийн дүн. Авлага Өглөгийн
+  // харьцаа нь бодит (хүүтэй) дүн дээр тооцогдоно.
+  const totalReceivable = receivables.reduce((s, i) => s + i.amount, 0);
+  const totalLoan = loans.reduce((s, i) => s + i.amount, 0);
+  const totalReceivableFinal = receivables.reduce((s, i) => s + i.amount + accruedInterest(i), 0);
+  const totalLoanFinal = loans.reduce((s, i) => s + i.amount + accruedInterest(i), 0);
 
   const openCreate = () => {
     setForm({ ...EMPTY }); setEditing(null); setUnitPriceDisplay(""); setQuantityInput(1); setAmountDisplay(""); setOpen(true);
   };
   const openEdit = (item: any) => {
-    setForm(item); setEditing(item._id);
+    setForm({ ...item, dueDate: toDateInputValue(item.dueDate) }); setEditing(item._id);
     setUnitPriceDisplay(item.unitPrice ? Number(item.unitPrice).toLocaleString("mn-MN") : "");
     setQuantityInput(item.quantity || 1);
     setAmountDisplay(item.amount === 0 ? "" : item.amount.toLocaleString("mn-MN"));
@@ -207,7 +211,7 @@ export default function ReceivablePage() {
       </nav>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
           <div className="glass-card glass-card-positive px-4 py-3">
             <p className="relative text-xs text-muted-foreground mb-1">{t.receivables.statTotalReceivable}</p>
             <p className="relative text-xl font-semibold text-positive stat-number">{fmt(totalReceivable)}</p>
@@ -229,10 +233,20 @@ export default function ReceivablePage() {
               {fmt(overdueItems.reduce((s, i) => s + i.amount, 0))}
             </p>
           </div>
-          <div className={`glass-card ${totalReceivable - totalLoan >= 0 ? "glass-card-positive" : "glass-card-negative"} px-4 py-3`}>
+          <div className="glass-card glass-card-positive px-4 py-3">
+            <p className="relative text-xs text-muted-foreground mb-1">{t.receivables.statTotalReceivableFinal}</p>
+            <p className="relative text-xl font-semibold text-positive stat-number">{fmt(totalReceivableFinal)}</p>
+            <p className="relative text-xs text-muted-foreground mt-1">{t.receivables.totalFinalSub}</p>
+          </div>
+          <div className="glass-card glass-card-negative px-4 py-3">
+            <p className="relative text-xs text-muted-foreground mb-1">{t.receivables.statTotalLoanFinal}</p>
+            <p className="relative text-xl font-semibold text-negative stat-number">{fmt(totalLoanFinal)}</p>
+            <p className="relative text-xs text-muted-foreground mt-1">{t.receivables.totalFinalSub}</p>
+          </div>
+          <div className={`glass-card ${totalReceivableFinal - totalLoanFinal >= 0 ? "glass-card-positive" : "glass-card-negative"} px-4 py-3`}>
             <p className="relative text-xs text-muted-foreground mb-1">{t.receivables.statNetPosition}</p>
-            <p className={`relative text-xl font-semibold stat-number ${totalReceivable - totalLoan >= 0 ? "text-positive" : "text-negative"}`}>
-              {fmt(totalReceivable - totalLoan)}
+            <p className={`relative text-xl font-semibold stat-number ${totalReceivableFinal - totalLoanFinal >= 0 ? "text-positive" : "text-negative"}`}>
+              {fmt(totalReceivableFinal - totalLoanFinal)}
             </p>
             <p className="relative text-xs text-muted-foreground mt-1">{t.receivables.netPositionSub}</p>
           </div>
@@ -297,7 +311,7 @@ export default function ReceivablePage() {
                     <TableCell className="text-right text-muted-foreground stat-number">
                       {item.interestRate > 0 ? fmt(accruedInterest(item)) : "—"}
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{item.dueDate || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{fmtDate(item.dueDate)}</TableCell>
                     <TableCell>
                       <Badge className={statusMap[item.status].cls}>{statusMap[item.status].label}</Badge>
                     </TableCell>

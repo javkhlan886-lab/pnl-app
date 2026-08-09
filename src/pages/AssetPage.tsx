@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { getAssets, createAsset, updateAsset, disposeAsset, calcDepreciation } from "@/lib/asset";
 import { getEmployees } from "@/lib/employee";
+import { toDateInputValue } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { logout } from "@/lib/auth";
 import { useLocale, format } from "@/hooks/useLocale";
@@ -108,7 +109,7 @@ export default function AssetPage() {
     setUnitPriceDisplay(""); setQuantityInput(1); setResidualDisplay(""); setOpen(true);
   };
   const openEdit = (a: any) => {
-    setForm(a); setEditing(a._id);
+    setForm({ ...a, purchaseDate: toDateInputValue(a.purchaseDate) }); setEditing(a._id);
     setUnitPriceDisplay(a.unitPrice ? Number(a.unitPrice).toLocaleString("mn-MN") : "");
     setQuantityInput(a.quantity || 1);
     setResidualDisplay(a.residualValue === 0 ? "" : a.residualValue.toLocaleString("mn-MN"));
