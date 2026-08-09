@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   LogOut, ChevronLeft, ShieldCheck, BarChart2, Users, Box, Receipt,
-  ArrowLeftRight, TableIcon,
+  ArrowLeftRight, TableIcon, HardHat, Handshake,
 } from "lucide-react";
 
 export default function AdminUsersPage() {
@@ -45,6 +45,8 @@ export default function AdminUsersPage() {
     { path: "/assets", label: t.common.navAssets, icon: <Box className="w-4 h-4" /> },
     { path: "/expenses", label: t.common.navExpenses, icon: <Receipt className="w-4 h-4" /> },
     { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
+    { path: "/workforce", label: t.common.navWorkforce, icon: <HardHat className="w-4 h-4" /> },
+    { path: "/partners", label: t.common.navPartners, icon: <Handshake className="w-4 h-4" /> },
     { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
     { path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> },
   ];

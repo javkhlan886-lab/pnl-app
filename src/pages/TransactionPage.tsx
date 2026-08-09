@@ -27,7 +27,7 @@ import { Label } from "@/components/ui/label";
 import {
   LogOut, ChevronLeft, BarChart2, TableIcon, Upload, Download, Search,
   FileText, TrendingUp, TrendingDown, X, Trash2, Plus, Users, Box, Receipt,
-  ArrowLeftRight, Pencil, ShieldCheck,
+  ArrowLeftRight, Pencil, ShieldCheck, HardHat, Handshake,
 } from "lucide-react";
 
 const fmt = (n: number) => "₮" + Math.round(Math.abs(n)).toLocaleString("mn-MN");
@@ -109,6 +109,8 @@ export default function TransactionPage() {
     { path: "/assets", label: t.common.navAssets, icon: <Box className="w-4 h-4" /> },
     { path: "/expenses", label: t.common.navExpenses, icon: <Receipt className="w-4 h-4" /> },
     { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
+    { path: "/workforce", label: t.common.navWorkforce, icon: <HardHat className="w-4 h-4" /> },
+    { path: "/partners", label: t.common.navPartners, icon: <Handshake className="w-4 h-4" /> },
     { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
     ...(isAdmin ? [{ path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> }] : []),
   ];
