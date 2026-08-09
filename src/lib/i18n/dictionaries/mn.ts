@@ -305,7 +305,7 @@ export const mn = {
     dueDate: "Хугацаа дуусах огноо",
   },
   workforce: {
-    pageTitle: "Ажиллах хүч",
+    pageTitle: "Ажиллах хүчний мэдээлэл",
     pageSubtitle: "Гэрээт, өдрийн хөлстэй ажиллах хүчний бүртгэл",
     add: "Ажиллах хүч нэмэх",
     statTotal: "Нийт бүртгэл",

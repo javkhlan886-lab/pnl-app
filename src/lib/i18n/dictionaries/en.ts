@@ -304,7 +304,7 @@ export const en: Dictionary = {
     dueDate: "Due date",
   },
   workforce: {
-    pageTitle: "Workforce",
+    pageTitle: "Workforce information",
     pageSubtitle: "Contract and day-rate labor records",
     add: "Add workforce",
     statTotal: "Total records",

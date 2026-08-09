@@ -60,7 +60,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAdmin, isManager, user, company } = useAuth();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   // Level 1 (admin) ба Level 2 (manager) бүх хэрэглэгчийн датаг хардаг тул
   // тэдэнд "Оруулсан" багана болон хэрэглэгчээр шүүх сонголтыг үзүүлнэ.
   const canSeeOwner = isAdmin || isManager;
@@ -128,7 +128,7 @@ export default function DashboardPage() {
         ? Array.from(selected)
         : records.map((r) => r._id!);
 
-      const response = await api.get(`/pnl/export?ids=${ids.join(",")}`, {
+      const response = await api.get(`/pnl/export?ids=${ids.join(",")}&locale=${locale}`, {
         responseType: "blob",
       });
 

@@ -304,7 +304,7 @@ export const ko: Dictionary = {
     dueDate: "만기일",
   },
   workforce: {
-    pageTitle: "인력",
+    pageTitle: "인력 정보",
     pageSubtitle: "계약직 및 일당제 인력 기록",
     add: "인력 추가",
     statTotal: "총 기록",
