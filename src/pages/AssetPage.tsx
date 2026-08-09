@@ -22,6 +22,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, Box, BarChart2, Users, Receipt, ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake } from "lucide-react";
+import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 
 // Чөлөөт текст утга — backend-д хадгалагддаг тул хэлээр орчуулахгүй
 // (өгөгдлийн бодит утга өөрчлөгдөх эрсдэлтэй).
@@ -92,6 +93,7 @@ export default function AssetPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  const assetCategories = mergeCategories(CATEGORIES, "assets");
   const filtered = catFilter ? assets.filter(a => a.category === catFilter) : assets;
   const activeAssets = assets.filter(a => a.status === "active");
   const totalValue = activeAssets.reduce((s, a) => s + a.price, 0);
@@ -121,6 +123,7 @@ export default function AssetPage() {
     if (!payload.name.trim()) return;
     setSaving(true);
     try {
+      addCustomCategory("assets", payload.category);
       setForm(payload);
       if (editing) {
         const updated = await updateAsset(editing, payload);
@@ -243,7 +246,7 @@ export default function AssetPage() {
 
         {/* Category filter */}
         <div className="flex items-center gap-2 mb-4 flex-wrap">
-          {["", ...CATEGORIES].map(c => (
+          {["", ...assetCategories].map(c => (
             <button key={c} onClick={() => setCatFilter(c)}
               className={`h-8 px-3 text-xs rounded-lg border ${catFilter === c
                 ? "bg-positive/15 text-positive border-positive/30"
@@ -368,10 +371,13 @@ export default function AssetPage() {
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.assets.category}</label>
-                <select className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none"
-                  value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
-                  {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-                </select>
+                <input list="asset-category-options"
+                  className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                  value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                  placeholder={t.transactions.categoryAddNewPlaceholder} />
+                <datalist id="asset-category-options">
+                  {assetCategories.map(c => <option key={c} value={c} />)}
+                </datalist>
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.assets.purchaseDate}</label>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getPNLList, deletePNL, updatePNL } from "@/lib/pnl";
+import { getTransactions } from "@/lib/transaction";
 import { logout } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { PNLRecord } from "@/types";
@@ -75,16 +76,27 @@ export default function DashboardPage() {
   const [ownerFilter, setOwnerFilter] = useState<string>("");
   const [ownerMenuOpen, setOwnerMenuOpen] = useState(false);
   const [openStatusId, setOpenStatusId] = useState<string | null>(null);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [txSummary, setTxSummary] = useState<{ totalIncome: number; totalExpense: number } | null>(null);
 
-  // Хэрэглэгчээр шүүх — эхлээд owner, дараа нь статусаар шүүнэ.
-  // Статусын тоолуур нь сонгосон хэрэглэгчийн бичлэгүүд дээр тооцогдоно.
+  // Хэрэглэгчээр шүүх — эхлээд owner, дараа нь статус, эцэст нь огнооны
+  // хязгаараар шүүнэ.
   const ownerScoped = ownerFilter
     ? records.filter((r) => ownerKey(r) === ownerFilter)
     : records;
 
-  const filteredRecords = statusFilter
+  const statusScoped = statusFilter
     ? ownerScoped.filter((r) => (r.status || "active") === statusFilter)
     : ownerScoped;
+
+  const filteredRecords = statusScoped.filter((r) => {
+    if (!dateFrom && !dateTo) return true;
+    if (!r.date) return false;
+    if (dateFrom && r.date < dateFrom) return false;
+    if (dateTo && r.date > dateTo) return false;
+    return true;
+  });
 
   // Dropdown-д харагдах хэрэглэгчдийн жагсаалт — бичлэгийн тооны дарааллаар.
   const ownerOptions = useMemo(() => {
@@ -162,6 +174,10 @@ export default function DashboardPage() {
         setSummary(null);
         setSummaryError(t.dashboard.summaryError);
       });
+
+    getTransactions({ limit: 1 })
+      .then((r) => setTxSummary({ totalIncome: r.summary.totalIncome, totalExpense: r.summary.totalExpense }))
+      .catch(() => setTxSummary(null));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -422,6 +438,31 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
+            {txSummary && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div className="glass-card glass-card-positive px-5 py-4">
+                  <div className="relative flex items-start justify-between">
+                    <p className="text-sm text-muted-foreground">{t.transactions.statIncome}</p>
+                    <span className="icon-badge-positive w-9 h-9"><TrendingUp className="w-4 h-4" /></span>
+                  </div>
+                  <p className="relative stat-number text-2xl font-bold mt-3">{fmt(txSummary.totalIncome, "₮")}</p>
+                </div>
+                <div className="glass-card glass-card-negative px-5 py-4">
+                  <div className="relative flex items-start justify-between">
+                    <p className="text-sm text-muted-foreground">{t.transactions.statExpense}</p>
+                    <span className="icon-badge-negative w-9 h-9"><TrendingDown className="w-4 h-4" /></span>
+                  </div>
+                  <p className="relative stat-number text-2xl font-bold mt-3">{fmt(txSummary.totalExpense, "₮")}</p>
+                </div>
+                <div className={`glass-card ${txSummary.totalIncome - txSummary.totalExpense >= 0 ? "glass-card-positive" : "glass-card-negative"} px-5 py-4`}>
+                  <div className="relative flex items-start justify-between">
+                    <p className="text-sm text-muted-foreground">{t.transactions.statNet}</p>
+                    <span className={`${txSummary.totalIncome - txSummary.totalExpense >= 0 ? "icon-badge-positive" : "icon-badge-negative"} w-9 h-9`}><CheckCircle className="w-4 h-4" /></span>
+                  </div>
+                  <p className="relative stat-number text-2xl font-bold mt-3">{fmt(txSummary.totalIncome - txSummary.totalExpense, "₮")}</p>
+                </div>
+              </div>
+            )}
           </>
         )}
 
@@ -484,6 +525,22 @@ export default function DashboardPage() {
                 </>
               )}
             </div>
+          )}
+        </div>
+
+        {/* Огнооны хязгаараар шүүх */}
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          <span className="text-xs text-muted-foreground">{t.transactions.dateRangeLabel}</span>
+          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+            className="h-8 px-2 text-xs rounded-lg border border-border bg-background" />
+          <span className="text-xs text-muted-foreground">—</span>
+          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+            className="h-8 px-2 text-xs rounded-lg border border-border bg-background" />
+          {(dateFrom || dateTo) && (
+            <button onClick={() => { setDateFrom(""); setDateTo(""); }}
+              className="h-8 px-3 text-xs rounded-full border bg-background text-muted-foreground border-border hover:bg-secondary/50">
+              {t.transactions.allFilter}
+            </button>
           )}
         </div>
 

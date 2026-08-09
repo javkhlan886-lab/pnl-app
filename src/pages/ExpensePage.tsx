@@ -21,6 +21,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, Receipt, BarChart2, Users, Box, ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake } from "lucide-react";
+import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 
 // Чөлөөт текст утга — backend-д хадгалагддаг тул хэлээр орчуулахгүй.
 const OFFICE_CATS = ["Оффис", "Тоног төхөөрөмж", "Цахилгаан, интернет", "Тээвэр, шатахуун", "Татвар, хураамж", "Бусад"];
@@ -104,6 +105,7 @@ export default function ExpensePage() {
     if (!payload.description.trim() || payload.amount === 0) return;
     setSaving(true);
     try {
+      addCustomCategory(payload.type === "office" ? "expenses_office" : "expenses_other", payload.category);
       setForm(payload);
       if (editing) {
         const updated = await updateExpense(editing, payload);
@@ -121,7 +123,10 @@ export default function ExpensePage() {
     setExpenses(prev => prev.filter(e => e._id !== id));
   };
 
-  const cats = form.type === "office" ? OFFICE_CATS : OTHER_CATS;
+  const cats = mergeCategories(
+    form.type === "office" ? OFFICE_CATS : OTHER_CATS,
+    form.type === "office" ? "expenses_office" : "expenses_other"
+  );
 
   const handleExport = async () => {
     setExporting(true);
@@ -331,10 +336,13 @@ export default function ExpensePage() {
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.expenses.category}</label>
-                <select className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none"
-                  value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
-                  {cats.map(c => <option key={c}>{c}</option>)}
-                </select>
+                <input list="expense-category-options"
+                  className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                  value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                  placeholder={t.transactions.categoryAddNewPlaceholder} />
+                <datalist id="expense-category-options">
+                  {cats.map(c => <option key={c} value={c} />)}
+                </datalist>
               </div>
               <div className="sm:col-span-2 flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.expenses.description}</label>

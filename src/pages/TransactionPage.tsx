@@ -9,6 +9,8 @@ import {
   getTransactions, getContractSummary, importTransactions,
   exportTransactions, deleteTransaction, createTransaction, updateTransaction,
 } from "@/lib/transaction";
+import { getPNLList } from "@/lib/pnl";
+import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { Transaction, ContractSummary } from "@/types";
 import { setAiPageContext } from "@/lib/aiPageContext";
 import { Button } from "@/components/ui/button";
@@ -102,6 +104,21 @@ export default function TransactionPage() {
   const [contractData, setContractData] = useState<ContractSummary | null>(null);
   const [contractLoading, setContractLoading] = useState(false);
   const [contractNotFound, setContractNotFound] = useState(false);
+
+  const [pnlContracts, setPnlContracts] = useState<{ contractNumber: string; label: string }[]>([]);
+  useEffect(() => {
+    getPNLList().then(list => {
+      const seen = new Set<string>();
+      const options: { contractNumber: string; label: string }[] = [];
+      list.forEach(r => {
+        const num = r.contractNumber?.trim();
+        if (!num || seen.has(num)) return;
+        seen.add(num);
+        options.push({ contractNumber: num, label: r.company ? `${num} — ${r.company}` : num });
+      });
+      setPnlContracts(options);
+    }).catch(() => setPnlContracts([]));
+  }, []);
 
   const NAV_ITEMS = [
     { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
@@ -242,6 +259,7 @@ export default function TransactionPage() {
         currency: "₮",
         status: "approved",
       };
+      addCustomCategory(newTx.type === "income" ? "transactions_income" : "transactions_expense", newTx.category);
       if (editingTxId) {
         await updateTransaction(editingTxId, payload);
       } else {
@@ -303,7 +321,10 @@ export default function TransactionPage() {
     catch { alert(t.transactions.exportError); }
   };
 
-  const categories = newTx.type === "income" ? CATEGORIES_INC : CATEGORIES_EXP;
+  const categories = mergeCategories(
+    newTx.type === "income" ? CATEGORIES_INC : CATEGORIES_EXP,
+    newTx.type === "income" ? "transactions_income" : "transactions_expense"
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -430,21 +451,26 @@ export default function TransactionPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">{t.transactions.categoryLabel}</Label>
-                  <select
+                  <Input
+                    list="tx-category-options"
                     value={newTx.category}
                     onChange={e => setNewTx(p => ({ ...p, category: e.target.value }))}
-                    className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring">
-                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                    placeholder={t.transactions.categoryAddNewPlaceholder}
+                    className="h-9 text-sm"
+                  />
+                  <datalist id="tx-category-options">
+                    {categories.map(c => <option key={c} value={c} />)}
+                  </datalist>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">{t.transactions.contractNumberLabel}</Label>
-                  <Input
+                  <select
                     value={newTx.contractNumber}
-                    onChange={e => setNewTx(p => ({ ...p, contractNumber: e.target.value.toUpperCase() }))}
-                    placeholder={t.transactions.contractNumberPlaceholder}
-                    className="h-9 text-sm font-mono tracking-wide"
-                  />
+                    onChange={e => setNewTx(p => ({ ...p, contractNumber: e.target.value }))}
+                    className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm font-mono tracking-wide focus:outline-none focus:ring-1 focus:ring-ring">
+                    <option value="">{t.transactions.contractNumberNone}</option>
+                    {pnlContracts.map(c => <option key={c.contractNumber} value={c.contractNumber}>{c.label}</option>)}
+                  </select>
                 </div>
               </div>
 

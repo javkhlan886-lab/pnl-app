@@ -31,6 +31,23 @@ const EMPTY = {
 
 const fmt = (n: number) => "₮" + Math.round(n).toLocaleString("mn-MN");
 
+// Сарын хүүг бүртгэсэн өдрөөс өнөөдрийг хүртэл хуримтлуулж тооцно —
+// хугацаа дуусах огноог бус, харин өнөөдрийг хүртэлх бодит хуримтлалыг
+// харуулна ("одоо нийт хэдэн төгрөгийн авлагатай/өртэй байгаа вэ" гэсэн
+// асуултад хариулна).
+const monthsElapsed = (createdAt?: string) => {
+  if (!createdAt) return 0;
+  const start = new Date(createdAt).getTime();
+  if (Number.isNaN(start)) return 0;
+  const days = (Date.now() - start) / 86400000;
+  return Math.max(0, days / 30.4368);
+};
+
+const accruedInterest = (item: any) => {
+  if (!item.interestRate) return 0;
+  return item.amount * (item.interestRate / 100) * monthsElapsed(item.createdAt);
+};
+
 export default function ReceivablePage() {
   const navigate = useNavigate();
   const { company, isAdmin } = useAuth();
@@ -80,8 +97,10 @@ export default function ReceivablePage() {
   const receivables = items.filter(i => i.type === "receivable" && i.status !== "paid");
   const loans = items.filter(i => i.type === "loan" && i.status !== "paid");
   const overdueItems = items.filter(i => i.status === "overdue");
-  const totalReceivable = receivables.reduce((s, i) => s + i.amount, 0);
-  const totalLoan = loans.reduce((s, i) => s + i.amount, 0);
+  // Хуримтлагдсан хүүг тухайн зүйлийн үндсэн дүн дээр нэмж авлага/өглөгийн
+  // харьцаанд тооцно.
+  const totalReceivable = receivables.reduce((s, i) => s + i.amount + accruedInterest(i), 0);
+  const totalLoan = loans.reduce((s, i) => s + i.amount + accruedInterest(i), 0);
 
   const openCreate = () => {
     setForm({ ...EMPTY }); setEditing(null); setUnitPriceDisplay(""); setQuantityInput(1); setAmountDisplay(""); setOpen(true);
@@ -252,6 +271,7 @@ export default function ReceivablePage() {
                   <TableHead>{t.receivables.colType}</TableHead>
                   <TableHead className="text-right">{t.receivables.colAmount}</TableHead>
                   <TableHead className="text-right">{t.receivables.colInterestRate}</TableHead>
+                  <TableHead className="text-right">{t.receivables.colAccruedInterest}</TableHead>
                   <TableHead>{t.receivables.colDueDate}</TableHead>
                   <TableHead>{t.receivables.colStatus}</TableHead>
                   <TableHead className="text-right">{t.receivables.colActions}</TableHead>
@@ -273,6 +293,9 @@ export default function ReceivablePage() {
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
                       {item.interestRate > 0 ? `${item.interestRate}%` : "—"}
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground stat-number">
+                      {item.interestRate > 0 ? fmt(accruedInterest(item)) : "—"}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">{item.dueDate || "—"}</TableCell>
                     <TableCell>
@@ -396,6 +419,14 @@ export default function ReceivablePage() {
                 <input type="number" min={0} step={0.1}
                   className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                   value={form.interestRate} onChange={e => setForm(f => ({ ...f, interestRate: Number(e.target.value) }))} />
+                {editing && (form as any).interestRate > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {format(t.receivables.accruedInterestNote, {
+                      amount: fmt(accruedInterest(form)),
+                      months: monthsElapsed((form as any).createdAt).toFixed(1),
+                    })}
+                  </p>
+                )}
               </div>
               <div className="sm:col-span-2 flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.receivables.dueDate}</label>

@@ -270,15 +270,18 @@ export default function PNLForm({ initial, id }: Props) {
       setData(payload);
       if (id) {
         await updatePNL(id, payload);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+        setSaving(false);
       } else {
-        const created = await createPNL(payload);
-        navigate(`/dashboard/${created._id}`, { replace: true });
+        await createPNL(payload);
+        // Шинэ тайланг хадгалмагц засварлах хуудас руу шилжихийн оронд
+        // шууд dashboard руу буцаана — dashboard дахин mount хийгдэж,
+        // жагсаалтаа шинээр татдаг тул шинэ тайлан нэн даруй харагдана.
+        navigate("/dashboard", { replace: true });
       }
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
     } catch {
       alert(t.pnlForm.saveError);
-    } finally {
       setSaving(false);
     }
   };
