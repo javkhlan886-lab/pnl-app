@@ -439,7 +439,9 @@ export default function DashboardPage() {
               </div>
             )}
             {txSummary && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              <div className="mb-6">
+                <h2 className="text-sm font-medium text-muted-foreground mb-2">{t.transactions.pageTitle}</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="glass-card glass-card-positive px-5 py-4">
                   <div className="relative flex items-start justify-between">
                     <p className="text-sm text-muted-foreground">{t.transactions.statIncome}</p>
@@ -460,6 +462,7 @@ export default function DashboardPage() {
                     <span className={`${txSummary.totalIncome - txSummary.totalExpense >= 0 ? "icon-badge-positive" : "icon-badge-negative"} w-9 h-9`}><CheckCircle className="w-4 h-4" /></span>
                   </div>
                   <p className="relative stat-number text-2xl font-bold mt-3">{fmt(txSummary.totalIncome - txSummary.totalExpense, "₮")}</p>
+                </div>
                 </div>
               </div>
             )}
