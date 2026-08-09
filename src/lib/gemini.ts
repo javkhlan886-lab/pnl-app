@@ -1,5 +1,5 @@
 import type { GoogleGenAI } from "@google/genai";
-import { PNLRecord } from "@/types";
+import { PNLRecord, Transaction } from "@/types";
 import type { AiPageContext } from "./aiPageContext";
 
 // ─── Gemini client ──────────────────────────────────────────────────────────
@@ -176,6 +176,15 @@ export interface SystemInstructionInput {
   admin?: AdminContext | null;
   /** Гүйлгээний дэвтрийн бүх хугацааны нэгдсэн дүн */
   txTotals?: TxTotals | null;
+  /** Гүйлгээний дэвтрийн бодит мөрүүд (сүүлийн N) — нэгдсэн дүн бус, тоочсон жагсаалт,
+   * ингэснээр "хамгийн том гүйлгээ ямар байсан", "энэ ангилалд хэдэн төгрөг" гэх мэт
+   * нарийвчилсан асуултад хариулж чадна. */
+  transactions?: Transaction[];
+  /** Модуль бүрийн бодит бичлэгүүд — зөвхөн нэгдсэн тоо биш, задалж харах боломжтой байхын тулд. */
+  expenses?: any[];
+  assets?: any[];
+  receivables?: any[];
+  employees?: any[];
   /** Хэрэглэгчийн одоо харж байгаа дэлгэц (шүүлтүүрийн дараах дүн гэх мэт) */
   pageContext?: AiPageContext | null;
   /** UI дээр сонгосон хэл — хариултын хэлийг үүгээр тодорхойлно (анхны утга mn). */
@@ -199,6 +208,11 @@ export function buildSystemInstruction({
   userName,
   admin,
   txTotals,
+  transactions,
+  expenses,
+  assets,
+  receivables,
+  employees,
   pageContext,
   locale = "mn",
 }: SystemInstructionInput): string {
@@ -234,6 +248,18 @@ export function buildSystemInstruction({
     "- Хэрэв асуултад хариулах өгөгдөл дутуу байвал ямар мэдээлэл хэрэгтэйг шууд хэл.",
     "- Дүнг мянгатын тусгаарлагчтай, ₮ тэмдэгтэй бич. Тооцоолол хийвэл хэрхэн гаргасныг эсээр тайлбарла.",
     "- Хариултаа хэт урт болгохгүй — шаардлагатай бол bullet эсвэл жижиг хүснэгтээр бүтэцтэй бич.",
+    "",
+    "═══ ДЭЛГЭРЭНГҮЙ ЗАДАЛСАН МЭДЭЭЛЭЛ АШИГЛАХ ═══",
+    "- Доор зөвхөн нэгдсэн дүн бус, бодит мөр бүрийн (гүйлгээ, орлого/зарлагын мөр, зардал, " +
+      "хөрөнгө, авлага/зээл, ажилтан) жагсаалт өгөгдсөн байгаа. Хэрэглэгч \"хамгийн их/бага\", " +
+      "\"аль нь\", \"хэдэн удаа\", \"тухайн ангилалд хэд\", \"тухайн он/сард хэд\", \"жагсаагаад өгөөч\" " +
+      "гэх мэт нарийвчилсан асуулт асуувал ЗАПРАВД ГАРГАЖ ИРСЭН МӨРҮҮДЭЭС өөрөө шүүж, эрэмбэлж, " +
+      "нэгтгэж тооцоод шууд тодорхой хариулт өг — зөвхөн нэгдсэн дүнгээр хариулж бүү зогс.",
+    "- Жишээ нь \"хамгийн том зардал юу байсан бэ\" гэвэл жагсаалт дундаас дүнгээр нь эрэмбэлж " +
+      "хамгийн их дүнтэй мөрийг нэр/огноо/дүнтэй нь зааж өг. \"Голомт ХХК-тай холбоотой гүйлгээ\" " +
+      "гэвэл гэрээ/харилцагчийн нэрээр шүүж жагсаа.",
+    "- Тоочсон жагсаалт нь зөвхөн сүүлийн хэсэгтэй (жишээ нь сүүлийн 100 гүйлгээ) тул хэрэв асуулт " +
+      "энэ хүрээнээс давсан хугацааг хамарвал (\"жилийн эхнээс\" гэх мэт) тоо дутуу байж болзошгүйг сануул.",
   ];
 
   if (summary) {
@@ -259,7 +285,10 @@ export function buildSystemInstruction({
       "",
       isAllData ? "═══ P&L ТАЙЛАНГУУД (бүх хэрэглэгчийн) ═══" : "═══ ТАНЫ ХАРАХ ЭРХТЭЙ P&L ТАЙЛАНГУУД ═══"
     );
-    // Prompt-ыг хэт томруулахгүйн тулд хамгийн сүүлийн 25 тайлан.
+    // Prompt-ыг хэт томруулахгүйн тулд хамгийн сүүлийн 25 тайлан, эхний 15-д нь
+    // мөр бүрийн задаргааг (income/expenseRows) хамт өгнө — үлдсэнийг зөвхөн нэгдсэн дүнгээр.
+    const DETAILED_REPORT_CAP = 15;
+    const ROWS_PER_REPORT_CAP = 10;
     records.slice(0, 25).forEach((r, i) => {
       const income = r.incomeRows.reduce((s, x) => s + Number(x.amount), 0);
       const expense = r.expenseRows.reduce((s, x) => s + Number(x.amount), 0);
@@ -270,6 +299,14 @@ export function buildSystemInstruction({
           `ашиг: ${(income - expense).toLocaleString("mn-MN")}${r.currency} | статус: ${r.status || "active"}` +
           (owner ? ` | оруулсан: ${owner}` : "")
       );
+      if (i < DETAILED_REPORT_CAP) {
+        r.incomeRows.slice(0, ROWS_PER_REPORT_CAP).forEach((row) => {
+          lines.push(`     орлогын мөр: ${row.name || "—"} — ${Number(row.amount).toLocaleString("mn-MN")}${r.currency}`);
+        });
+        r.expenseRows.slice(0, ROWS_PER_REPORT_CAP).forEach((row) => {
+          lines.push(`     зарлагын мөр: ${row.name || "—"} — ${Number(row.amount).toLocaleString("mn-MN")}${r.currency}`);
+        });
+      }
     });
     if (records.length > 25) {
       lines.push(`… мөн бусад ${records.length - 25} тайлан (дэлгэрэнгүйг хүснэгтээс хараарай).`);
@@ -290,6 +327,68 @@ export function buildSystemInstruction({
       `Цэвэр дүн: ${net >= 0 ? "+" : "-"}${Math.round(Math.abs(net)).toLocaleString("mn-MN")}₮ ` +
         `(${net >= 0 ? "Ашигтай" : "Алдагдалтай"})`
     );
+  }
+
+  // ─── Гүйлгээний дэвтэр — бодит мөрүүд (сүүлийн N) ─────────────────────────
+  if (transactions && transactions.length > 0) {
+    lines.push(
+      "",
+      "═══ ГҮЙЛГЭЭНИЙ ЖАГСААЛТ (сүүлийн " + transactions.length + " гүйлгээ, мөр бүрээр) ═══"
+    );
+    transactions.forEach((tx) => {
+      lines.push(
+        `- ${tx.date} | ${tx.type === "income" ? "орлого" : "зарлага"} | ${tx.category} | ` +
+          `${Number(tx.amount).toLocaleString("mn-MN")}${tx.currency} | ${tx.description}` +
+          (tx.contractNumber ? ` | гэрээ: ${tx.contractNumber}` : "") +
+          ` | статус: ${tx.status}`
+      );
+    });
+  }
+
+  // ─── Зардал — бодит бичлэгүүд ──────────────────────────────────────────────
+  if (expenses && expenses.length > 0) {
+    lines.push("", `═══ ЗАРДЛЫН ЖАГСААЛТ (${expenses.length} бичлэг) ═══`);
+    expenses.forEach((e) => {
+      lines.push(
+        `- ${e.date} | ${e.type === "office" ? "оффис" : "бусад"} | ${e.category} | ` +
+          `${Number(e.amount).toLocaleString("mn-MN")}${e.currency || "₮"} | ${e.description} | статус: ${e.status}`
+      );
+    });
+  }
+
+  // ─── Хөрөнгө — бодит бичлэгүүд ──────────────────────────────────────────────
+  if (assets && assets.length > 0) {
+    lines.push("", `═══ ХӨРӨНГИЙН ЖАГСААЛТ (${assets.length} бичлэг) ═══`);
+    assets.forEach((a) => {
+      lines.push(
+        `- ${a.name} | ${a.category} | код: ${a.code} | үнэ: ${Number(a.price).toLocaleString("mn-MN")}${a.currency || "₮"} | ` +
+          `худалдан авсан: ${a.purchaseDate} | статус: ${a.status}` +
+          (a.assignedTo ? ` | хариуцагч: ${a.assignedTo}` : "")
+      );
+    });
+  }
+
+  // ─── Авлага & Зээл — бодит бичлэгүүд ────────────────────────────────────────
+  if (receivables && receivables.length > 0) {
+    lines.push("", `═══ АВЛАГА & ЗЭЭЛИЙН ЖАГСААЛТ (${receivables.length} бичлэг) ═══`);
+    receivables.forEach((r) => {
+      lines.push(
+        `- ${r.type === "receivable" ? "авлага" : "зээл"} | ${r.counterparty} | ` +
+          `${Number(r.amount).toLocaleString("mn-MN")}${r.currency || "₮"} | хугацаа: ${String(r.dueDate).slice(0, 10)} | ` +
+          `хүү: ${r.interestRate ? r.interestRate + "%/сар" : "—"} | статус: ${r.status}`
+      );
+    });
+  }
+
+  // ─── Ажилтан — бодит бичлэгүүд (Level 1/2 л дэлгэрэнгүй цалин харна) ───────
+  if (employees && employees.length > 0 && isAllData) {
+    lines.push("", `═══ АЖИЛТНЫ ЖАГСААЛТ (${employees.length} бичлэг) ═══`);
+    employees.forEach((e) => {
+      lines.push(
+        `- ${e.name} | ${e.position || "—"} | ${e.type === "engineer" ? "инженер" : "ажилтан"} | ` +
+          `үндсэн цалин: ${Number(e.baseSalary).toLocaleString("mn-MN")}₮ | статус: ${e.status}`
+      );
+    });
   }
 
   // ─── Хэрэглэгчийн одоо харж байгаа дэлгэц ─────────────────────────────────
@@ -330,7 +429,11 @@ export function buildSystemInstruction({
     }
   }
 
-  if (!summary && records.length === 0) {
+  const hasAnyData =
+    summary || records.length > 0 || (transactions && transactions.length > 0) ||
+    (expenses && expenses.length > 0) || (assets && assets.length > 0) ||
+    (receivables && receivables.length > 0) || (employees && employees.length > 0);
+  if (!hasAnyData) {
     lines.push(
       "",
       level <= 2

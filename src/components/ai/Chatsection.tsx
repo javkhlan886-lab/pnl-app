@@ -5,9 +5,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { getPNLList } from "@/lib/pnl";
 import { getCompanyUsers } from "@/lib/admin";
 import { getTransactions } from "@/lib/transaction";
+import { getExpenses } from "@/lib/expense";
+import { getAssets } from "@/lib/asset";
+import { getReceivables } from "@/lib/receivable";
+import { getEmployees } from "@/lib/employee";
 import { useAiPageContext } from "@/lib/aiPageContext";
 import { useLocale, format } from "@/hooks/useLocale";
-import { PNLRecord } from "@/types";
+import { PNLRecord, Transaction } from "@/types";
 import api from "@/lib/axios";
 import {
   streamChat,
@@ -62,6 +66,11 @@ export default function ChatSection() {
     records: PNLRecord[];
     admin: AdminContext | null;
     txTotals: TxTotals | null;
+    transactions: Transaction[];
+    expenses: any[];
+    assets: any[];
+    receivables: any[];
+    employees: any[];
   } | null>(null);
 
   // Хэрэглэгчийн одоо харж байгаа дэлгэцийн тоо (ж: Гүйлгээний дэвтрийн
@@ -103,8 +112,16 @@ export default function ChatSection() {
             }))
             .catch(() => null)
         : Promise.resolve(null),
-    ]).then(([summary, records, txTotals, admin]) =>
-      setContext({ summary, records, txTotals, admin })
+      // Дэлгэрэнгүй, мөр-мөрөөр задалж харах боломжтой бодит бичлэгүүд —
+      // зөвхөн нэгдсэн дүн бус, "хамгийн их зарцуулсан ажил юу байсан бэ" гэх
+      // мэт нарийвчилсан асуултад хариулах чадвар өгнө.
+      getTransactions({ limit: 100 }).then((r) => r.transactions as Transaction[]).catch(() => []),
+      getExpenses().catch(() => []),
+      getAssets().catch(() => []),
+      getReceivables().catch(() => []),
+      getEmployees().catch(() => []),
+    ]).then(([summary, records, txTotals, admin, transactions, expenses, assets, receivables, employees]) =>
+      setContext({ summary, records, txTotals, admin, transactions, expenses, assets, receivables, employees })
     );
   }, [open, context, authLoading, level, company]);
 
@@ -166,6 +183,11 @@ export default function ChatSection() {
           userName: user?.name,
           admin: level === 1 ? context?.admin ?? null : null,
           txTotals: context?.txTotals ?? null,
+          transactions: context?.transactions ?? [],
+          expenses: context?.expenses ?? [],
+          assets: context?.assets ?? [],
+          receivables: context?.receivables ?? [],
+          employees: context?.employees ?? [],
           pageContext,
           locale,
         }),
