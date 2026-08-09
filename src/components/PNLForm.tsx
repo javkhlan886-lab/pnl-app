@@ -194,6 +194,19 @@ export default function PNLForm({ initial, id }: Props) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  // "Тайлант үе" нь эхлэх/дуусах огноогоор бөглөгддөг болсон тул хуучин
+  // чөлөөт текст `period` талбарыг өөрчлөхгүйгээр (backend/schema-д хамаагүй)
+  // энэ хоёр огнооноос автоматаар угсарна.
+  const periodParts = (data.period || "").split(" — ");
+  const [periodStart, setPeriodStart] = useState(periodParts[0] || "");
+  const [periodEnd, setPeriodEnd] = useState(periodParts[1] || "");
+
+  useEffect(() => {
+    const next = periodStart && periodEnd ? `${periodStart} — ${periodEnd}` : periodStart || periodEnd || "";
+    setData((prev) => (prev.period === next ? prev : { ...prev, period: next }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [periodStart, periodEnd]);
+
   const totalIncome = data.incomeRows.reduce((s, r) => s + Number(r.amount), 0);
   const totalExpense = data.expenseRows.reduce((s, r) => s + Number(r.amount), 0);
   const net = totalIncome - totalExpense;
@@ -277,14 +290,18 @@ export default function PNLForm({ initial, id }: Props) {
           <CardTitle className="text-base font-medium">{t.pnlForm.basicInfo}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-1.5">
               <Label>{t.pnlForm.company}</Label>
               <Input value={data.company} onChange={(e) => setData({ ...data, company: e.target.value })} placeholder={t.pnlForm.companyPlaceholder} />
             </div>
             <div className="space-y-1.5">
-              <Label>{t.pnlForm.period}</Label>
-              <Input value={data.period} onChange={(e) => setData({ ...data, period: e.target.value })} placeholder={t.pnlForm.periodPlaceholder} />
+              <Label>{t.pnlForm.periodStart}</Label>
+              <Input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t.pnlForm.periodEnd}</Label>
+              <Input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label>{t.pnlForm.date}</Label>
@@ -330,6 +347,7 @@ export default function PNLForm({ initial, id }: Props) {
                     <SelectItem value="closed">{t.pnlForm.statusClosed}</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground leading-snug">{t.pnlForm.statusHelp}</p>
               </div>
             </div>
           </div>

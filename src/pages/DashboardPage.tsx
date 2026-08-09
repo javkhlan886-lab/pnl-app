@@ -6,6 +6,7 @@ import { logout } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { PNLRecord } from "@/types";
 import { fmt } from "@/lib/utils";
+import { toMnt } from "@/lib/exchangeRates";
 import api from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -182,27 +183,34 @@ export default function DashboardPage() {
     closed: { label: t.common.statusClosed, dot: "bg-muted-foreground", cls: "bg-muted text-muted-foreground" },
   };
 
+  // Тайлан бүрийн мөрийн дүнг тухайн тайлангийн `currency`-аар ₮-рүү
+  // хөрвүүлж нэмдэг — өөр валюттай тайлангуудыг шууд арифметикаар нэмбэл
+  // ам.доллар г.м. дүн төгрөгийн дүн рүү тоо утгаараа алдаатай нэмэгддэг.
   const totalIncome = (r: PNLRecord) =>
-    r.incomeRows.reduce((s, x) => s + Number(x.amount), 0);
-  const netProfit = (r: PNLRecord) =>
-    r.incomeRows.reduce((s, x) => s + Number(x.amount), 0) -
-    r.expenseRows.reduce((s, x) => s + Number(x.amount), 0);
+    r.incomeRows.reduce((s, x) => s + toMnt(Number(x.amount), r.currency), 0);
+  const totalExpenseOf = (r: PNLRecord) =>
+    r.expenseRows.reduce((s, x) => s + toMnt(Number(x.amount), r.currency), 0);
+  const netProfit = (r: PNLRecord) => totalIncome(r) - totalExpenseOf(r);
 
   const computedSummary = useMemo(() => {
     if (records.length === 0) return null;
     const pnlIncome = records.reduce((sum, record) => sum + totalIncome(record), 0);
-    const totalOperatingExpense = records.reduce(
-      (sum, record) => sum + record.expenseRows.reduce((s, x) => s + Number(x.amount), 0),
-      0
-    );
+    const totalOperatingExpense = records.reduce((sum, record) => sum + totalExpenseOf(record), 0);
     const net = pnlIncome - totalOperatingExpense;
     const margin = pnlIncome > 0 ? Number(((net / pnlIncome) * 100).toFixed(1)) : 0;
+    const completed = records.filter((r) => r.status === "closed");
+    const completedIncome = completed.reduce((sum, record) => sum + totalIncome(record), 0);
+    const completedExpense = completed.reduce((sum, record) => sum + totalExpenseOf(record), 0);
     return {
       pnlIncome,
       pnlCount: records.length,
       totalOperatingExpense,
       netProfit: net,
       margin,
+      completedIncome,
+      completedExpense,
+      completedProfit: completedIncome - completedExpense,
+      completedCount: completed.length,
     };
   }, [records]);
 
@@ -383,6 +391,34 @@ export default function DashboardPage() {
                   </div>
                   <p className="relative stat-number text-2xl font-bold mt-3">{fmt(summary.otherExpense, "₮")}</p>
                   <p className="relative text-xs text-muted-foreground mt-1">{t.dashboard.approvedLabel}</p>
+                </div>
+              </div>
+            )}
+            {displaySummary.completedCount > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="glass-card glass-card-positive px-5 py-4">
+                  <div className="relative flex items-start justify-between">
+                    <p className="text-sm text-muted-foreground">{t.dashboard.statCompletedIncome}</p>
+                    <span className="icon-badge-positive w-9 h-9"><CheckCircle className="w-4 h-4" /></span>
+                  </div>
+                  <p className="relative stat-number text-2xl font-bold mt-3">{fmt(displaySummary.completedIncome, "₮")}</p>
+                  <p className="relative text-xs text-muted-foreground mt-1">
+                    {format(t.dashboard.statCompletedSub, { count: String(displaySummary.completedCount) })}
+                  </p>
+                </div>
+                <div className="glass-card glass-card-negative px-5 py-4">
+                  <div className="relative flex items-start justify-between">
+                    <p className="text-sm text-muted-foreground">{t.dashboard.statCompletedExpense}</p>
+                    <span className="icon-badge-negative w-9 h-9"><TrendingDown className="w-4 h-4" /></span>
+                  </div>
+                  <p className="relative stat-number text-2xl font-bold mt-3">{fmt(displaySummary.completedExpense, "₮")}</p>
+                </div>
+                <div className={`glass-card ${displaySummary.completedProfit >= 0 ? "glass-card-positive" : "glass-card-negative"} px-5 py-4`}>
+                  <div className="relative flex items-start justify-between">
+                    <p className="text-sm text-muted-foreground">{t.dashboard.statCompletedProfit}</p>
+                    <span className={`${displaySummary.completedProfit >= 0 ? "icon-badge-positive" : "icon-badge-negative"} w-9 h-9`}><TrendingUp className="w-4 h-4" /></span>
+                  </div>
+                  <p className="relative stat-number text-2xl font-bold mt-3">{fmt(displaySummary.completedProfit, "₮")}</p>
                 </div>
               </div>
             )}

@@ -601,19 +601,19 @@ export default function TransactionPage() {
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border/50">
-                      <TableHead style={{ width: "90px" }}>{t.transactions.colDate}</TableHead>
+                      <TableHead className="w-[90px]">{t.transactions.colDate}</TableHead>
                       <TableHead>{t.transactions.colDescription}</TableHead>
-                      <TableHead style={{ width: "100px" }}>{t.transactions.colContract}</TableHead>
-                      <TableHead style={{ width: "90px" }}>{t.transactions.colCategory}</TableHead>
-                      <TableHead className="text-right" style={{ width: "130px" }}>{t.transactions.colAmount}</TableHead>
-                      <TableHead style={{ width: "70px" }}>{t.transactions.colType}</TableHead>
-                      <TableHead className="text-right" style={{ width: "60px" }}>{t.transactions.colActions}</TableHead>
+                      <TableHead className="w-[100px]">{t.transactions.colContract}</TableHead>
+                      <TableHead className="w-[90px]">{t.transactions.colCategory}</TableHead>
+                      <TableHead className="w-[130px] text-right">{t.transactions.colAmount}</TableHead>
+                      <TableHead className="w-[70px]">{t.transactions.colType}</TableHead>
+                      <TableHead className="w-[60px] text-right">{t.transactions.colActions}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filtered.map(tx => (
                       <TableRow key={tx._id} className="border-border/50 hover:bg-secondary/30">
-                        <TableCell className="text-muted-foreground text-xs">{tx.date}</TableCell>
+                        <TableCell className="text-muted-foreground text-xs whitespace-nowrap">{tx.date}</TableCell>
                         <TableCell className="text-sm max-w-0 overflow-hidden">
                           <div className="truncate">{tx.description}</div>
                           {tx.note && <div className="text-xs text-muted-foreground truncate">{tx.note}</div>}
@@ -806,10 +806,10 @@ export default function TransactionPage() {
                     <Table>
                       <TableHeader>
                         <TableRow className="border-border/50">
-                          <TableHead style={{ width: "90px" }}>{t.transactions.colDate}</TableHead>
+                          <TableHead className="w-[90px]">{t.transactions.colDate}</TableHead>
                           <TableHead>{t.transactions.colDescription}</TableHead>
-                          <TableHead style={{ width: "90px" }}>{t.transactions.colCategory}</TableHead>
-                          <TableHead className="text-right" style={{ width: "130px" }}>{t.transactions.colAmount}</TableHead>
+                          <TableHead className="w-[90px]">{t.transactions.colCategory}</TableHead>
+                          <TableHead className="w-[130px] text-right">{t.transactions.colAmount}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -837,10 +837,10 @@ export default function TransactionPage() {
                     <Table>
                       <TableHeader>
                         <TableRow className="border-border/50">
-                          <TableHead style={{ width: "90px" }}>{t.transactions.colDate}</TableHead>
+                          <TableHead className="w-[90px]">{t.transactions.colDate}</TableHead>
                           <TableHead>{t.transactions.colDescription}</TableHead>
-                          <TableHead style={{ width: "90px" }}>{t.transactions.colCategory}</TableHead>
-                          <TableHead className="text-right" style={{ width: "130px" }}>{t.transactions.colAmount}</TableHead>
+                          <TableHead className="w-[90px]">{t.transactions.colCategory}</TableHead>
+                          <TableHead className="w-[130px] text-right">{t.transactions.colAmount}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
