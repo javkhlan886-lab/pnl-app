@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { createPNL, updatePNL } from "@/lib/pnl";
 import { PNLRecord, Row } from "@/types";
 import { fmt, toDateInputValue } from "@/lib/utils";
-import { toMnt } from "@/lib/exchangeRates";
+import { toMnt, defaultRate } from "@/lib/exchangeRates";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -360,7 +360,15 @@ export default function PNLForm({ initial, id }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1.5">
                 <Label>{t.pnlForm.currency}</Label>
-                <Select value={data.currency} onValueChange={(v) => setData({ ...data, currency: v })}>
+                <Select
+                  value={data.currency}
+                  onValueChange={(v) =>
+                    setData((prev) => ({
+                      ...prev,
+                      currency: v,
+                      exchangeRate: v === "₮" ? undefined : (prev.exchangeRate ?? defaultRate(v)),
+                    }))
+                  }>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="₮">MNT — ₮</SelectItem>
@@ -370,6 +378,17 @@ export default function PNLForm({ initial, id }: Props) {
                   </SelectContent>
                 </Select>
               </div>
+              {data.currency !== "₮" && (
+                <div className="space-y-1.5">
+                  <Label>{format(t.pnlForm.exchangeRateLabel, { currency: data.currency })}</Label>
+                  <Input
+                    type="number" min={0} step="0.01"
+                    value={data.exchangeRate ?? ""}
+                    onChange={(e) => setData({ ...data, exchangeRate: Number(e.target.value) || undefined })}
+                    placeholder={String(defaultRate(data.currency))}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
@@ -401,9 +420,9 @@ export default function PNLForm({ initial, id }: Props) {
         <CardContent className="pt-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: t.pnlForm.summaryIncome, val: fmt(totalIncome, data.currency), mnt: toMnt(totalIncome, data.currency), color: "text-green-600" },
-              { label: t.pnlForm.summaryExpense, val: fmt(totalExpense, data.currency), mnt: toMnt(totalExpense, data.currency), color: "text-red-500" },
-              { label: t.pnlForm.summaryNet, val: fmt(net, data.currency), mnt: toMnt(net, data.currency), color: net >= 0 ? "text-green-600" : "text-red-500" },
+              { label: t.pnlForm.summaryIncome, val: fmt(totalIncome, data.currency), mnt: toMnt(totalIncome, data.currency, data.exchangeRate), color: "text-green-600" },
+              { label: t.pnlForm.summaryExpense, val: fmt(totalExpense, data.currency), mnt: toMnt(totalExpense, data.currency, data.exchangeRate), color: "text-red-500" },
+              { label: t.pnlForm.summaryNet, val: fmt(net, data.currency), mnt: toMnt(net, data.currency, data.exchangeRate), color: net >= 0 ? "text-green-600" : "text-red-500" },
               { label: t.pnlForm.summaryMargin, val: `${margin}%`, mnt: null, color: Number(margin) >= 0 ? "text-green-600" : "text-red-500" },
             ].map((c) => (
               <div key={c.label} className="bg-muted/40 rounded-lg p-4">

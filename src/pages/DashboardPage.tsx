@@ -203,9 +203,9 @@ export default function DashboardPage() {
   // хөрвүүлж нэмдэг — өөр валюттай тайлангуудыг шууд арифметикаар нэмбэл
   // ам.доллар г.м. дүн төгрөгийн дүн рүү тоо утгаараа алдаатай нэмэгддэг.
   const totalIncome = (r: PNLRecord) =>
-    r.incomeRows.reduce((s, x) => s + toMnt(Number(x.amount), r.currency), 0);
+    r.incomeRows.reduce((s, x) => s + toMnt(Number(x.amount), r.currency, r.exchangeRate), 0);
   const totalExpenseOf = (r: PNLRecord) =>
-    r.expenseRows.reduce((s, x) => s + toMnt(Number(x.amount), r.currency), 0);
+    r.expenseRows.reduce((s, x) => s + toMnt(Number(x.amount), r.currency, r.exchangeRate), 0);
   const netProfit = (r: PNLRecord) => totalIncome(r) - totalExpenseOf(r);
 
   const computedSummary = useMemo(() => {

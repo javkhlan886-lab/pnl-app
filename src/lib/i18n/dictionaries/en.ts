@@ -113,6 +113,7 @@ export const en: Dictionary = {
     statusPending: "◎ Pending",
     statusClosed: "✓ Completed",
     currency: "Currency",
+    exchangeRateLabel: "Rate (1{currency} = ? MNT)",
     income: "Income",
     expense: "Expense",
     colName: "Name",

@@ -20,6 +20,9 @@ export interface PNLRecord {
   company: string;
   period: string;
   currency: string;
+  // Гараар оруулсан ханш (1 нэгж = ? ₮) — байхгүй бол системийн тогтмол
+  // ойролцоо ханш ашиглана. Зөвхөн currency "₮" биш үед хамааралтай.
+  exchangeRate?: number | null;
   incomeRows: Row[];
   expenseRows: Row[];
   // ── Шинэ талбарууд ──────────────────────

@@ -113,6 +113,7 @@ export const ko: Dictionary = {
     statusPending: "◎ 대기 중",
     statusClosed: "✓ 완료됨",
     currency: "통화",
+    exchangeRateLabel: "환율 (1{currency} = ? MNT)",
     income: "수입",
     expense: "지출",
     colName: "이름",

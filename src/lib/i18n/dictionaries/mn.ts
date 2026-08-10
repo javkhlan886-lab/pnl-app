@@ -114,6 +114,7 @@ export const mn = {
     statusPending: "◎ Хүлээгдэж буй",
     statusClosed: "✓ Дуусан",
     currency: "Валют",
+    exchangeRateLabel: "Ханш (1{currency} = ? ₮)",
     income: "Орлого",
     expense: "Зарлага",
     colName: "Нэр",

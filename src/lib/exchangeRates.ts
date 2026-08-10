@@ -8,7 +8,18 @@ const MNT_RATES: Record<string, number> = {
   "¥": 480,
 };
 
-export function toMnt(amount: number, currency: string | null | undefined): number {
+// overrideRate: an individual report's own manually-entered ханш, takes
+// precedence over the fixed table when the currency isn't MNT.
+export function toMnt(
+  amount: number,
+  currency: string | null | undefined,
+  overrideRate?: number | null
+): number {
+  if (currency && currency !== "₮" && overrideRate) return amount * overrideRate;
   const rate = MNT_RATES[currency ?? "₮"] ?? 1;
   return amount * rate;
+}
+
+export function defaultRate(currency: string | null | undefined): number {
+  return MNT_RATES[currency ?? "₮"] ?? 1;
 }
