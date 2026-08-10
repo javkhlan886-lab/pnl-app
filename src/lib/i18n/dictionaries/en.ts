@@ -178,6 +178,7 @@ export const en: Dictionary = {
     ndshtLabel: "Health ins. ({rate}%)",
     totalCost: "Total cost",
     exportError: "Export error",
+    saveError: "Failed to save",
   },
   assets: {
     pageTitle: "Asset Register",
@@ -232,6 +233,7 @@ export const en: Dictionary = {
     currentBookValue: "Current book value",
     depreciatedPct: "{pct}% depreciated",
     exportError: "Export error",
+    saveError: "Failed to save",
   },
   expenses: {
     pageTitle: "Expense Records",
@@ -268,6 +270,7 @@ export const en: Dictionary = {
     totalAmount: "Total amount",
     date: "Date",
     status: "Status",
+    saveError: "Failed to save",
   },
   receivables: {
     pageTitle: "Loans & Receivables",
@@ -314,6 +317,7 @@ export const en: Dictionary = {
     interestRate: "Monthly interest rate (%)",
     dueDate: "Due date",
     accruedInterestNote: "Accrued interest: {amount} ({months} mo.)",
+    saveError: "Failed to save",
   },
   workforce: {
     pageTitle: "Workforce information",
@@ -345,6 +349,7 @@ export const en: Dictionary = {
     rate: "Rate / pay",
     status: "Status",
     note: "Note",
+    saveError: "Failed to save",
   },
   partners: {
     pageTitle: "Partner Organizations",
@@ -378,6 +383,7 @@ export const en: Dictionary = {
     collaborationPlaceholder: "Orders materials monthly",
     status: "Status",
     note: "Note",
+    saveError: "Failed to save",
   },
   transactions: {
     pageTitle: "Transaction Ledger",

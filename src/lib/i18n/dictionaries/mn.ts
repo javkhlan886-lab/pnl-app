@@ -179,6 +179,7 @@ export const mn = {
     ndshtLabel: "НДШТ ({rate}%)",
     totalCost: "Нийт зардал",
     exportError: "Export алдаа",
+    saveError: "Хадгалахад алдаа гарлаа",
   },
   assets: {
     pageTitle: "Хөрөнгийн бүртгэл",
@@ -233,6 +234,7 @@ export const mn = {
     currentBookValue: "Өнөөдрийн дансны үнэ",
     depreciatedPct: "{pct}% элэгдсэн",
     exportError: "Export алдаа",
+    saveError: "Хадгалахад алдаа гарлаа",
   },
   expenses: {
     pageTitle: "Зардлын бүртгэл",
@@ -269,6 +271,7 @@ export const mn = {
     totalAmount: "Нийт дүн",
     date: "Огноо",
     status: "Статус",
+    saveError: "Хадгалахад алдаа гарлаа",
   },
   receivables: {
     pageTitle: "Зээл & Авлага",
@@ -315,6 +318,7 @@ export const mn = {
     interestRate: "Сарын хүү (%)",
     dueDate: "Хугацаа дуусах огноо",
     accruedInterestNote: "Хуримтлагдсан хүү: {amount} ({months} сар)",
+    saveError: "Хадгалахад алдаа гарлаа",
   },
   workforce: {
     pageTitle: "Ажиллах хүчний мэдээлэл",
@@ -346,6 +350,7 @@ export const mn = {
     rate: "Хөлс / цалин",
     status: "Төлөв",
     note: "Тэмдэглэл",
+    saveError: "Хадгалахад алдаа гарлаа",
   },
   partners: {
     pageTitle: "Түнш байгууллага",
@@ -379,6 +384,7 @@ export const mn = {
     collaborationPlaceholder: "Сар бүр материал захиалдаг",
     status: "Төлөв",
     note: "Тэмдэглэл",
+    saveError: "Хадгалахад алдаа гарлаа",
   },
   transactions: {
     pageTitle: "Гүйлгээний дэвтэр",

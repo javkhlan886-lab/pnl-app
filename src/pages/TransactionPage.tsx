@@ -271,8 +271,8 @@ export default function TransactionPage() {
       setEditingTxId(null);
       setNewTx(EMPTY_TX);
       loadTxs();
-    } catch {
-      setSaveError(t.transactions.saveError);
+    } catch (err: any) {
+      setSaveError(err.response?.data?.error || t.transactions.saveError);
     } finally {
       setSaving(false);
     }

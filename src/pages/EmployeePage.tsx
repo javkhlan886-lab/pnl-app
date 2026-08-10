@@ -118,6 +118,8 @@ export default function EmployeePage() {
         setEmployees(prev => [created, ...prev]);
       }
       setOpen(false);
+    } catch (err: any) {
+      alert(err.response?.data?.error || t.employees.saveError);
     } finally { setSaving(false); }
   };
 

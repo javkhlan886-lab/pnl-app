@@ -178,6 +178,7 @@ export const ko: Dictionary = {
     ndshtLabel: "건강보험 ({rate}%)",
     totalCost: "총 비용",
     exportError: "내보내기 오류",
+    saveError: "저장 실패",
   },
   assets: {
     pageTitle: "자산 대장",
@@ -232,6 +233,7 @@ export const ko: Dictionary = {
     currentBookValue: "현재 장부가액",
     depreciatedPct: "{pct}% 상각됨",
     exportError: "내보내기 오류",
+    saveError: "저장 실패",
   },
   expenses: {
     pageTitle: "지출 기록",
@@ -268,6 +270,7 @@ export const ko: Dictionary = {
     totalAmount: "총 금액",
     date: "날짜",
     status: "상태",
+    saveError: "저장 실패",
   },
   receivables: {
     pageTitle: "대여 & 미수금",
@@ -314,6 +317,7 @@ export const ko: Dictionary = {
     interestRate: "월 이자율 (%)",
     dueDate: "만기일",
     accruedInterestNote: "누적 이자: {amount} ({months}개월)",
+    saveError: "저장 실패",
   },
   workforce: {
     pageTitle: "인력 정보",
@@ -345,6 +349,7 @@ export const ko: Dictionary = {
     rate: "보수 / 급여",
     status: "상태",
     note: "메모",
+    saveError: "저장 실패",
   },
   partners: {
     pageTitle: "협력업체",
@@ -378,6 +383,7 @@ export const ko: Dictionary = {
     collaborationPlaceholder: "매월 자재 주문",
     status: "상태",
     note: "메모",
+    saveError: "저장 실패",
   },
   transactions: {
     pageTitle: "거래 장부",

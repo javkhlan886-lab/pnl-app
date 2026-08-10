@@ -116,6 +116,8 @@ export default function ExpensePage() {
         setExpenses(prev => [created, ...prev]);
       }
       setOpen(false);
+    } catch (err: any) {
+      alert(err.response?.data?.error || t.expenses.saveError);
     } finally { setSaving(false); }
   };
 

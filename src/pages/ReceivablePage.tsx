@@ -134,6 +134,8 @@ export default function ReceivablePage() {
         setItems(prev => [created, ...prev]);
       }
       setOpen(false);
+    } catch (err: any) {
+      alert(err.response?.data?.error || t.receivables.saveError);
     } finally { setSaving(false); }
   };
 

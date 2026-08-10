@@ -98,6 +98,8 @@ export default function PartnerPage() {
         setItems(prev => [created, ...prev]);
       }
       setOpen(false);
+    } catch (err: any) {
+      alert(err.response?.data?.error || t.partners.saveError);
     } finally { setSaving(false); }
   };
 

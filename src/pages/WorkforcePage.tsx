@@ -102,6 +102,8 @@ export default function WorkforcePage() {
         setItems(prev => [created, ...prev]);
       }
       setOpen(false);
+    } catch (err: any) {
+      alert(err.response?.data?.error || t.workforce.saveError);
     } finally { setSaving(false); }
   };
 

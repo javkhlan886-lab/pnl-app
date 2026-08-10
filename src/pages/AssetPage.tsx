@@ -135,12 +135,18 @@ export default function AssetPage() {
         setAssets(prev => [created, ...prev]);
       }
       setOpen(false);
+    } catch (err: any) {
+      alert(err.response?.data?.error || t.assets.saveError);
     } finally { setSaving(false); }
   };
 
   const handleDispose = async (id: string) => {
-    await disposeAsset(id);
-    setAssets(prev => prev.map(a => a._id === id ? { ...a, status: "disposed" } : a));
+    try {
+      await disposeAsset(id);
+      setAssets(prev => prev.map(a => a._id === id ? { ...a, status: "disposed" } : a));
+    } catch (err: any) {
+      alert(err.response?.data?.error || t.assets.saveError);
+    }
   };
 
   const dep = form.price > 0 && form.purchaseDate
