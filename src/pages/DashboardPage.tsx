@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getPNLList, deletePNL, updatePNL } from "@/lib/pnl";
@@ -159,12 +159,12 @@ export default function DashboardPage() {
     }
   };
 
-  useEffect(() => {
-    getPNLList()
-      .then(setRecords)
-      .catch(() => setError(t.dashboard.loadError))
-      .finally(() => setLoading(false));
-
+  // Толгойн статистик карт болон гүйлгээний дэвтэрийн дүн бусад модулиудтай
+  // (ажилчид, зардал, авлага гэх мэт) хамт нэгтгэж тооцдог тул зөвхөн
+  // records state-ээс дахин тооцох боломжгүй — status солих/устгах бүрд
+  // серверээс дахин татаж шинэчилнэ (эс тэгвэл гар refresh хийх хүртэл
+  // хуучин дүн харагдсаар байдаг байсан).
+  const loadSummary = useCallback(() => {
     api.get("/summary")
       .then((r) => {
         setSummary(r.data);
@@ -181,16 +181,28 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    getPNLList()
+      .then(setRecords)
+      .catch(() => setError(t.dashboard.loadError))
+      .finally(() => setLoading(false));
+
+    loadSummary();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleDelete = async (id: string) => {
     await deletePNL(id);
     setRecords((prev) => prev.filter((r) => r._id !== id));
     setSelected((prev) => { const n = new Set(prev); n.delete(id); return n; });
+    loadSummary();
   };
 
   const handleStatusChange = async (id: string, status: "active" | "pending" | "closed") => {
     await updatePNL(id, { status });
     setRecords(prev => prev.map(r => r._id === id ? { ...r, status } : r));
     setOpenStatusId(null);
+    loadSummary();
   };
 
   const statusConfig = {
