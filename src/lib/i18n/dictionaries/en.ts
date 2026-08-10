@@ -114,6 +114,7 @@ export const en: Dictionary = {
     statusClosed: "✓ Completed",
     currency: "Currency",
     exchangeRateLabel: "Rate (1{currency} = ? MNT)",
+    saveRateHint: "Save this rate as the default for the next report",
     income: "Income",
     expense: "Expense",
     colName: "Name",

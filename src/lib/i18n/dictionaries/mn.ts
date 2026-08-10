@@ -115,6 +115,7 @@ export const mn = {
     statusClosed: "✓ Дуусан",
     currency: "Валют",
     exchangeRateLabel: "Ханш (1{currency} = ? ₮)",
+    saveRateHint: "Энэ ханшийг дараагийн тайланд анхны утга болгож хадгална",
     income: "Орлого",
     expense: "Зарлага",
     colName: "Нэр",

@@ -114,6 +114,7 @@ export const ko: Dictionary = {
     statusClosed: "✓ 완료됨",
     currency: "통화",
     exchangeRateLabel: "환율 (1{currency} = ? MNT)",
+    saveRateHint: "이 환율을 다음 보고서의 기본값으로 저장",
     income: "수입",
     expense: "지출",
     colName: "이름",

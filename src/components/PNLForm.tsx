@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { createPNL, updatePNL } from "@/lib/pnl";
 import { PNLRecord, Row } from "@/types";
 import { fmt, toDateInputValue } from "@/lib/utils";
-import { toMnt, defaultRate } from "@/lib/exchangeRates";
+import { toMnt, defaultRate, getSavedRate, saveRate } from "@/lib/exchangeRates";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -194,6 +194,7 @@ export default function PNLForm({ initial, id }: Props) {
   );
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [rateSaved, setRateSaved] = useState(false);
 
   // "Тайлант үе" нь эхлэх/дуусах огноогоор бөглөгддөг болсон тул хуучин
   // чөлөөт текст `period` талбарыг өөрчлөхгүйгээр (backend/schema-д хамаагүй)
@@ -366,7 +367,7 @@ export default function PNLForm({ initial, id }: Props) {
                     setData((prev) => ({
                       ...prev,
                       currency: v,
-                      exchangeRate: v === "₮" ? undefined : (prev.exchangeRate ?? defaultRate(v)),
+                      exchangeRate: v === "₮" ? undefined : (prev.exchangeRate ?? getSavedRate(v) ?? defaultRate(v)),
                     }))
                   }>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -381,12 +382,29 @@ export default function PNLForm({ initial, id }: Props) {
               {data.currency !== "₮" && (
                 <div className="space-y-1.5">
                   <Label>{format(t.pnlForm.exchangeRateLabel, { currency: data.currency })}</Label>
-                  <Input
-                    type="number" min={0} step="0.01"
-                    value={data.exchangeRate ?? ""}
-                    onChange={(e) => setData({ ...data, exchangeRate: Number(e.target.value) || undefined })}
-                    placeholder={String(defaultRate(data.currency))}
-                  />
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number" min={0} step="0.01"
+                      value={data.exchangeRate ?? ""}
+                      onChange={(e) => {
+                        setRateSaved(false);
+                        setData({ ...data, exchangeRate: Number(e.target.value) || undefined });
+                      }}
+                      placeholder={String(defaultRate(data.currency))}
+                    />
+                    <Button
+                      type="button" variant="outline" size="sm"
+                      disabled={!data.exchangeRate}
+                      onClick={() => {
+                        if (!data.exchangeRate) return;
+                        saveRate(data.currency, data.exchangeRate);
+                        setRateSaved(true);
+                        setTimeout(() => setRateSaved(false), 2000);
+                      }}
+                      title={t.pnlForm.saveRateHint}>
+                      {rateSaved ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>

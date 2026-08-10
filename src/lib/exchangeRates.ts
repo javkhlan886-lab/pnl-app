@@ -23,3 +23,27 @@ export function toMnt(
 export function defaultRate(currency: string | null | undefined): number {
   return MNT_RATES[currency ?? "₮"] ?? 1;
 }
+
+// Хэрэглэгчийн гараар хадгалсан ханш — browser-т хадгалагдаж, дараагийн
+// шинэ тайлан үүсгэхэд тухайн валютын анхны утга болно (customCategories.ts
+// -тэй ижил хандлага).
+const SAVED_RATE_PREFIX = "pnl_saved_rate_";
+
+export function getSavedRate(currency: string): number | null {
+  try {
+    const raw = localStorage.getItem(SAVED_RATE_PREFIX + currency);
+    const n = raw ? Number(raw) : NaN;
+    return Number.isFinite(n) && n > 0 ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveRate(currency: string, rate: number): void {
+  if (!(rate > 0)) return;
+  try {
+    localStorage.setItem(SAVED_RATE_PREFIX + currency, String(rate));
+  } catch {
+    // localStorage unavailable (privacy mode гэх мэт) — чимээгүй алгасна.
+  }
+}
