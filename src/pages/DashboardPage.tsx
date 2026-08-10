@@ -232,6 +232,18 @@ export default function DashboardPage() {
 
   const displaySummary = summary || computedSummary;
 
+  // Толгойн статистик карт (`summary`) нь бүх датаг тооцдог тул огнооны
+  // шүүлтүүрт хамаарахгүй — тиймээс шүүсэн `filteredRecords`-с тусад нь
+  // өөрийн дүнг тооцоод харуулна.
+  const isDateFiltered = Boolean(dateFrom || dateTo);
+  const filteredSummary = useMemo(() => {
+    if (!isDateFiltered) return null;
+    const income = filteredRecords.reduce((sum, record) => sum + totalIncome(record), 0);
+    const expense = filteredRecords.reduce((sum, record) => sum + totalExpenseOf(record), 0);
+    return { income, expense, net: income - expense, count: filteredRecords.length };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredRecords, isDateFiltered]);
+
   const NAV_ITEMS = [
     { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
     { path: "/employees", label: t.common.navEmployees, icon: <Users className="w-4 h-4" /> },
@@ -546,6 +558,30 @@ export default function DashboardPage() {
             </button>
           )}
         </div>
+
+        {filteredSummary && (
+          <div className="glass-card px-5 py-4 mb-6">
+            <p className="text-xs text-muted-foreground mb-3">
+              {format(t.dashboard.filteredSummaryTitle, { count: String(filteredSummary.count) })}
+            </p>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredIncome}</p>
+                <p className="stat-number text-lg font-semibold text-positive">{fmt(filteredSummary.income, "₮")}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredExpense}</p>
+                <p className="stat-number text-lg font-semibold text-negative">{fmt(filteredSummary.expense, "₮")}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredNet}</p>
+                <p className={`stat-number text-lg font-semibold ${filteredSummary.net >= 0 ? "text-positive" : "text-negative"}`}>
+                  {fmt(filteredSummary.net, "₮")}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="text-center py-20 text-muted-foreground text-sm">{t.common.loading}</div>

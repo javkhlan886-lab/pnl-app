@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { createPNL, updatePNL } from "@/lib/pnl";
 import { PNLRecord, Row } from "@/types";
 import { fmt, toDateInputValue } from "@/lib/utils";
+import { toMnt } from "@/lib/exchangeRates";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -400,14 +401,19 @@ export default function PNLForm({ initial, id }: Props) {
         <CardContent className="pt-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: t.pnlForm.summaryIncome, val: fmt(totalIncome, data.currency), color: "text-green-600" },
-              { label: t.pnlForm.summaryExpense, val: fmt(totalExpense, data.currency), color: "text-red-500" },
-              { label: t.pnlForm.summaryNet, val: fmt(net, data.currency), color: net >= 0 ? "text-green-600" : "text-red-500" },
-              { label: t.pnlForm.summaryMargin, val: `${margin}%`, color: Number(margin) >= 0 ? "text-green-600" : "text-red-500" },
+              { label: t.pnlForm.summaryIncome, val: fmt(totalIncome, data.currency), mnt: toMnt(totalIncome, data.currency), color: "text-green-600" },
+              { label: t.pnlForm.summaryExpense, val: fmt(totalExpense, data.currency), mnt: toMnt(totalExpense, data.currency), color: "text-red-500" },
+              { label: t.pnlForm.summaryNet, val: fmt(net, data.currency), mnt: toMnt(net, data.currency), color: net >= 0 ? "text-green-600" : "text-red-500" },
+              { label: t.pnlForm.summaryMargin, val: `${margin}%`, mnt: null, color: Number(margin) >= 0 ? "text-green-600" : "text-red-500" },
             ].map((c) => (
               <div key={c.label} className="bg-muted/40 rounded-lg p-4">
                 <p className="text-xs text-muted-foreground mb-1">{c.label}</p>
                 <p className={`text-xl font-semibold ${c.color}`}>{c.val}</p>
+                {data.currency !== "₮" && c.mnt !== null && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {format(t.pnlForm.mntEquivalent, { amount: Math.round(c.mnt).toLocaleString("mn-MN") })}
+                  </p>
+                )}
               </div>
             ))}
           </div>

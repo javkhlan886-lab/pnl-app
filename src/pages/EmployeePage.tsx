@@ -90,7 +90,9 @@ export default function EmployeePage() {
     .reduce((s, e) => s + e.baseSalary, 0);
   const totalND = employees.filter(e => e.status === "active")
     .reduce((s, e) => s + e.baseSalary * e.ndRate / 100, 0);
-  const totalCost = totalSalary + totalND;
+  const totalNdsht = employees.filter(e => e.status === "active")
+    .reduce((s, e) => s + e.baseSalary * e.ndshtRate / 100, 0);
+  const totalCost = totalSalary + totalND + totalNdsht;
   const engineerCount = employees.filter(e => e.type === "engineer").length;
   const staffCount = employees.filter(e => e.type === "staff").length;
 
