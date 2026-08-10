@@ -677,12 +677,12 @@ export default function DashboardPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right text-positive font-medium stat-number">{fmt(income, r.currency)}</TableCell>
+                      <TableCell className="text-right text-positive font-medium stat-number">{fmt(income, "₮")}</TableCell>
                       <TableCell className="text-right">
                         <Badge className={profit >= 0
                           ? "bg-positive/15 text-positive hover:bg-positive/15 blur-number"
                           : "bg-negative/15 text-negative hover:bg-negative/15 blur-number"}>
-                          {fmt(profit, r.currency)}
+                          {fmt(profit, "₮")}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
