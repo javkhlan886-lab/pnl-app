@@ -260,6 +260,17 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredRecords, isDateFiltered]);
 
+  // Чагт тэмдэглэсэн (сонгосон) тайлангуудын нэгтгэл — export-д ашигладаг
+  // ижил `selected` Set дээр суурилна.
+  const selectedSummary = useMemo(() => {
+    if (selected.size === 0) return null;
+    const selectedRecords = records.filter((r) => selected.has(r._id!));
+    const income = selectedRecords.reduce((sum, record) => sum + totalIncome(record), 0);
+    const expense = selectedRecords.reduce((sum, record) => sum + totalExpenseOf(record), 0);
+    return { income, expense, net: income - expense };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected, records]);
+
   const NAV_ITEMS = [
     { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
     { path: "/employees", label: t.common.navEmployees, icon: <Users className="w-4 h-4" /> },
@@ -497,14 +508,32 @@ export default function DashboardPage() {
           </>
         )}
 
-        {selected.size > 0 && (
-          <div className="mb-4 flex items-center gap-3 bg-positive/10 border border-positive/25 rounded-lg px-4 py-2.5">
-            <span className="text-sm text-positive font-medium">
-              {format(t.dashboard.selectedCount, { count: String(selected.size) })}
-            </span>
-            <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground ml-auto">
-              {t.dashboard.deselect}
-            </button>
+        {selectedSummary && (
+          <div className="mb-4 bg-positive/10 border border-positive/25 rounded-lg px-4 py-2.5">
+            <div className="flex items-center gap-3 mb-2.5">
+              <span className="text-sm text-positive font-medium">
+                {format(t.dashboard.selectedCount, { count: String(selected.size) })}
+              </span>
+              <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground ml-auto">
+                {t.dashboard.deselect}
+              </button>
+            </div>
+            <div className="grid grid-cols-3 gap-4 pt-2.5 border-t border-positive/20">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredIncome}</p>
+                <p className="stat-number text-base font-semibold text-positive">{fmt(selectedSummary.income, "₮")}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredExpense}</p>
+                <p className="stat-number text-base font-semibold text-negative">{fmt(selectedSummary.expense, "₮")}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredNet}</p>
+                <p className={`stat-number text-base font-semibold ${selectedSummary.net >= 0 ? "text-positive" : "text-negative"}`}>
+                  {fmt(selectedSummary.net, "₮")}
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
