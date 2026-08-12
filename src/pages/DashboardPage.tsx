@@ -93,8 +93,12 @@ export default function DashboardPage() {
   const filteredRecords = statusScoped.filter((r) => {
     if (!dateFrom && !dateTo) return true;
     if (!r.date) return false;
-    if (dateFrom && r.date < dateFrom) return false;
-    if (dateTo && r.date > dateTo) return false;
+    // r.date талбар бүтэн ISO timestamp ("2026-08-09T00:00:00.000Z") байж
+    // болдог тул эхний 10 тэмдэгтээр нь (YYYY-MM-DD) харьцуулна — эс тэгвэл
+    // dateTo-той яг тэнцүү өдрийн бичлэгүүд алдаатайгаар хасагдаж байсан.
+    const day = r.date.slice(0, 10);
+    if (dateFrom && day < dateFrom) return false;
+    if (dateTo && day > dateTo) return false;
     return true;
   });
 
