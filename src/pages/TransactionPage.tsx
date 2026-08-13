@@ -11,6 +11,7 @@ import {
 } from "@/lib/transaction";
 import { getPNLList } from "@/lib/pnl";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
+import { getRecent, addRecent } from "@/lib/recentValues";
 import { fmtDate, toDateInputValue } from "@/lib/utils";
 import { Transaction, ContractSummary } from "@/types";
 import { setAiPageContext } from "@/lib/aiPageContext";
@@ -285,6 +286,7 @@ export default function TransactionPage() {
         status: "approved",
       };
       addCustomCategory(newTx.type === "income" ? "transactions_income" : "transactions_expense", newTx.category);
+      addRecent("transactions", "description", payload.description);
       if (editingTxId) {
         await updateTransaction(editingTxId, payload);
       } else {
@@ -465,9 +467,10 @@ export default function TransactionPage() {
 
               <div className="space-y-1.5">
                 <Label className="text-xs">{t.transactions.descriptionLabel}</Label>
-                <Input
+                <Combobox
                   value={newTx.description}
-                  onChange={e => setNewTx(p => ({ ...p, description: e.target.value }))}
+                  onChange={(v) => setNewTx(p => ({ ...p, description: v }))}
+                  options={getRecent("transactions", "description")}
                   placeholder={t.transactions.descriptionPlaceholder}
                   className="h-9 text-sm"
                 />

@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Combobox } from "@/components/ui/combobox";
+import { getRecent, addRecent } from "@/lib/recentValues";
 import { LogOut, Plus, Pencil, Trash2, ChevronLeft, BarChart2, Users, Box, Receipt, ArrowLeftRight, TableIcon, ShieldCheck, HardHat, Handshake, Package } from "lucide-react";
 
 interface WorkforceRecord {
@@ -95,6 +97,8 @@ export default function WorkforcePage() {
     if (!form.name.trim()) return;
     setSaving(true);
     try {
+      addRecent("workforce", "name", form.name);
+      addRecent("workforce", "skills", form.skills);
       if (editing) {
         const updated = await updateWorkforce(editing, form);
         setItems(prev => prev.map(i => i._id === editing ? updated : i));
@@ -244,7 +248,7 @@ export default function WorkforcePage() {
           <div className="flex flex-col gap-3 py-2 max-h-[60vh] overflow-y-auto pr-1">
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">{t.workforce.name}</Label>
-              <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={t.workforce.namePlaceholder} className="h-9 text-sm" />
+              <Combobox value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} options={getRecent("workforce", "name")} placeholder={t.workforce.namePlaceholder} className="h-9 text-sm" />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">{t.workforce.address}</Label>
@@ -262,7 +266,7 @@ export default function WorkforcePage() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">{t.workforce.skills}</Label>
-              <Input value={form.skills} onChange={e => setForm(f => ({ ...f, skills: e.target.value }))} placeholder={t.workforce.skillsPlaceholder} className="h-9 text-sm" />
+              <Combobox value={form.skills} onChange={v => setForm(f => ({ ...f, skills: v }))} options={getRecent("workforce", "skills")} placeholder={t.workforce.skillsPlaceholder} className="h-9 text-sm" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">

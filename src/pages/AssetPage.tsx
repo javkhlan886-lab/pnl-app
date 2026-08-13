@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, Box, BarChart2, Users, Receipt, ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake, Package } from "lucide-react";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
+import { getRecent, addRecent } from "@/lib/recentValues";
 import { Combobox } from "@/components/ui/combobox";
 
 // Чөлөөт текст утга — backend-д хадгалагддаг тул хэлээр орчуулахгүй
@@ -120,6 +121,8 @@ export default function AssetPage() {
     setSaving(true);
     try {
       addCustomCategory("assets", payload.category);
+      addRecent("assets", "name", payload.name);
+      addRecent("assets", "location", payload.location);
       setForm(payload);
       if (editing) {
         const updated = await updateAsset(editing, payload);
@@ -335,8 +338,10 @@ export default function AssetPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="sm:col-span-2 flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.assets.name}</label>
-                <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-                  value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                <Combobox
+                  value={form.name}
+                  onChange={(v) => setForm(f => ({ ...f, name: v }))}
+                  options={getRecent("assets", "name")}
                   placeholder={t.assets.namePlaceholder} />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -396,8 +401,10 @@ export default function AssetPage() {
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.assets.location}</label>
-                <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-                  value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
+                <Combobox
+                  value={form.location}
+                  onChange={(v) => setForm(f => ({ ...f, location: v }))}
+                  options={getRecent("assets", "location")}
                   placeholder={t.assets.locationPlaceholder} />
               </div>
             </div>

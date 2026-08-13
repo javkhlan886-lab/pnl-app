@@ -25,6 +25,7 @@ import {
   ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake, Package, Search,
 } from "lucide-react";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
+import { getRecent, addRecent } from "@/lib/recentValues";
 import { Combobox } from "@/components/ui/combobox";
 
 // Чөлөөт текст утга — backend-д хадгалагддаг тул хэлээр орчуулахгүй.
@@ -128,6 +129,8 @@ export default function ProductPage() {
     setSaving(true);
     try {
       addCustomCategory("products", form.category);
+      addRecent("products", "name", form.name);
+      addRecent("products", "description", form.description);
       if (editing) {
         const updated = await updateProduct(editing, form);
         setProducts(prev => prev.map(p => p._id === editing ? updated : p));
@@ -353,8 +356,10 @@ export default function ProductPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="sm:col-span-2 flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.products.name}</label>
-                <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-                  value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                <Combobox
+                  value={form.name}
+                  onChange={(v) => setForm(f => ({ ...f, name: v }))}
+                  options={getRecent("products", "name")}
                   placeholder={t.products.namePlaceholder} />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -373,8 +378,10 @@ export default function ProductPage() {
               </div>
               <div className="sm:col-span-2 flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.products.description}</label>
-                <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-                  value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                <Combobox
+                  value={form.description}
+                  onChange={(v) => setForm(f => ({ ...f, description: v }))}
+                  options={getRecent("products", "description")}
                   placeholder={t.products.descriptionPlaceholder} />
               </div>
               <div className="flex flex-col gap-1.5">

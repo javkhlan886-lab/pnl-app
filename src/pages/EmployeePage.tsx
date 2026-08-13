@@ -22,6 +22,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { LogOut, TableIcon, Plus, Pencil, Trash2, Users, ChevronLeft, BarChart2, Box, Receipt, ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake, Package } from "lucide-react";
+import { Combobox } from "@/components/ui/combobox";
+import { getRecent, addRecent } from "@/lib/recentValues";
 
 interface Employee {
   _id?: string;
@@ -111,6 +113,8 @@ export default function EmployeePage() {
     if (!form.name.trim()) return;
     setSaving(true);
     try {
+      addRecent("employees", "name", form.name);
+      addRecent("employees", "position", form.position);
       if (editing) {
         const updated = await updateEmployee(editing, form);
         setEmployees(prev => prev.map(e => e._id === editing ? updated : e));
@@ -328,16 +332,18 @@ export default function EmployeePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.employees.name}</label>
-                <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                <Combobox
                   value={form.name}
-                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  onChange={(v) => setForm(f => ({ ...f, name: v }))}
+                  options={getRecent("employees", "name")}
                   placeholder={t.employees.namePlaceholder} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.employees.position}</label>
-                <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                <Combobox
                   value={form.position}
-                  onChange={e => setForm(f => ({ ...f, position: e.target.value }))}
+                  onChange={(v) => setForm(f => ({ ...f, position: v }))}
+                  options={getRecent("employees", "position")}
                   placeholder={t.employees.positionPlaceholder} />
               </div>
             </div>

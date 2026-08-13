@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, Receipt, BarChart2, Users, Box, ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake, Package } from "lucide-react";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
+import { getRecent, addRecent } from "@/lib/recentValues";
 import { Combobox } from "@/components/ui/combobox";
 
 // Чөлөөт текст утга — backend-д хадгалагддаг тул хэлээр орчуулахгүй.
@@ -109,6 +110,7 @@ export default function ExpensePage() {
     setSaving(true);
     try {
       addCustomCategory(payload.type === "office" ? "expenses_office" : "expenses_other", payload.category);
+      addRecent("expenses", "description", payload.description);
       setForm(payload);
       if (editing) {
         const updated = await updateExpense(editing, payload);
@@ -349,8 +351,10 @@ export default function ExpensePage() {
               </div>
               <div className="sm:col-span-2 flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.expenses.description}</label>
-                <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-                  value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                <Combobox
+                  value={form.description}
+                  onChange={(v) => setForm(f => ({ ...f, description: v }))}
+                  options={getRecent("expenses", "description")}
                   placeholder={t.expenses.descriptionPlaceholder} />
               </div>
               <div className="flex flex-col gap-1.5">

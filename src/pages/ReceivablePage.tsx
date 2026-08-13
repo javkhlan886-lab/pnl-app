@@ -22,6 +22,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, ArrowLeftRight, BarChart2, Users, Box, Receipt, Download, ShieldCheck, HardHat, Handshake, Package } from "lucide-react";
+import { Combobox } from "@/components/ui/combobox";
+import { getRecent, addRecent } from "@/lib/recentValues";
 
 const EMPTY = {
   type: "receivable" as "receivable" | "loan",
@@ -126,6 +128,7 @@ export default function ReceivablePage() {
     if (!payload.counterparty.trim() || payload.amount === 0) return;
     setSaving(true);
     try {
+      addRecent("receivables", "counterparty", payload.counterparty);
       setForm(payload);
       if (editing) {
         const updated = await updateReceivable(editing, payload);
@@ -382,8 +385,10 @@ export default function ReceivablePage() {
                 <label className="text-xs font-medium text-muted-foreground">
                   {form.type === "receivable" ? t.receivables.counterpartyReceivable : t.receivables.counterpartyLoan}
                 </label>
-                <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-                  value={form.counterparty} onChange={e => setForm(f => ({ ...f, counterparty: e.target.value }))}
+                <Combobox
+                  value={form.counterparty}
+                  onChange={(v) => setForm(f => ({ ...f, counterparty: v }))}
+                  options={getRecent("receivables", "counterparty")}
                   placeholder={form.type === "receivable" ? t.receivables.counterpartyPlaceholderReceivable : t.receivables.counterpartyPlaceholderLoan} />
               </div>
               <div className="flex flex-col gap-1.5">

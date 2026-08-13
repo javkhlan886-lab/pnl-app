@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Combobox } from "@/components/ui/combobox";
+import { getRecent, addRecent } from "@/lib/recentValues";
 import { LogOut, Plus, Pencil, Trash2, ChevronLeft, BarChart2, Users, Box, Receipt, ArrowLeftRight, TableIcon, ShieldCheck, HardHat, Handshake, Package } from "lucide-react";
 
 interface PartnerRecord {
@@ -91,6 +93,10 @@ export default function PartnerPage() {
     if (!form.name.trim()) return;
     setSaving(true);
     try {
+      addRecent("partners", "name", form.name);
+      addRecent("partners", "offering", form.offering);
+      addRecent("partners", "priceInfo", form.priceInfo);
+      addRecent("partners", "collaboration", form.collaboration);
       if (editing) {
         const updated = await updatePartner(editing, form);
         setItems(prev => prev.map(i => i._id === editing ? updated : i));
@@ -238,7 +244,7 @@ export default function PartnerPage() {
           <div className="flex flex-col gap-3 py-2 max-h-[60vh] overflow-y-auto pr-1">
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">{t.partners.name}</Label>
-              <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={t.partners.namePlaceholder} className="h-9 text-sm" />
+              <Combobox value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} options={getRecent("partners", "name")} placeholder={t.partners.namePlaceholder} className="h-9 text-sm" />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">{t.partners.address}</Label>
@@ -256,15 +262,15 @@ export default function PartnerPage() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">{t.partners.offering}</Label>
-              <Input value={form.offering} onChange={e => setForm(f => ({ ...f, offering: e.target.value }))} placeholder={t.partners.offeringPlaceholder} className="h-9 text-sm" />
+              <Combobox value={form.offering} onChange={v => setForm(f => ({ ...f, offering: v }))} options={getRecent("partners", "offering")} placeholder={t.partners.offeringPlaceholder} className="h-9 text-sm" />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">{t.partners.priceInfo}</Label>
-              <Input value={form.priceInfo} onChange={e => setForm(f => ({ ...f, priceInfo: e.target.value }))} placeholder={t.partners.priceInfoPlaceholder} className="h-9 text-sm" />
+              <Combobox value={form.priceInfo} onChange={v => setForm(f => ({ ...f, priceInfo: v }))} options={getRecent("partners", "priceInfo")} placeholder={t.partners.priceInfoPlaceholder} className="h-9 text-sm" />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">{t.partners.collaboration}</Label>
-              <Input value={form.collaboration} onChange={e => setForm(f => ({ ...f, collaboration: e.target.value }))} placeholder={t.partners.collaborationPlaceholder} className="h-9 text-sm" />
+              <Combobox value={form.collaboration} onChange={v => setForm(f => ({ ...f, collaboration: v }))} options={getRecent("partners", "collaboration")} placeholder={t.partners.collaborationPlaceholder} className="h-9 text-sm" />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">{t.partners.status}</Label>
