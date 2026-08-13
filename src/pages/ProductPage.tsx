@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { getProducts, createProduct, updateProduct, deleteProduct } from "@/lib/product";
@@ -69,12 +69,12 @@ export default function ProductPage() {
     { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
     { path: "/employees", label: t.common.navEmployees, icon: <Users className="w-4 h-4" /> },
     { path: "/assets", label: t.common.navAssets, icon: <Box className="w-4 h-4" /> },
+    { path: "/products", label: t.common.navProducts, icon: <Package className="w-4 h-4" /> },
+    { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
     { path: "/expenses", label: t.common.navExpenses, icon: <Receipt className="w-4 h-4" /> },
     { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
     { path: "/workforce", label: t.common.navWorkforce, icon: <HardHat className="w-4 h-4" /> },
     { path: "/partners", label: t.common.navPartners, icon: <Handshake className="w-4 h-4" /> },
-    { path: "/products", label: t.common.navProducts, icon: <Package className="w-4 h-4" /> },
-    { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
     ...(isAdmin ? [{ path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> }] : []),
   ];
 
@@ -86,6 +86,18 @@ export default function ProductPage() {
   useEffect(() => { load(); }, [load]);
 
   const productCategories = mergeCategories(CATEGORIES, "products");
+
+  // Шүүлтүүрийн мөрөнд бүх ангилалыг жагсаахын оронд бодит бүтээгдэхүүн дээр
+  // хамгийн олон удаа хэрэглэгдсэн 6 ангиллыг автоматаар харуулна.
+  const topCategories = useMemo(() => {
+    const counts = new Map<string, number>();
+    products.forEach(p => counts.set(p.category, (counts.get(p.category) || 0) + 1));
+    const byUsage = [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([c]) => c);
+    if (byUsage.length >= 6) return byUsage.slice(0, 6);
+    const fill = CATEGORIES.filter(c => !byUsage.includes(c));
+    return [...byUsage, ...fill].slice(0, 6);
+  }, [products]);
+
   const filtered = products.filter(p => {
     if (catFilter && p.category !== catFilter) return false;
     if (search.trim()) {
@@ -238,7 +250,7 @@ export default function ProductPage() {
               placeholder={t.products.searchPlaceholder}
               className="h-8 w-56 pl-8 pr-3 text-xs rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring" />
           </div>
-          {["", ...productCategories].map(c => (
+          {["", ...topCategories].map(c => (
             <button key={c} onClick={() => setCatFilter(c)}
               className={`h-8 px-3 text-xs rounded-lg border ${catFilter === c
                 ? "bg-positive/15 text-positive border-positive/30"
@@ -377,7 +389,7 @@ export default function ProductPage() {
                   }} placeholder="0" />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">{t.products.price}</label>
+                <label className="text-xs font-medium text-muted-foreground">{t.products.unitPrice}</label>
                 <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
                   inputMode="numeric" value={priceDisplay}
                   onChange={e => {
@@ -410,6 +422,18 @@ export default function ProductPage() {
                 <label className="text-xs font-medium text-muted-foreground">{t.products.note}</label>
                 <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                   value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} />
+              </div>
+            </div>
+            <div className="bg-secondary/50 rounded-lg px-4 py-3 text-sm">
+              <div className="flex justify-between py-1">
+                <span className="text-muted-foreground">{t.products.totalPriceLabel}</span>
+                <span className="font-medium">{fmt(form.price * form.quantity)}</span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-muted-foreground">{t.products.remainingLabel}</span>
+                <span className={`font-medium ${form.quantity - form.issuedQty < 0 ? "text-negative" : "text-positive"}`}>
+                  {(form.quantity - form.issuedQty).toLocaleString("mn-MN")}
+                </span>
               </div>
             </div>
           </div>
