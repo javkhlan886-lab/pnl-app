@@ -1,9 +1,10 @@
-export type Locale = "mn" | "en" | "ko";
+export type Locale = "mn" | "en" | "ko" | "zh";
 
 export const LOCALES: { code: Locale; label: string; flagSrc: string; flagScale?: number }[] = [
   { code: "mn", label: "Монгол", flagSrc: "/flags/mn.webp" },
   { code: "en", label: "English", flagSrc: "/flags/en.jpg" },
   { code: "ko", label: "한국어", flagSrc: "/flags/ko.jpg", flagScale: 1.2 },
+  { code: "zh", label: "中文", flagSrc: "/flags/zh.svg" },
 ];
 
 export const DEFAULT_LOCALE: Locale = "mn";

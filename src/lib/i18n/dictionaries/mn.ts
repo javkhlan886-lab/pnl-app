@@ -51,6 +51,8 @@ export const mn = {
     statProjectExpenseSub: "P&L тайлангийн",
     statSalary: "Цалин & НД",
     statSalarySub: "{count} ажилтан",
+    blurSection: "Энэ хэсгийг буларлах",
+    unblurSection: "Буларыг унтраах",
     statOffice: "Оффис зардал",
     statOther: "Бусад зардал",
     approvedLabel: "Батлагдсан",

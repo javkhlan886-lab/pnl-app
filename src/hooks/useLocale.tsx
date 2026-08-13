@@ -4,8 +4,9 @@ import type { Dictionary } from "@/lib/i18n/dictionary-type";
 import { mn } from "@/lib/i18n/dictionaries/mn";
 import { en } from "@/lib/i18n/dictionaries/en";
 import { ko } from "@/lib/i18n/dictionaries/ko";
+import { zh } from "@/lib/i18n/dictionaries/zh";
 
-const DICTIONARIES: Record<Locale, Dictionary> = { mn, en, ko };
+const DICTIONARIES: Record<Locale, Dictionary> = { mn, en, ko, zh };
 const STORAGE_KEY = "pnl-locale";
 
 // Same module-level-state pattern as useTheme — a component-level useState

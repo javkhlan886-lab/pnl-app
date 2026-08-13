@@ -22,7 +22,7 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { PlusCircle, LogOut, Pencil, Trash2, Download, TrendingUp, TrendingDown, BarChart2, CheckCircle, Users, Box, Receipt, ArrowLeftRight, TableIcon, ChevronDown, ShieldCheck, HardHat, Handshake } from "lucide-react";
+import { PlusCircle, LogOut, Pencil, Trash2, Download, TrendingUp, TrendingDown, BarChart2, CheckCircle, Users, Box, Receipt, ArrowLeftRight, TableIcon, ChevronDown, ShieldCheck, HardHat, Handshake, Eye, EyeOff } from "lucide-react";
 
 // ── Оруулсан хэрэглэгчийг харуулах туслах функцууд ──────────────────────────
 // owner талбарыг backend зөвхөн Level 1, 2 (admin, manager)-д илгээдэг.
@@ -79,6 +79,7 @@ export default function DashboardPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [txSummary, setTxSummary] = useState<{ totalIncome: number; totalExpense: number } | null>(null);
+  const [txBlurred, setTxBlurred] = useState(false);
 
   // Хэрэглэгчээр шүүх — эхлээд owner, дараа нь статус, эцэст нь огнооны
   // хязгаараар шүүнэ.
@@ -517,8 +518,16 @@ export default function DashboardPage() {
             )}
             {txSummary && (
               <div className="mb-6">
-                <h2 className="text-sm font-medium text-muted-foreground mb-2">{t.transactions.pageTitle}</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <h2 className="text-sm font-medium text-muted-foreground">{t.transactions.pageTitle}</h2>
+                  <button
+                    onClick={() => setTxBlurred(v => !v)}
+                    title={txBlurred ? t.dashboard.unblurSection : t.dashboard.blurSection}
+                    className="text-muted-foreground hover:text-foreground">
+                    {txBlurred ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+                <div className={`grid grid-cols-1 sm:grid-cols-3 gap-4 ${txBlurred ? "section-blurred" : ""}`}>
                 <div className="glass-card glass-card-positive px-5 py-4">
                   <div className="relative flex items-start justify-between">
                     <p className="text-sm text-muted-foreground">{t.transactions.statIncome}</p>

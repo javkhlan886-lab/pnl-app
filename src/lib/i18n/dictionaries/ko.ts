@@ -50,6 +50,8 @@ export const ko: Dictionary = {
     statProjectExpenseSub: "P&L 보고서 기준",
     statSalary: "급여 & 보험",
     statSalarySub: "직원 {count}명",
+    blurSection: "이 섹션 흐리게",
+    unblurSection: "흐림 해제",
     statOffice: "사무실 비용",
     statOther: "기타 비용",
     approvedLabel: "승인됨",

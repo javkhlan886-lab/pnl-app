@@ -50,6 +50,8 @@ export const en: Dictionary = {
     statProjectExpenseSub: "From P&L reports",
     statSalary: "Payroll & insurance",
     statSalarySub: "{count} employees",
+    blurSection: "Blur this section",
+    unblurSection: "Unblur",
     statOffice: "Office expenses",
     statOther: "Other expenses",
     approvedLabel: "Approved",

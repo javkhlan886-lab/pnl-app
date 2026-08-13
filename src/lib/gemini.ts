@@ -188,13 +188,14 @@ export interface SystemInstructionInput {
   /** Хэрэглэгчийн одоо харж байгаа дэлгэц (шүүлтүүрийн дараах дүн гэх мэт) */
   pageContext?: AiPageContext | null;
   /** UI дээр сонгосон хэл — хариултын хэлийг үүгээр тодорхойлно (анхны утга mn). */
-  locale?: "mn" | "en" | "ko";
+  locale?: "mn" | "en" | "ko" | "zh";
 }
 
-const RESPONSE_LANGUAGE_INSTRUCTION: Record<"mn" | "en" | "ko", string> = {
+const RESPONSE_LANGUAGE_INSTRUCTION: Record<"mn" | "en" | "ko" | "zh", string> = {
   mn: "- Үргэлж монгол хэлээр, тодорхой бөгөөд хэрэгцээтэй хариул.",
   en: "- Always answer in English, clearly and concisely.",
   ko: "- 항상 한국어로 명확하고 간결하게 답변하세요.",
+  zh: "- 请始终使用简体中文清晰简洁地回答。",
 };
 
 // ─── Системийн заавар ───────────────────────────────────────────────────────
