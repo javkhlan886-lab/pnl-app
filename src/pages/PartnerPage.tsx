@@ -55,10 +55,10 @@ export default function PartnerPage() {
 
   const NAV_ITEMS = [
     { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
-    { path: "/employees", label: t.common.navEmployees, icon: <Users className="w-4 h-4" /> },
-    { path: "/assets", label: t.common.navAssets, icon: <Box className="w-4 h-4" /> },
     { path: "/products", label: t.common.navProducts, icon: <Package className="w-4 h-4" /> },
     { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
+    { path: "/employees", label: t.common.navEmployees, icon: <Users className="w-4 h-4" /> },
+    { path: "/assets", label: t.common.navAssets, icon: <Box className="w-4 h-4" /> },
     { path: "/expenses", label: t.common.navExpenses, icon: <Receipt className="w-4 h-4" /> },
     { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
     { path: "/workforce", label: t.common.navWorkforce, icon: <HardHat className="w-4 h-4" /> },

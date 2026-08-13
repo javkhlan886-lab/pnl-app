@@ -68,10 +68,10 @@ export default function ProductPage() {
 
   const NAV_ITEMS = [
     { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
-    { path: "/employees", label: t.common.navEmployees, icon: <Users className="w-4 h-4" /> },
-    { path: "/assets", label: t.common.navAssets, icon: <Box className="w-4 h-4" /> },
     { path: "/products", label: t.common.navProducts, icon: <Package className="w-4 h-4" /> },
     { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
+    { path: "/employees", label: t.common.navEmployees, icon: <Users className="w-4 h-4" /> },
+    { path: "/assets", label: t.common.navAssets, icon: <Box className="w-4 h-4" /> },
     { path: "/expenses", label: t.common.navExpenses, icon: <Receipt className="w-4 h-4" /> },
     { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
     { path: "/workforce", label: t.common.navWorkforce, icon: <HardHat className="w-4 h-4" /> },
@@ -108,9 +108,11 @@ export default function ProductPage() {
     return true;
   });
 
-  const totalValue = products.reduce((s, p) => s + p.price * p.quantity, 0);
-  const totalIssued = products.reduce((s, p) => s + p.issuedQty, 0);
-  const totalRemaining = products.reduce((s, p) => s + p.remainingQty, 0);
+  const activeProducts = products.filter(p => p.status === "active");
+  const inactiveCount = products.length - activeProducts.length;
+  const totalValue = activeProducts.reduce((s, p) => s + p.price * p.quantity, 0);
+  const totalIssued = activeProducts.reduce((s, p) => s + p.issuedQty, 0);
+  const totalRemaining = activeProducts.reduce((s, p) => s + p.remainingQty, 0);
 
   const openCreate = () => {
     setForm({ ...EMPTY }); setEditing(null);
@@ -226,10 +228,10 @@ export default function ProductPage() {
       </nav>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
           <div className="glass-card px-4 py-3">
             <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotal}</p>
-            <p className="relative text-xl font-semibold stat-number">{products.length}</p>
+            <p className="relative text-xl font-semibold stat-number">{activeProducts.length}</p>
           </div>
           <div className="glass-card glass-card-positive px-4 py-3">
             <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotalValue}</p>
@@ -244,6 +246,14 @@ export default function ProductPage() {
             <p className="relative text-xl font-semibold text-positive stat-number">{Math.round(totalRemaining).toLocaleString("mn-MN")}</p>
           </div>
         </div>
+
+        {inactiveCount > 0 && (
+          <div className="glass-card px-4 py-2.5 mb-3 w-fit flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-muted-foreground/50" />
+            <p className="text-xs text-muted-foreground">{t.products.statInactive}</p>
+            <p className="text-sm font-semibold text-muted-foreground stat-number">{inactiveCount}</p>
+          </div>
+        )}
 
         {/* Search + category filter */}
         <div className="flex items-center gap-2 mb-4 flex-wrap">
@@ -280,17 +290,17 @@ export default function ProductPage() {
           <div className="glass-card overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="border-border/50">
-                  <TableHead className="w-10">{t.products.colIndex}</TableHead>
-                  <TableHead>{t.products.colName}</TableHead>
-                  <TableHead>{t.products.colCategory}</TableHead>
-                  <TableHead>{t.products.colUnit}</TableHead>
-                  <TableHead className="text-right">{t.products.colQuantity}</TableHead>
-                  <TableHead className="text-right">{t.products.colPrice}</TableHead>
-                  <TableHead className="text-right">{t.products.colIssuedQty}</TableHead>
-                  <TableHead className="text-right">{t.products.colRemainingQty}</TableHead>
-                  <TableHead>{t.products.colStatus}</TableHead>
-                  <TableHead className="text-right">{t.products.colActions}</TableHead>
+                <TableRow className="border-border/50 bg-secondary/40 hover:bg-secondary/40">
+                  <TableHead className="w-10 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colIndex}</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colName}</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colCategory}</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colUnit}</TableHead>
+                  <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colQuantity}</TableHead>
+                  <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colPrice}</TableHead>
+                  <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colIssuedQty}</TableHead>
+                  <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colRemainingQty}</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colStatus}</TableHead>
+                  <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colActions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
