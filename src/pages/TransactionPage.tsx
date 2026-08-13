@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Combobox } from "@/components/ui/combobox";
 import {
   LogOut, ChevronLeft, BarChart2, TableIcon, Upload, Download, Search,
   FileText, TrendingUp, TrendingDown, X, Trash2, Plus, Users, Box, Receipt,
@@ -95,6 +96,8 @@ export default function TransactionPage() {
   const PAGE_SIZE = 10;
   const [summary, setSummary] = useState({ totalIncome: 0, totalExpense: 0, incomeCount: 0, expenseCount: 0 });
 
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
   const [showModal, setShowModal] = useState(false);
   const [editingTxId, setEditingTxId] = useState<string | null>(null);
   const [newTx, setNewTx] = useState<NewTx>(EMPTY_TX);
@@ -162,10 +165,30 @@ export default function TransactionPage() {
 
   useEffect(() => { setPage(1); }, [typeFilter, dateFrom, dateTo, debouncedSearch]);
 
+  // Хуудас/шүүлтүүр солиход харагдахгүй болсон мөрүүд сонгогдсон хэвээр
+  // үлдэж, "сонгосон нийлбэр" ойлгомжгүй болохоос сэргийлж цэвэрлэнэ.
+  useEffect(() => { setSelected(new Set()); }, [page, typeFilter, dateFrom, dateTo, debouncedSearch]);
+
   const totalInc = summary.totalIncome;
   const totalExp = summary.totalExpense;
   const netAmount = totalInc - totalExp;
   const filtered = txs;
+
+  const toggleOne = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const toggleAll = () => {
+    setSelected(prev =>
+      filtered.length > 0 && filtered.every(tx => prev.has(tx._id!)) ? new Set() : new Set(filtered.map(tx => tx._id!))
+    );
+  };
+  const selectedTxs = filtered.filter(tx => selected.has(tx._id!));
+  const selectedNet = selectedTxs.reduce((s, tx) => s + (tx.type === "income" ? tx.amount : -tx.amount), 0);
+  const allSelected = filtered.length > 0 && filtered.every(tx => selected.has(tx._id!));
 
   // ── AI ассистентэд одоо дэлгэц дээр харагдаж байгаа тоог дамжуулна ──
   // Энэ context нь зөвхөн AI загварт зориулагдсан тул хэрэглэгчийн сонгосон
@@ -452,16 +475,12 @@ export default function TransactionPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">{t.transactions.categoryLabel}</Label>
-                  <Input
-                    list="tx-category-options"
+                  <Combobox
                     value={newTx.category}
-                    onChange={e => setNewTx(p => ({ ...p, category: e.target.value }))}
+                    onChange={(v) => setNewTx(p => ({ ...p, category: v }))}
+                    options={categories}
                     placeholder={t.transactions.categoryAddNewPlaceholder}
-                    className="h-9 text-sm"
                   />
-                  <datalist id="tx-category-options">
-                    {categories.map(c => <option key={c} value={c} />)}
-                  </datalist>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">{t.transactions.contractNumberLabel}</Label>
@@ -630,10 +649,27 @@ export default function TransactionPage() {
                 </button>
               </div>
             ) : (
+              <>
+              {selected.size > 0 && (
+                <div className="mb-3 flex items-center gap-3 bg-positive/10 border border-positive/25 rounded-lg px-4 py-2.5 flex-wrap">
+                  <span className="text-sm text-positive font-medium">
+                    {format(t.transactions.selectedCount, { count: String(selected.size) })}
+                  </span>
+                  <span className="text-sm font-medium stat-number">
+                    {t.transactions.selectedTotal}: {fmtSigned(selectedNet)}
+                  </span>
+                  <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground ml-auto">
+                    {t.transactions.deselect}
+                  </button>
+                </div>
+              )}
               <div className="glass-card overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border/50">
+                      <TableHead className="w-[36px]">
+                        <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 cursor-pointer accent-positive" />
+                      </TableHead>
                       <TableHead className="w-[90px]">{t.transactions.colDate}</TableHead>
                       <TableHead>{t.transactions.colDescription}</TableHead>
                       <TableHead className="w-[100px]">{t.transactions.colContract}</TableHead>
@@ -646,6 +682,9 @@ export default function TransactionPage() {
                   <TableBody>
                     {filtered.map(tx => (
                       <TableRow key={tx._id} className="border-border/50 hover:bg-secondary/30">
+                        <TableCell>
+                          <input type="checkbox" checked={selected.has(tx._id!)} onChange={() => toggleOne(tx._id!)} className="w-4 h-4 cursor-pointer accent-positive" />
+                        </TableCell>
                         <TableCell className="text-muted-foreground text-xs whitespace-nowrap">{fmtDate(tx.date)}</TableCell>
                         <TableCell className="text-sm max-w-0 overflow-hidden">
                           <div className="truncate">{tx.description}</div>
@@ -736,6 +775,7 @@ export default function TransactionPage() {
                   )}
                 </div>
               </div>
+              </>
             )}
           </>
         )}

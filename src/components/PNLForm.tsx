@@ -96,7 +96,7 @@ interface RowSectionProps {
   rows: Row[];
   currency: string;
   total: number;
-  onUpdate: (i: number, field: keyof Row | "unitPrice" | "quantity", val: string | number) => void;
+  onUpdate: (i: number, field: keyof Row | "unitPrice" | "quantity", val: string | number | boolean) => void;
   onAdd: () => void;
   onDelete: (i: number) => void;
   t: Dictionary;
@@ -114,16 +114,17 @@ const RowSection = ({ type, label, rows, currency, total, onUpdate, onAdd, onDel
     <div className="rounded-lg border overflow-x-auto">
       <div className="min-w-[640px]">
       <div className="grid grid-cols-12 gap-0 bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground border-b">
-        <div className="col-span-4">{t.pnlForm.colName}</div>
-        <div className="col-span-3">{t.pnlForm.colNote}</div>
+        <div className="col-span-3">{t.pnlForm.colName}</div>
+        <div className="col-span-2">{t.pnlForm.colNote}</div>
+        <div className="col-span-1 text-center">{t.pnlForm.colVat}</div>
         <div className="col-span-2 text-right">{format(t.pnlForm.colUnitPrice, { currency })}</div>
         <div className="col-span-1 text-right">{t.pnlForm.colQuantity}</div>
-        <div className="col-span-1 text-right">{format(t.pnlForm.colTotal, { currency })}</div>
+        <div className="col-span-2 text-right">{format(t.pnlForm.colTotal, { currency })}</div>
         <div className="col-span-1"></div>
       </div>
       {rows.map((r, i) => (
         <div key={i} className="grid grid-cols-12 gap-0 px-3 py-1.5 border-b last:border-0 hover:bg-muted/20 items-center">
-          <div className="col-span-4 pr-2">
+          <div className="col-span-3 pr-2">
             <input
               value={r.name}
               placeholder={t.pnlForm.namePlaceholder}
@@ -132,13 +133,22 @@ const RowSection = ({ type, label, rows, currency, total, onUpdate, onAdd, onDel
               style={{ width: "100%", background: "transparent", border: "none", outline: "none", fontSize: "13px", color: "inherit" }}
             />
           </div>
-          <div className="col-span-3 pr-2">
+          <div className="col-span-2 pr-2">
             <input
               value={r.note}
               placeholder={t.pnlForm.notePlaceholder}
               onChange={(e) => onUpdate(i, "note", e.target.value)}
               onFocus={(e) => e.currentTarget.select()}
               style={{ width: "100%", background: "transparent", border: "none", outline: "none", fontSize: "13px", color: "inherit", opacity: 0.6 }}
+            />
+          </div>
+          <div className="col-span-1 flex justify-center">
+            <input
+              type="checkbox"
+              checked={Boolean(r.hasVat)}
+              onChange={(e) => onUpdate(i, "hasVat", e.target.checked)}
+              className="w-4 h-4 cursor-pointer accent-positive"
+              title={t.pnlForm.vatCheckboxTitle}
             />
           </div>
           <div className="col-span-2">
@@ -148,7 +158,7 @@ const RowSection = ({ type, label, rows, currency, total, onUpdate, onAdd, onDel
             <input type="number" min={1} value={r.quantity || 1} onChange={(e) => onUpdate(i, "quantity", Math.max(1, Number(e.target.value) || 1))}
               style={{ width: "100%", background: "transparent", border: "none", outline: "none", fontSize: "13px", textAlign: "right" }} />
           </div>
-          <div className="col-span-1">
+          <div className="col-span-2">
             <AmountInput value={Number(r.amount || 0)} onChange={(v) => onUpdate(i, "amount", v)} />
           </div>
           <div className="col-span-1 flex justify-end">
@@ -214,7 +224,7 @@ export default function PNLForm({ initial, id }: Props) {
   const net = totalIncome - totalExpense;
   const margin = totalIncome > 0 ? ((net / totalIncome) * 100).toFixed(1) : "0.0";
 
-  const updateRow = useCallback((type: "incomeRows" | "expenseRows", i: number, field: keyof Row | "unitPrice" | "quantity", val: string | number) => {
+  const updateRow = useCallback((type: "incomeRows" | "expenseRows", i: number, field: keyof Row | "unitPrice" | "quantity", val: string | number | boolean) => {
     setData((prev) => {
       const rows = [...prev[type]];
       const row = { ...rows[i] } as any;
@@ -241,7 +251,7 @@ export default function PNLForm({ initial, id }: Props) {
   }, []);
 
   const addRow = useCallback((type: "incomeRows" | "expenseRows") => {
-    setData((prev) => ({ ...prev, [type]: [...prev[type], { name: "", note: "", unitPrice: 0, quantity: 1, amount: 0 }] }));
+    setData((prev) => ({ ...prev, [type]: [...prev[type], { name: "", note: "", unitPrice: 0, quantity: 1, amount: 0, hasVat: false }] }));
   }, []);
 
   const delRow = useCallback((type: "incomeRows" | "expenseRows", i: number) => {

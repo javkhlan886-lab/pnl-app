@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CompanyLogo } from "@/components/CompanyLogo";
-import { getAssets, createAsset, updateAsset, disposeAsset, calcDepreciation } from "@/lib/asset";
+import { getAssets, createAsset, updateAsset, disposeAsset } from "@/lib/asset";
 import { getEmployees } from "@/lib/employee";
 import { toDateInputValue } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, Box, BarChart2, Users, Receipt, ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake } from "lucide-react";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
+import { Combobox } from "@/components/ui/combobox";
 
 // Чөлөөт текст утга — backend-д хадгалагддаг тул хэлээр орчуулахгүй
 // (өгөгдлийн бодит утга өөрчлөгдөх эрсдэлтэй).
@@ -70,7 +71,6 @@ export default function AssetPage() {
   const [catFilter, setCatFilter] = useState("");
   const [unitPriceDisplay, setUnitPriceDisplay] = useState("");
   const [quantityInput, setQuantityInput] = useState<number>(1);
-  const [residualDisplay, setResidualDisplay] = useState("");
 
   const NAV_ITEMS = [
     { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
@@ -98,21 +98,15 @@ export default function AssetPage() {
   const filtered = catFilter ? assets.filter(a => a.category === catFilter) : assets;
   const activeAssets = assets.filter(a => a.status === "active");
   const totalValue = activeAssets.reduce((s, a) => s + a.price, 0);
-  const totalAccumDep = activeAssets.reduce((s, a) => {
-    if (!a.purchaseDate) return s;
-    return s + calcDepreciation(a.price, a.residualValue, a.lifespan, a.depMethod, a.purchaseDate).accumulated;
-  }, 0);
-  const totalCurrentValue = totalValue - totalAccumDep;
 
   const openCreate = () => {
     setForm({ ...EMPTY }); setEditing(null);
-    setUnitPriceDisplay(""); setQuantityInput(1); setResidualDisplay(""); setOpen(true);
+    setUnitPriceDisplay(""); setQuantityInput(1); setOpen(true);
   };
   const openEdit = (a: any) => {
     setForm({ ...a, purchaseDate: toDateInputValue(a.purchaseDate) }); setEditing(a._id);
     setUnitPriceDisplay(a.unitPrice ? Number(a.unitPrice).toLocaleString("mn-MN") : "");
     setQuantityInput(a.quantity || 1);
-    setResidualDisplay(a.residualValue === 0 ? "" : a.residualValue.toLocaleString("mn-MN"));
     setOpen(true);
   };
 
@@ -148,10 +142,6 @@ export default function AssetPage() {
       alert(err.response?.data?.error || t.assets.saveError);
     }
   };
-
-  const dep = form.price > 0 && form.purchaseDate
-    ? calcDepreciation(form.price, form.residualValue, form.lifespan, form.depMethod, form.purchaseDate)
-    : null;
 
   const handleExport = async () => {
     setExporting(true);
@@ -226,7 +216,7 @@ export default function AssetPage() {
       </nav>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 gap-3 mb-6 max-w-md">
           <div className="glass-card px-4 py-3">
             <p className="relative text-xs text-muted-foreground mb-1">{t.assets.statTotal}</p>
             <p className="relative text-xl font-semibold stat-number">{assets.length}</p>
@@ -238,16 +228,6 @@ export default function AssetPage() {
             <p className="relative text-xs text-muted-foreground mb-1">{t.assets.statInitialValue}</p>
             <p className="relative text-xl font-semibold text-info stat-number">{fmt(totalValue)}</p>
             <p className="relative text-xs text-muted-foreground mt-1">{t.assets.total}</p>
-          </div>
-          <div className="glass-card glass-card-negative px-4 py-3">
-            <p className="relative text-xs text-muted-foreground mb-1">{t.assets.statAccumDep}</p>
-            <p className="relative text-xl font-semibold text-negative stat-number">{fmt(totalAccumDep)}</p>
-            <p className="relative text-xs text-muted-foreground mt-1">{t.assets.total}</p>
-          </div>
-          <div className="glass-card glass-card-positive px-4 py-3">
-            <p className="relative text-xs text-muted-foreground mb-1">{t.assets.statBookValue}</p>
-            <p className="relative text-xl font-semibold text-positive stat-number">{fmt(totalCurrentValue)}</p>
-            <p className="relative text-xs text-muted-foreground mt-1">{t.assets.asOfToday}</p>
           </div>
         </div>
 
@@ -286,9 +266,6 @@ export default function AssetPage() {
                   <TableHead className="text-right">{t.assets.colUnitPrice}</TableHead>
                   <TableHead className="text-right">{t.assets.colQuantity}</TableHead>
                   <TableHead className="text-right">{t.assets.colTotalPrice}</TableHead>
-                  <TableHead className="text-right">{t.assets.colMonthlyDep}</TableHead>
-                  <TableHead className="text-right">{t.assets.colBookValue}</TableHead>
-                  <TableHead>{t.assets.colDepPct}</TableHead>
                   <TableHead>{t.assets.colAssignee}</TableHead>
                   <TableHead>{t.assets.colStatus}</TableHead>
                   <TableHead className="text-right">{t.assets.colActions}</TableHead>
@@ -296,9 +273,6 @@ export default function AssetPage() {
               </TableHeader>
               <TableBody>
                 {filtered.map(a => {
-                  const d = a.purchaseDate
-                    ? calcDepreciation(a.price, a.residualValue, a.lifespan, a.depMethod, a.purchaseDate)
-                    : null;
                   return (
                     <TableRow key={a._id} className="border-border/50 hover:bg-secondary/30">
                       <TableCell>
@@ -309,18 +283,6 @@ export default function AssetPage() {
                       <TableCell className="text-right stat-number">{fmt(a.unitPrice || 0)}</TableCell>
                       <TableCell className="text-right stat-number">{a.quantity || 1}</TableCell>
                       <TableCell className="text-right stat-number">{fmt(a.price)}</TableCell>
-                      <TableCell className="text-right text-negative stat-number">{d ? fmt(d.monthly) : "—"}</TableCell>
-                      <TableCell className="text-right text-positive font-medium stat-number">{d ? fmt(d.currentValue) : "—"}</TableCell>
-                      <TableCell>
-                        {d ? (
-                          <div className="flex items-center gap-2 min-w-20">
-                            <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
-                              <div className="h-full bg-info rounded-full" style={{ width: `${d.depreciatedPct}%` }} />
-                            </div>
-                            <span className="text-xs text-muted-foreground w-8">{d.depreciatedPct}%</span>
-                          </div>
-                        ) : "—"}
-                      </TableCell>
                       <TableCell className="text-muted-foreground text-sm">{a.assignedTo || "—"}</TableCell>
                       <TableCell>
                         <Badge className={statusCls[a.status]}>{statusLabel[a.status]}</Badge>
@@ -378,13 +340,11 @@ export default function AssetPage() {
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.assets.category}</label>
-                <input list="asset-category-options"
-                  className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-                  value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                <Combobox
+                  value={form.category}
+                  onChange={(v) => setForm(f => ({ ...f, category: v }))}
+                  options={assetCategories}
                   placeholder={t.transactions.categoryAddNewPlaceholder} />
-                <datalist id="asset-category-options">
-                  {assetCategories.map(c => <option key={c} value={c} />)}
-                </datalist>
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.assets.purchaseDate}</label>
@@ -426,31 +386,6 @@ export default function AssetPage() {
                   value={form.price ? form.price.toLocaleString("mn-MN") : ""} placeholder="0" />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">{t.assets.residualValue}</label>
-                <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
-                  inputMode="numeric" value={residualDisplay}
-                  onChange={e => {
-                    const raw = e.target.value.replace(/[^0-9]/g, "");
-                    const num = Number(raw) || 0;
-                    setResidualDisplay(num === 0 ? "" : num.toLocaleString("mn-MN"));
-                    setForm(f => ({ ...f, residualValue: num }));
-                  }} placeholder="0" />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">{t.assets.lifespan}</label>
-                <input type="number" min={1} max={50}
-                  className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-                  value={form.lifespan} onChange={e => setForm(f => ({ ...f, lifespan: Number(e.target.value) }))} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">{t.assets.depMethod}</label>
-                <select className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none"
-                  value={form.depMethod} onChange={e => setForm(f => ({ ...f, depMethod: e.target.value as any }))}>
-                  <option value="straight">{t.assets.methodStraight}</option>
-                  <option value="declining">{t.assets.methodDeclining}</option>
-                </select>
-              </div>
-              <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.assets.assignedEmployee}</label>
                 <select className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none"
                   value={form.assignedTo} onChange={e => setForm(f => ({ ...f, assignedTo: e.target.value }))}>
@@ -465,29 +400,6 @@ export default function AssetPage() {
                   placeholder={t.assets.locationPlaceholder} />
               </div>
             </div>
-            {dep && (
-              <div className="bg-secondary/50 rounded-lg px-4 py-3 text-sm">
-                <p className="text-xs font-medium text-muted-foreground mb-2">{t.assets.depCalcTitle}</p>
-                <div className="flex justify-between py-1">
-                  <span className="text-muted-foreground">{t.assets.monthlyDep}</span>
-                  <span className="text-negative blur-number">{fmt(dep.monthly)}</span>
-                </div>
-                <div className="flex justify-between py-1">
-                  <span className="text-muted-foreground">{t.assets.yearlyDep}</span>
-                  <span className="text-negative blur-number">{fmt(dep.yearly)}</span>
-                </div>
-                <div className="flex justify-between py-1 font-medium">
-                  <span>{t.assets.currentBookValue}</span>
-                  <span className="text-positive blur-number">{fmt(dep.currentValue)}</span>
-                </div>
-                <div className="flex items-center gap-2 mt-2">
-                  <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
-                    <div className="h-full bg-info rounded-full" style={{ width: `${dep.depreciatedPct}%` }} />
-                  </div>
-                  <span className="text-xs text-muted-foreground">{format(t.assets.depreciatedPct, { pct: String(dep.depreciatedPct) })}</span>
-                </div>
-              </div>
-            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>{t.common.cancel}</Button>

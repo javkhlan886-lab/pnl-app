@@ -226,16 +226,22 @@ export default function DashboardPage() {
 
   const computedSummary = useMemo(() => {
     if (records.length === 0) return null;
-    const pnlIncome = records.reduce((sum, record) => sum + totalIncome(record), 0);
-    const totalOperatingExpense = records.reduce((sum, record) => sum + totalExpenseOf(record), 0);
+    // Үндсэн дүн зөвхөн идэвхтэй тайлангаас — backend-ийн /summary-тэй ижил
+    // логик (хүлээгдэж буй, дуусан төслүүд тус бүрдээ доор задарна).
+    const active = records.filter((r) => (r.status || "active") === "active");
+    const pnlIncome = active.reduce((sum, record) => sum + totalIncome(record), 0);
+    const totalOperatingExpense = active.reduce((sum, record) => sum + totalExpenseOf(record), 0);
     const net = pnlIncome - totalOperatingExpense;
     const margin = pnlIncome > 0 ? Number(((net / pnlIncome) * 100).toFixed(1)) : 0;
     const completed = records.filter((r) => r.status === "closed");
     const completedIncome = completed.reduce((sum, record) => sum + totalIncome(record), 0);
     const completedExpense = completed.reduce((sum, record) => sum + totalExpenseOf(record), 0);
+    const pending = records.filter((r) => r.status === "pending");
+    const pendingIncome = pending.reduce((sum, record) => sum + totalIncome(record), 0);
+    const pendingExpense = pending.reduce((sum, record) => sum + totalExpenseOf(record), 0);
     return {
       pnlIncome,
-      pnlCount: records.length,
+      pnlCount: active.length,
       totalOperatingExpense,
       netProfit: net,
       margin,
@@ -243,6 +249,10 @@ export default function DashboardPage() {
       completedExpense,
       completedProfit: completedIncome - completedExpense,
       completedCount: completed.length,
+      pendingIncome,
+      pendingExpense,
+      pendingProfit: pendingIncome - pendingExpense,
+      pendingCount: pending.length,
     };
   }, [records]);
 
@@ -474,6 +484,34 @@ export default function DashboardPage() {
                     <span className={`${displaySummary.completedProfit >= 0 ? "icon-badge-positive" : "icon-badge-negative"} w-9 h-9`}><TrendingUp className="w-4 h-4" /></span>
                   </div>
                   <p className="relative stat-number text-2xl font-bold mt-3">{fmt(displaySummary.completedProfit, "₮")}</p>
+                </div>
+              </div>
+            )}
+            {displaySummary.pendingCount > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="glass-card px-5 py-4">
+                  <div className="relative flex items-start justify-between">
+                    <p className="text-sm text-muted-foreground">{t.dashboard.statPendingIncome}</p>
+                    <span className="w-9 h-9 rounded-full flex items-center justify-center bg-amber-400/15 text-amber-400"><CheckCircle className="w-4 h-4" /></span>
+                  </div>
+                  <p className="relative stat-number text-2xl font-bold mt-3">{fmt(displaySummary.pendingIncome, "₮")}</p>
+                  <p className="relative text-xs text-muted-foreground mt-1">
+                    {format(t.dashboard.statPendingSub, { count: String(displaySummary.pendingCount) })}
+                  </p>
+                </div>
+                <div className="glass-card px-5 py-4">
+                  <div className="relative flex items-start justify-between">
+                    <p className="text-sm text-muted-foreground">{t.dashboard.statPendingExpense}</p>
+                    <span className="w-9 h-9 rounded-full flex items-center justify-center bg-amber-400/15 text-amber-400"><TrendingDown className="w-4 h-4" /></span>
+                  </div>
+                  <p className="relative stat-number text-2xl font-bold mt-3">{fmt(displaySummary.pendingExpense, "₮")}</p>
+                </div>
+                <div className="glass-card px-5 py-4">
+                  <div className="relative flex items-start justify-between">
+                    <p className="text-sm text-muted-foreground">{t.dashboard.statPendingProfit}</p>
+                    <span className="w-9 h-9 rounded-full flex items-center justify-center bg-amber-400/15 text-amber-400"><TrendingUp className="w-4 h-4" /></span>
+                  </div>
+                  <p className="relative stat-number text-2xl font-bold mt-3">{fmt(displaySummary.pendingProfit, "₮")}</p>
                 </div>
               </div>
             )}

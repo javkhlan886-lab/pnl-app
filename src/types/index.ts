@@ -4,6 +4,7 @@ export interface Row {
   unitPrice?: number;
   quantity?: number;
   amount: number;
+  hasVat?: boolean;
 }
 
 // Тайланг оруулсан хэрэглэгч — backend зөвхөн Level 1, 2 (admin, manager)-д илгээнэ.
