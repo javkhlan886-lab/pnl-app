@@ -221,7 +221,7 @@ export default function EmployeePage() {
       </nav>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="glass-card glass-card-positive px-5 py-4">
             <p className="relative text-sm text-muted-foreground mb-1">{t.employees.statTotalEmployees}</p>
             <p className="relative stat-number text-2xl font-bold">{employees.length}</p>

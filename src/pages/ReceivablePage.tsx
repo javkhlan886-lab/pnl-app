@@ -229,7 +229,7 @@ export default function ReceivablePage() {
       </nav>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-6">
           <div className="glass-card glass-card-positive px-4 py-3">
             <p className="relative text-xs text-muted-foreground mb-1">{t.receivables.statTotalReceivable}</p>
             <p className="relative text-xl font-semibold text-positive stat-number">{fmt(totalReceivable)}</p>

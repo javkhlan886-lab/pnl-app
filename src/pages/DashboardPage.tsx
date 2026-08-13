@@ -418,41 +418,33 @@ export default function DashboardPage() {
               <span className="w-1.5 h-1.5 rounded-full bg-positive/60" />
               {t.dashboard.mainSectionTitle}
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-              <div className={`glass-card glass-card-positive px-3.5 py-3 ${selectedSummary ? "ring-1 ring-positive/50" : ""}`}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+              <div className="glass-card glass-card-positive px-3.5 py-3">
                 <div className="relative flex items-center justify-between mb-1.5">
-                  <p className="text-xs text-muted-foreground truncate">{selectedSummary ? t.dashboard.selectedLabel : t.dashboard.statIncome}</p>
+                  <p className="text-xs text-muted-foreground truncate">{t.dashboard.statIncome}</p>
                   <span className="icon-badge-positive w-7 h-7 shrink-0"><BarChart2 className="w-3.5 h-3.5" /></span>
                 </div>
-                <p className="relative stat-number text-lg font-bold leading-tight">{fmt(selectedSummary ? selectedSummary.income : displaySummary.pnlIncome, "₮")}</p>
+                <p className="relative stat-number text-lg font-bold leading-tight">{fmt(displaySummary.pnlIncome, "₮")}</p>
                 <p className="relative text-[11px] text-muted-foreground mt-0.5">
-                  {selectedSummary
-                    ? format(t.dashboard.selectedCount, { count: String(selected.size) })
-                    : format(t.dashboard.statIncomeCount, { count: String(displaySummary.pnlCount) })}
+                  {format(t.dashboard.statIncomeCount, { count: String(displaySummary.pnlCount) })}
                 </p>
               </div>
-              <div className={`glass-card glass-card-negative px-3.5 py-3 ${selectedSummary ? "ring-1 ring-positive/50" : ""}`}>
+              <div className="glass-card glass-card-negative px-3.5 py-3">
                 <div className="relative flex items-center justify-between mb-1.5">
-                  <p className="text-xs text-muted-foreground truncate">{selectedSummary ? t.dashboard.selectedLabel : t.dashboard.statOpEx}</p>
+                  <p className="text-xs text-muted-foreground truncate">{t.dashboard.statOpEx}</p>
                   <span className="icon-badge-negative w-7 h-7 shrink-0"><TrendingDown className="w-3.5 h-3.5" /></span>
                 </div>
-                <p className="relative stat-number text-lg font-bold leading-tight">{fmt(selectedSummary ? selectedSummary.expense : displaySummary.totalOperatingExpense, "₮")}</p>
-                <p className="relative text-[11px] text-muted-foreground mt-0.5">{selectedSummary ? t.dashboard.selectedTotalsHint : t.dashboard.statOpExSub}</p>
+                <p className="relative stat-number text-lg font-bold leading-tight">{fmt(displaySummary.totalOperatingExpense, "₮")}</p>
+                <p className="relative text-[11px] text-muted-foreground mt-0.5">{t.dashboard.statOpExSub}</p>
               </div>
-              <div className={`glass-card ${(selectedSummary ? selectedSummary.net : displaySummary.netProfit) >= 0 ? "glass-card-positive" : "glass-card-negative"} px-3.5 py-3 ${selectedSummary ? "ring-1 ring-positive/50" : ""}`}>
+              <div className={`glass-card ${displaySummary.netProfit >= 0 ? "glass-card-positive" : "glass-card-negative"} px-3.5 py-3`}>
                 <div className="relative flex items-center justify-between mb-1.5">
-                  <p className="text-xs text-muted-foreground truncate">{selectedSummary ? t.dashboard.selectedLabel : t.dashboard.statNetProfit}</p>
-                  <span className={`${(selectedSummary ? selectedSummary.net : displaySummary.netProfit) >= 0 ? "icon-badge-positive" : "icon-badge-negative"} w-7 h-7 shrink-0`}><TrendingUp className="w-3.5 h-3.5" /></span>
+                  <p className="text-xs text-muted-foreground truncate">{t.dashboard.statNetProfit}</p>
+                  <span className={`${displaySummary.netProfit >= 0 ? "icon-badge-positive" : "icon-badge-negative"} w-7 h-7 shrink-0`}><TrendingUp className="w-3.5 h-3.5" /></span>
                 </div>
-                <p className="relative stat-number text-lg font-bold leading-tight blur-number">{fmt(selectedSummary ? selectedSummary.net : displaySummary.netProfit, "₮")}</p>
+                <p className="relative stat-number text-lg font-bold leading-tight blur-number">{fmt(displaySummary.netProfit, "₮")}</p>
                 <p className="relative text-[11px] text-muted-foreground mt-0.5">
-                  {selectedSummary ? (
-                    <button onClick={() => setSelected(new Set())} className="text-muted-foreground hover:text-foreground underline">
-                      {t.dashboard.deselect}
-                    </button>
-                  ) : (
-                    format(t.dashboard.statMargin, { margin: String(displaySummary.margin) })
-                  )}
+                  {format(t.dashboard.statMargin, { margin: String(displaySummary.margin) })}
                 </p>
               </div>
               {displaySummary.netPosition != null && (
@@ -473,7 +465,7 @@ export default function DashboardPage() {
                   <span className="w-1.5 h-1.5 rounded-full bg-negative/60" />
                   {t.dashboard.breakdownSectionTitle}
                 </p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-5">
                   <div className="glass-card glass-card-negative px-3.5 py-3">
                     <div className="relative flex items-center justify-between mb-1.5">
                       <p className="text-xs text-muted-foreground truncate">{t.dashboard.statProjectExpense}</p>
@@ -707,6 +699,35 @@ export default function DashboardPage() {
                 <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredNet}</p>
                 <p className={`stat-number text-lg font-semibold ${filteredSummary.net >= 0 ? "text-positive" : "text-negative"}`}>
                   {fmt(filteredSummary.net, "₮")}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {selectedSummary && (
+          <div className="glass-card px-5 py-4 mb-6 ring-1 ring-positive/40">
+            <div className="flex items-center gap-3 mb-3">
+              <p className="text-xs text-positive font-medium">
+                {format(t.dashboard.selectedCount, { count: String(selected.size) })}
+              </p>
+              <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground ml-auto">
+                {t.dashboard.deselect}
+              </button>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredIncome}</p>
+                <p className="stat-number text-lg font-semibold text-positive">{fmt(selectedSummary.income, "₮")}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredExpense}</p>
+                <p className="stat-number text-lg font-semibold text-negative">{fmt(selectedSummary.expense, "₮")}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredNet}</p>
+                <p className={`stat-number text-lg font-semibold ${selectedSummary.net >= 0 ? "text-positive" : "text-negative"}`}>
+                  {fmt(selectedSummary.net, "₮")}
                 </p>
               </div>
             </div>

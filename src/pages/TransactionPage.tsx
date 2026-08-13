@@ -567,7 +567,7 @@ export default function TransactionPage() {
 
         {tab === "range" && (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
               {[
                 { label: t.transactions.statTotalTx, val: totalCount, sub: format(t.transactions.incExpCount, { inc: String(summary.incomeCount), exp: String(summary.expenseCount) }), color: "" },
                 { label: t.transactions.statIncome, val: fmt(totalInc), sub: format(t.transactions.txCount, { count: String(summary.incomeCount) }), color: "text-positive" },

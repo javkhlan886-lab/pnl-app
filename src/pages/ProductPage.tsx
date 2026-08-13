@@ -282,7 +282,7 @@ export default function ProductPage() {
           const hasSelection = selected.size > 0;
           const cardCls = hasSelection ? "ring-1 ring-positive/50" : "";
           return (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-3">
               <div className={`glass-card px-4 py-3 ${cardCls}`}>
                 <p className="relative text-xs text-muted-foreground mb-1">{hasSelection ? t.products.selectedLabel : t.products.statTotal}</p>
                 <p className="relative text-xl font-semibold stat-number">{hasSelection ? selected.size : activeProducts.length}</p>
@@ -309,7 +309,7 @@ export default function ProductPage() {
               <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
               {t.products.finishedSectionTitle}
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
               <div className="glass-card px-4 py-3 opacity-80">
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotal}</p>
                 <p className="relative text-xl font-semibold text-muted-foreground stat-number">{finishedProducts.length}</p>
