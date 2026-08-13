@@ -21,7 +21,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, ArrowLeftRight, BarChart2, Users, Box, Receipt, Download, ShieldCheck, HardHat, Handshake } from "lucide-react";
+import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, ArrowLeftRight, BarChart2, Users, Box, Receipt, Download, ShieldCheck, HardHat, Handshake, Package } from "lucide-react";
 
 const EMPTY = {
   type: "receivable" as "receivable" | "loan",
@@ -83,6 +83,7 @@ export default function ReceivablePage() {
     { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
     { path: "/workforce", label: t.common.navWorkforce, icon: <HardHat className="w-4 h-4" /> },
     { path: "/partners", label: t.common.navPartners, icon: <Handshake className="w-4 h-4" /> },
+    { path: "/products", label: t.common.navProducts, icon: <Package className="w-4 h-4" /> },
     { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
     ...(isAdmin ? [{ path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> }] : []),
   ];

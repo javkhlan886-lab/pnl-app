@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogOut, Plus, Pencil, Trash2, ChevronLeft, BarChart2, Users, Box, Receipt, ArrowLeftRight, TableIcon, ShieldCheck, HardHat, Handshake } from "lucide-react";
+import { LogOut, Plus, Pencil, Trash2, ChevronLeft, BarChart2, Users, Box, Receipt, ArrowLeftRight, TableIcon, ShieldCheck, HardHat, Handshake, Package } from "lucide-react";
 
 interface PartnerRecord {
   _id?: string;
@@ -59,6 +59,7 @@ export default function PartnerPage() {
     { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
     { path: "/workforce", label: t.common.navWorkforce, icon: <HardHat className="w-4 h-4" /> },
     { path: "/partners", label: t.common.navPartners, icon: <Handshake className="w-4 h-4" /> },
+    { path: "/products", label: t.common.navProducts, icon: <Package className="w-4 h-4" /> },
     { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
     ...(isAdmin ? [{ path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> }] : []),
   ];

@@ -31,7 +31,7 @@ import { Combobox } from "@/components/ui/combobox";
 import {
   LogOut, ChevronLeft, BarChart2, TableIcon, Upload, Download, Search,
   FileText, TrendingUp, TrendingDown, X, Trash2, Plus, Users, Box, Receipt,
-  ArrowLeftRight, Pencil, ShieldCheck, HardHat, Handshake,
+  ArrowLeftRight, Pencil, ShieldCheck, HardHat, Handshake, Package,
 } from "lucide-react";
 
 const fmt = (n: number) => "₮" + Math.round(Math.abs(n)).toLocaleString("mn-MN");
@@ -132,6 +132,7 @@ export default function TransactionPage() {
     { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
     { path: "/workforce", label: t.common.navWorkforce, icon: <HardHat className="w-4 h-4" /> },
     { path: "/partners", label: t.common.navPartners, icon: <Handshake className="w-4 h-4" /> },
+    { path: "/products", label: t.common.navProducts, icon: <Package className="w-4 h-4" /> },
     { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
     ...(isAdmin ? [{ path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> }] : []),
   ];

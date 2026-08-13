@@ -21,7 +21,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, Receipt, BarChart2, Users, Box, ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake } from "lucide-react";
+import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, Receipt, BarChart2, Users, Box, ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake, Package } from "lucide-react";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { Combobox } from "@/components/ui/combobox";
 
@@ -71,6 +71,7 @@ export default function ExpensePage() {
     { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
     { path: "/workforce", label: t.common.navWorkforce, icon: <HardHat className="w-4 h-4" /> },
     { path: "/partners", label: t.common.navPartners, icon: <Handshake className="w-4 h-4" /> },
+    { path: "/products", label: t.common.navProducts, icon: <Package className="w-4 h-4" /> },
     { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
     ...(isAdmin ? [{ path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> }] : []),
   ];
