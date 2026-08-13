@@ -69,6 +69,8 @@ export const zh: Dictionary = {
     statPendingSub: "{count} 个项目",
     selectedCount: "已选择 {count} 份报表",
     deselect: "取消选择",
+    selectedLabel: "已选",
+    selectedTotalsHint: "已选合计显示在上方字段中",
     ownerFilterLabel: "录入人",
     noRecords: "暂无报表",
     createFirstReport: "创建新报表",

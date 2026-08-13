@@ -70,6 +70,8 @@ export const en: Dictionary = {
     statPendingSub: "{count} projects",
     selectedCount: "{count} reports selected",
     deselect: "Clear",
+    selectedLabel: "Selected",
+    selectedTotalsHint: "Selected totals are shown on the fields above",
     ownerFilterLabel: "Entered by",
     noRecords: "No reports yet",
     createFirstReport: "Create a report",

@@ -70,6 +70,8 @@ export const ko: Dictionary = {
     statPendingSub: "{count}개 프로젝트",
     selectedCount: "{count}건 선택됨",
     deselect: "선택 해제",
+    selectedLabel: "선택됨",
+    selectedTotalsHint: "선택한 합계가 위 항목에 표시됩니다",
     ownerFilterLabel: "입력자",
     noRecords: "보고서가 없습니다",
     createFirstReport: "새 보고서 만들기",

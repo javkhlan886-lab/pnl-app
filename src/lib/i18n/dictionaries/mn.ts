@@ -71,6 +71,8 @@ export const mn = {
     statPendingSub: "{count} төсөл",
     selectedCount: "{count} тайлан сонгогдсон",
     deselect: "Цуцлах",
+    selectedLabel: "Сонгосон",
+    selectedTotalsHint: "Дээрх талбаруудад сонгосон нийлбэрийг харуулж байна",
     ownerFilterLabel: "Оруулсан",
     noRecords: "Тайлан байхгүй байна",
     createFirstReport: "Шинэ тайлан үүсгэх",
