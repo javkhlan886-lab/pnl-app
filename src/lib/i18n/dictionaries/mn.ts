@@ -40,6 +40,10 @@ export const mn = {
     loadError: "Тайлангийн мэдээллийг татаж чадсангүй",
     summaryError:
       "Нийт дүнгийн мэдээллийг серверээс татаж чадсангүй тул тайлангаас тооцсон өгөгдлийг харуулж байна.",
+    mainSectionTitle: "Ерөнхий үзүүлэлт",
+    breakdownSectionTitle: "Зардлын задаргаа",
+    completedSectionTitle: "Дуусан төслүүд",
+    pendingSectionTitle: "Хүлээгдэж буй төслүүд",
     statIncome: "Нийт орлого",
     statIncomeCount: "{count} тайлан",
     statOpEx: "Үйл ажиллагааны зардал",

@@ -39,6 +39,10 @@ export const en: Dictionary = {
     loadError: "Couldn't load report data",
     summaryError:
       "Couldn't fetch totals from the server, so figures are calculated from the reports shown.",
+    mainSectionTitle: "Overview",
+    breakdownSectionTitle: "Expense breakdown",
+    completedSectionTitle: "Finished projects",
+    pendingSectionTitle: "Pending projects",
     statIncome: "Total income",
     statIncomeCount: "{count} reports",
     statOpEx: "Operating expenses",

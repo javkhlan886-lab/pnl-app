@@ -39,6 +39,10 @@ export const ko: Dictionary = {
     loadError: "보고서 데이터를 불러오지 못했습니다",
     summaryError:
       "서버에서 합계 데이터를 가져오지 못해 표시된 보고서 기준으로 계산한 값을 보여줍니다.",
+    mainSectionTitle: "개요",
+    breakdownSectionTitle: "비용 내역",
+    completedSectionTitle: "완료된 프로젝트",
+    pendingSectionTitle: "대기 중 프로젝트",
     statIncome: "총 수입",
     statIncomeCount: "{count}건",
     statOpEx: "운영 비용",
