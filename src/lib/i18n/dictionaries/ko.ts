@@ -423,6 +423,11 @@ export const ko: Dictionary = {
     note: "메모",
     exportError: "내보내기 오류",
     saveError: "저장 실패",
+    selectedCount: "{count}개 상품 선택됨",
+    deselect: "선택 해제",
+    selectedTotalValue: "선택 총 금액",
+    selectedIssued: "선택 출고",
+    selectedRemaining: "선택 재고",
   },
   transactions: {
     pageTitle: "거래 장부",

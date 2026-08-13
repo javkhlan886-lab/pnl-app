@@ -423,6 +423,11 @@ export const en: Dictionary = {
     note: "Note",
     exportError: "Export error",
     saveError: "Failed to save",
+    selectedCount: "{count} products selected",
+    deselect: "Clear",
+    selectedTotalValue: "Selected total value",
+    selectedIssued: "Selected issued",
+    selectedRemaining: "Selected remaining",
   },
   transactions: {
     pageTitle: "Transaction Ledger",

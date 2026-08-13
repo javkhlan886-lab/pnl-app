@@ -65,6 +65,7 @@ export default function ProductPage() {
   const [quantityDisplay, setQuantityDisplay] = useState("");
   const [priceDisplay, setPriceDisplay] = useState("");
   const [issuedDisplay, setIssuedDisplay] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const NAV_ITEMS = [
     { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
@@ -113,6 +114,26 @@ export default function ProductPage() {
   const totalValue = activeProducts.reduce((s, p) => s + p.price * p.quantity, 0);
   const totalIssued = activeProducts.reduce((s, p) => s + p.issuedQty, 0);
   const totalRemaining = activeProducts.reduce((s, p) => s + p.remainingQty, 0);
+
+  useEffect(() => { setSelected(new Set()); }, [catFilter, search]);
+
+  const toggleOne = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const toggleAll = () => {
+    setSelected(prev =>
+      filtered.length > 0 && filtered.every(p => prev.has(p._id!)) ? new Set() : new Set(filtered.map(p => p._id!))
+    );
+  };
+  const selectedProducts = filtered.filter(p => selected.has(p._id!));
+  const selectedTotalValue = selectedProducts.reduce((s, p) => s + p.price * p.quantity, 0);
+  const selectedIssued = selectedProducts.reduce((s, p) => s + p.issuedQty, 0);
+  const selectedRemaining = selectedProducts.reduce((s, p) => s + p.remainingQty, 0);
+  const allSelected = filtered.length > 0 && filtered.every(p => selected.has(p._id!));
 
   const openCreate = () => {
     setForm({ ...EMPTY }); setEditing(null);
@@ -287,10 +308,33 @@ export default function ProductPage() {
             </div>
           </div>
         ) : (
+          <>
+          {selected.size > 0 && (
+            <div className="mb-3 flex items-center gap-3 bg-positive/10 border border-positive/25 rounded-lg px-4 py-2.5 flex-wrap">
+              <span className="text-sm text-positive font-medium">
+                {format(t.products.selectedCount, { count: String(selected.size) })}
+              </span>
+              <span className="text-sm font-medium stat-number">
+                {t.products.selectedTotalValue}: {fmt(selectedTotalValue)}
+              </span>
+              <span className="text-sm font-medium text-negative stat-number">
+                {t.products.selectedIssued}: {Math.round(selectedIssued).toLocaleString("mn-MN")}
+              </span>
+              <span className="text-sm font-medium text-positive stat-number">
+                {t.products.selectedRemaining}: {Math.round(selectedRemaining).toLocaleString("mn-MN")}
+              </span>
+              <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground ml-auto">
+                {t.products.deselect}
+              </button>
+            </div>
+          )}
           <div className="glass-card overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="border-border/50 bg-secondary/40 hover:bg-secondary/40">
+                  <TableHead className="w-9">
+                    <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 cursor-pointer accent-positive" />
+                  </TableHead>
                   <TableHead className="w-10 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colIndex}</TableHead>
                   <TableHead className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colName}</TableHead>
                   <TableHead className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colCategory}</TableHead>
@@ -306,6 +350,9 @@ export default function ProductPage() {
               <TableBody>
                 {filtered.map((p, idx) => (
                   <TableRow key={p._id} className="border-border/50 hover:bg-secondary/30">
+                    <TableCell>
+                      <input type="checkbox" checked={selected.has(p._id!)} onChange={() => toggleOne(p._id!)} className="w-4 h-4 cursor-pointer accent-positive" />
+                    </TableCell>
                     <TableCell className="text-muted-foreground text-xs">{idx + 1}</TableCell>
                     <TableCell>
                       <div className="font-medium">{p.name}</div>
@@ -354,6 +401,7 @@ export default function ProductPage() {
               </TableBody>
             </Table>
           </div>
+          </>
         )}
       </main>
 

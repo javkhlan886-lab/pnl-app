@@ -422,6 +422,11 @@ export const zh: Dictionary = {
     note: "备注",
     exportError: "导出失败",
     saveError: "保存失败",
+    selectedCount: "已选择 {count} 件商品",
+    deselect: "取消选择",
+    selectedTotalValue: "已选总价值",
+    selectedIssued: "已选出库",
+    selectedRemaining: "已选库存",
   },
   transactions: {
     pageTitle: "交易台账",

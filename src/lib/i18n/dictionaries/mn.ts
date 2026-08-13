@@ -424,6 +424,11 @@ export const mn = {
     note: "Тэмдэглэл",
     exportError: "Export алдаа",
     saveError: "Хадгалахад алдаа гарлаа",
+    selectedCount: "{count} бүтээгдэхүүн сонгогдсон",
+    deselect: "Цуцлах",
+    selectedTotalValue: "Сонгосон нийт үнэ",
+    selectedIssued: "Сонгосон гарсан",
+    selectedRemaining: "Сонгосон үлдэгдэл",
   },
   transactions: {
     pageTitle: "Гүйлгээний дэвтэр",
