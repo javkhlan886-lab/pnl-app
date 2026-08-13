@@ -110,10 +110,13 @@ export default function ProductPage() {
   });
 
   const activeProducts = products.filter(p => p.status === "active");
-  const inactiveCount = products.length - activeProducts.length;
+  const finishedProducts = products.filter(p => p.status === "inactive");
   const totalValue = activeProducts.reduce((s, p) => s + p.price * p.quantity, 0);
   const totalIssued = activeProducts.reduce((s, p) => s + p.issuedQty, 0);
   const totalRemaining = activeProducts.reduce((s, p) => s + p.remainingQty, 0);
+  const finishedValue = finishedProducts.reduce((s, p) => s + p.price * p.quantity, 0);
+  const finishedIssued = finishedProducts.reduce((s, p) => s + p.issuedQty, 0);
+  const finishedRemaining = finishedProducts.reduce((s, p) => s + p.remainingQty, 0);
 
   useEffect(() => { setSelected(new Set()); }, [catFilter, search]);
 
@@ -268,11 +271,30 @@ export default function ProductPage() {
           </div>
         </div>
 
-        {inactiveCount > 0 && (
-          <div className="glass-card px-4 py-2.5 mb-3 w-fit flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-muted-foreground/50" />
-            <p className="text-xs text-muted-foreground">{t.products.statInactive}</p>
-            <p className="text-sm font-semibold text-muted-foreground stat-number">{inactiveCount}</p>
+        {finishedProducts.length > 0 && (
+          <div className="mb-6">
+            <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
+              {t.products.finishedSectionTitle}
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="glass-card px-4 py-3 opacity-80">
+                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotal}</p>
+                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{finishedProducts.length}</p>
+              </div>
+              <div className="glass-card px-4 py-3 opacity-80">
+                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotalValue}</p>
+                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{fmt(finishedValue)}</p>
+              </div>
+              <div className="glass-card px-4 py-3 opacity-80">
+                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statIssued}</p>
+                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{Math.round(finishedIssued).toLocaleString("mn-MN")}</p>
+              </div>
+              <div className="glass-card px-4 py-3 opacity-80">
+                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRemaining}</p>
+                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{Math.round(finishedRemaining).toLocaleString("mn-MN")}</p>
+              </div>
+            </div>
           </div>
         )}
 
