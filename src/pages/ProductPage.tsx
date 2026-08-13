@@ -278,36 +278,30 @@ export default function ProductPage() {
       </nav>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-          <div className="glass-card px-4 py-3">
-            <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotal}</p>
-            <p className="relative text-xl font-semibold stat-number">{activeProducts.length}</p>
-            {selected.size > 0 && (
-              <p className="relative text-[11px] text-positive mt-1 stat-number">{t.products.selectedLabel}: {selected.size}</p>
-            )}
-          </div>
-          <div className="glass-card glass-card-positive px-4 py-3">
-            <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotalValue}</p>
-            <p className="relative text-xl font-semibold text-info stat-number">{fmt(totalValue)}</p>
-            {selected.size > 0 && (
-              <p className="relative text-[11px] text-positive mt-1 stat-number">{t.products.selectedLabel}: {fmt(selectedTotalValue)}</p>
-            )}
-          </div>
-          <div className="glass-card glass-card-negative px-4 py-3">
-            <p className="relative text-xs text-muted-foreground mb-1">{t.products.statIssued}</p>
-            <p className="relative text-xl font-semibold text-negative stat-number">{Math.round(totalIssued).toLocaleString("mn-MN")}</p>
-            {selected.size > 0 && (
-              <p className="relative text-[11px] text-positive mt-1 stat-number">{t.products.selectedLabel}: {Math.round(selectedIssued).toLocaleString("mn-MN")}</p>
-            )}
-          </div>
-          <div className="glass-card glass-card-positive px-4 py-3">
-            <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRemaining}</p>
-            <p className="relative text-xl font-semibold text-positive stat-number">{Math.round(totalRemaining).toLocaleString("mn-MN")}</p>
-            {selected.size > 0 && (
-              <p className="relative text-[11px] text-positive mt-1 stat-number">{t.products.selectedLabel}: {Math.round(selectedRemaining).toLocaleString("mn-MN")}</p>
-            )}
-          </div>
-        </div>
+        {(() => {
+          const hasSelection = selected.size > 0;
+          const cardCls = hasSelection ? "ring-1 ring-positive/50" : "";
+          return (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+              <div className={`glass-card px-4 py-3 ${cardCls}`}>
+                <p className="relative text-xs text-muted-foreground mb-1">{hasSelection ? t.products.selectedLabel : t.products.statTotal}</p>
+                <p className="relative text-xl font-semibold stat-number">{hasSelection ? selected.size : activeProducts.length}</p>
+              </div>
+              <div className={`glass-card glass-card-positive px-4 py-3 ${cardCls}`}>
+                <p className="relative text-xs text-muted-foreground mb-1">{hasSelection ? t.products.selectedLabel : t.products.statTotalValue}</p>
+                <p className="relative text-xl font-semibold text-info stat-number">{fmt(hasSelection ? selectedTotalValue : totalValue)}</p>
+              </div>
+              <div className={`glass-card glass-card-negative px-4 py-3 ${cardCls}`}>
+                <p className="relative text-xs text-muted-foreground mb-1">{hasSelection ? t.products.selectedLabel : t.products.statIssued}</p>
+                <p className="relative text-xl font-semibold text-negative stat-number">{Math.round(hasSelection ? selectedIssued : totalIssued).toLocaleString("mn-MN")}</p>
+              </div>
+              <div className={`glass-card glass-card-positive px-4 py-3 ${cardCls}`}>
+                <p className="relative text-xs text-muted-foreground mb-1">{hasSelection ? t.products.selectedLabel : t.products.statRemaining}</p>
+                <p className="relative text-xl font-semibold text-positive stat-number">{Math.round(hasSelection ? selectedRemaining : totalRemaining).toLocaleString("mn-MN")}</p>
+              </div>
+            </div>
+          );
+        })()}
 
         {finishedProducts.length > 0 && (
           <div className="mb-6">
