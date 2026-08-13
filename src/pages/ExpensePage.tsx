@@ -24,6 +24,7 @@ import {
 import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, Receipt, BarChart2, Users, Box, ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake, Package } from "lucide-react";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { getRecent, addRecent } from "@/lib/recentValues";
+import { setAiPageContext } from "@/lib/aiPageContext";
 import { Combobox } from "@/components/ui/combobox";
 
 // Чөлөөт текст утга — backend-д хадгалагддаг тул хэлээр орчуулахгүй.
@@ -89,6 +90,17 @@ export default function ExpensePage() {
   const totalPending = filtered.filter(e => e.status === "pending").reduce((s, e) => s + e.amount, 0);
   const officeTotal = expenses.filter(e => e.type === "office" && e.status === "approved").reduce((s, e) => s + e.amount, 0);
   const otherTotal = expenses.filter(e => e.type === "other" && e.status === "approved").reduce((s, e) => s + e.amount, 0);
+
+  useEffect(() => {
+    const lines = [
+      `Идэвхтэй шүүлтүүр: ${typeFilter === "" ? "бүгд" : typeFilter === "office" ? "оффис" : "бусад"}`,
+      `Харагдаж буй мөр: ${filtered.length} / Нийт: ${expenses.length}`,
+      `Батлагдсан: ${fmt(totalApproved)} | Хүлээгдэж буй: ${fmt(totalPending)}`,
+      `Оффис зардал (батлагдсан): ${fmt(officeTotal)} | Бусад зардал (батлагдсан): ${fmt(otherTotal)}`,
+    ];
+    setAiPageContext({ title: t.expenses.pageTitle, lines });
+    return () => setAiPageContext(null);
+  }, [typeFilter, filtered.length, expenses.length, totalApproved, totalPending, officeTotal, otherTotal, t]);
 
   const openCreate = () => {
     setForm({ ...EMPTY }); setEditing(null); setUnitPriceDisplay(""); setQuantityInput(1); setAmountDisplay(""); setOpen(true);

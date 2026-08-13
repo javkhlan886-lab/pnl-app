@@ -424,9 +424,8 @@ export const zh: Dictionary = {
     saveError: "保存失败",
     selectedCount: "已选择 {count} 件商品",
     deselect: "取消选择",
-    selectedTotalValue: "已选总价值",
-    selectedIssued: "已选出库",
-    selectedRemaining: "已选库存",
+    selectedLabel: "已选",
+    selectedTotalsHint: "已选合计显示在上方字段中",
   },
   transactions: {
     pageTitle: "交易台账",

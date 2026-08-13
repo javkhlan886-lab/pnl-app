@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { getRecent, addRecent } from "@/lib/recentValues";
+import { setAiPageContext } from "@/lib/aiPageContext";
 import { Combobox } from "@/components/ui/combobox";
 
 // Чөлөөт текст утга — backend-д хадгалагддаг тул хэлээр орчуулахгүй.
@@ -137,6 +138,31 @@ export default function ProductPage() {
   const selectedIssued = selectedProducts.reduce((s, p) => s + p.issuedQty, 0);
   const selectedRemaining = selectedProducts.reduce((s, p) => s + p.remainingQty, 0);
   const allSelected = filtered.length > 0 && filtered.every(p => selected.has(p._id!));
+
+  useEffect(() => {
+    const lines: string[] = [
+      `Идэвхтэй шүүлтүүр: ${catFilter || "бүгд"}${search.trim() ? ` · хайлт: "${search.trim()}"` : ""}`,
+      `Харагдаж буй мөр: ${filtered.length} / Нийт: ${products.length}`,
+      `Нээлттэй бүтээгдэхүүн: ${activeProducts.length} ш | Нийт үнэ: ${fmt(totalValue)} | Гарсан: ${Math.round(totalIssued).toLocaleString("mn-MN")} | Үлдэгдэл: ${Math.round(totalRemaining).toLocaleString("mn-MN")}`,
+    ];
+    if (finishedProducts.length > 0) {
+      lines.push(
+        `Дуусан бүтээгдэхүүн: ${finishedProducts.length} ш | Нийт үнэ: ${fmt(finishedValue)} | Гарсан: ${Math.round(finishedIssued).toLocaleString("mn-MN")} | Үлдэгдэл: ${Math.round(finishedRemaining).toLocaleString("mn-MN")}`
+      );
+    }
+    if (selected.size > 0) {
+      lines.push(
+        `Сонгосон ${selected.size} бүтээгдэхүүн: Нийт үнэ ${fmt(selectedTotalValue)} | Гарсан ${Math.round(selectedIssued).toLocaleString("mn-MN")} | Үлдэгдэл ${Math.round(selectedRemaining).toLocaleString("mn-MN")}`
+      );
+    }
+    setAiPageContext({ title: t.products.pageTitle, lines });
+    return () => setAiPageContext(null);
+  }, [
+    catFilter, search, filtered.length, products.length,
+    activeProducts.length, totalValue, totalIssued, totalRemaining,
+    finishedProducts.length, finishedValue, finishedIssued, finishedRemaining,
+    selected.size, selectedTotalValue, selectedIssued, selectedRemaining, t,
+  ]);
 
   const openCreate = () => {
     setForm({ ...EMPTY }); setEditing(null);
@@ -256,18 +282,30 @@ export default function ProductPage() {
           <div className="glass-card px-4 py-3">
             <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotal}</p>
             <p className="relative text-xl font-semibold stat-number">{activeProducts.length}</p>
+            {selected.size > 0 && (
+              <p className="relative text-[11px] text-positive mt-1 stat-number">{t.products.selectedLabel}: {selected.size}</p>
+            )}
           </div>
           <div className="glass-card glass-card-positive px-4 py-3">
             <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotalValue}</p>
             <p className="relative text-xl font-semibold text-info stat-number">{fmt(totalValue)}</p>
+            {selected.size > 0 && (
+              <p className="relative text-[11px] text-positive mt-1 stat-number">{t.products.selectedLabel}: {fmt(selectedTotalValue)}</p>
+            )}
           </div>
           <div className="glass-card glass-card-negative px-4 py-3">
             <p className="relative text-xs text-muted-foreground mb-1">{t.products.statIssued}</p>
             <p className="relative text-xl font-semibold text-negative stat-number">{Math.round(totalIssued).toLocaleString("mn-MN")}</p>
+            {selected.size > 0 && (
+              <p className="relative text-[11px] text-positive mt-1 stat-number">{t.products.selectedLabel}: {Math.round(selectedIssued).toLocaleString("mn-MN")}</p>
+            )}
           </div>
           <div className="glass-card glass-card-positive px-4 py-3">
             <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRemaining}</p>
             <p className="relative text-xl font-semibold text-positive stat-number">{Math.round(totalRemaining).toLocaleString("mn-MN")}</p>
+            {selected.size > 0 && (
+              <p className="relative text-[11px] text-positive mt-1 stat-number">{t.products.selectedLabel}: {Math.round(selectedRemaining).toLocaleString("mn-MN")}</p>
+            )}
           </div>
         </div>
 
@@ -336,15 +374,7 @@ export default function ProductPage() {
               <span className="text-sm text-positive font-medium">
                 {format(t.products.selectedCount, { count: String(selected.size) })}
               </span>
-              <span className="text-sm font-medium stat-number">
-                {t.products.selectedTotalValue}: {fmt(selectedTotalValue)}
-              </span>
-              <span className="text-sm font-medium text-negative stat-number">
-                {t.products.selectedIssued}: {Math.round(selectedIssued).toLocaleString("mn-MN")}
-              </span>
-              <span className="text-sm font-medium text-positive stat-number">
-                {t.products.selectedRemaining}: {Math.round(selectedRemaining).toLocaleString("mn-MN")}
-              </span>
+              <span className="text-xs text-muted-foreground">{t.products.selectedTotalsHint}</span>
               <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground ml-auto">
                 {t.products.deselect}
               </button>

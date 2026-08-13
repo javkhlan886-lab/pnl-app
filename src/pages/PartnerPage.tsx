@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Combobox } from "@/components/ui/combobox";
 import { getRecent, addRecent } from "@/lib/recentValues";
+import { setAiPageContext } from "@/lib/aiPageContext";
 import { LogOut, Plus, Pencil, Trash2, ChevronLeft, BarChart2, Users, Box, Receipt, ArrowLeftRight, TableIcon, ShieldCheck, HardHat, Handshake, Package } from "lucide-react";
 
 interface PartnerRecord {
@@ -81,6 +82,14 @@ export default function PartnerPage() {
   useEffect(() => { load(); }, [load]);
 
   const activeCount = items.filter(i => i.status === "active").length;
+
+  useEffect(() => {
+    const lines = [
+      `Нийт түнш байгууллага: ${items.length} (${activeCount} идэвхтэй)`,
+    ];
+    setAiPageContext({ title: t.partners.pageTitle, lines });
+    return () => setAiPageContext(null);
+  }, [items.length, activeCount, t]);
 
   const openCreate = () => {
     setForm(EMPTY); setEditing(null); setOpen(true);

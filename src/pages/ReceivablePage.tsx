@@ -24,6 +24,7 @@ import {
 import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, ArrowLeftRight, BarChart2, Users, Box, Receipt, Download, ShieldCheck, HardHat, Handshake, Package } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import { getRecent, addRecent } from "@/lib/recentValues";
+import { setAiPageContext } from "@/lib/aiPageContext";
 
 const EMPTY = {
   type: "receivable" as "receivable" | "loan",
@@ -108,6 +109,17 @@ export default function ReceivablePage() {
   const totalLoan = loans.reduce((s, i) => s + i.amount, 0);
   const totalReceivableFinal = receivables.reduce((s, i) => s + i.amount + accruedInterest(i), 0);
   const totalLoanFinal = loans.reduce((s, i) => s + i.amount + accruedInterest(i), 0);
+
+  useEffect(() => {
+    const lines = [
+      `Идэвхтэй шүүлтүүр: ${typeFilter === "" ? "бүгд" : typeFilter === "receivable" ? "авлага" : "зээл"}`,
+      `Харагдаж буй мөр: ${filtered.length} / Нийт: ${items.length}`,
+      `Нийт авлага: ${fmt(totalReceivable)} (эцсийн дүн ${fmt(totalReceivableFinal)}) | Нийт зээл: ${fmt(totalLoan)} (эцсийн дүн ${fmt(totalLoanFinal)})`,
+      `Хугацаа хэтэрсэн: ${overdueItems.length} ш | Цэвэр байрлал: ${fmt(totalReceivableFinal - totalLoanFinal)}`,
+    ];
+    setAiPageContext({ title: t.receivables.pageTitle, lines });
+    return () => setAiPageContext(null);
+  }, [typeFilter, filtered.length, items.length, totalReceivable, totalLoan, totalReceivableFinal, totalLoanFinal, overdueItems.length, t]);
 
   const openCreate = () => {
     setForm({ ...EMPTY }); setEditing(null); setUnitPriceDisplay(""); setQuantityInput(1); setAmountDisplay(""); setOpen(true);

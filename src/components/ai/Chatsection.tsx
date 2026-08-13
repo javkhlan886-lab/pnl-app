@@ -9,6 +9,7 @@ import { getExpenses } from "@/lib/expense";
 import { getAssets } from "@/lib/asset";
 import { getReceivables } from "@/lib/receivable";
 import { getEmployees } from "@/lib/employee";
+import { getProducts } from "@/lib/product";
 import { useAiPageContext } from "@/lib/aiPageContext";
 import { useLocale, format } from "@/hooks/useLocale";
 import { PNLRecord, Transaction } from "@/types";
@@ -71,6 +72,7 @@ export default function ChatSection() {
     assets: any[];
     receivables: any[];
     employees: any[];
+    products: any[];
   } | null>(null);
 
   // Хэрэглэгчийн одоо харж байгаа дэлгэцийн тоо (ж: Гүйлгээний дэвтрийн
@@ -120,8 +122,9 @@ export default function ChatSection() {
       getAssets().catch(() => []),
       getReceivables().catch(() => []),
       getEmployees().catch(() => []),
-    ]).then(([summary, records, txTotals, admin, transactions, expenses, assets, receivables, employees]) =>
-      setContext({ summary, records, txTotals, admin, transactions, expenses, assets, receivables, employees })
+      getProducts().catch(() => []),
+    ]).then(([summary, records, txTotals, admin, transactions, expenses, assets, receivables, employees, products]) =>
+      setContext({ summary, records, txTotals, admin, transactions, expenses, assets, receivables, employees, products })
     );
   }, [open, context, authLoading, level, company]);
 
@@ -188,6 +191,7 @@ export default function ChatSection() {
           assets: context?.assets ?? [],
           receivables: context?.receivables ?? [],
           employees: context?.employees ?? [],
+          products: context?.products ?? [],
           pageContext,
           locale,
         }),

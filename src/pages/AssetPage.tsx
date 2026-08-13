@@ -25,6 +25,7 @@ import {
 import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, Box, BarChart2, Users, Receipt, ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake, Package } from "lucide-react";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { getRecent, addRecent } from "@/lib/recentValues";
+import { setAiPageContext } from "@/lib/aiPageContext";
 import { Combobox } from "@/components/ui/combobox";
 
 // Чөлөөт текст утга — backend-д хадгалагддаг тул хэлээр орчуулахгүй
@@ -100,6 +101,16 @@ export default function AssetPage() {
   const filtered = catFilter ? assets.filter(a => a.category === catFilter) : assets;
   const activeAssets = assets.filter(a => a.status === "active");
   const totalValue = activeAssets.reduce((s, a) => s + a.price, 0);
+
+  useEffect(() => {
+    const lines = [
+      `Идэвхтэй ангиллын шүүлтүүр: ${catFilter || "бүгд"}`,
+      `Харагдаж буй мөр: ${filtered.length} / Нийт: ${assets.length}`,
+      `Ашиглагдаж буй хөрөнгө: ${activeAssets.length} ш | Нийт үнэ: ${fmt(totalValue)}`,
+    ];
+    setAiPageContext({ title: t.assets.pageTitle, lines });
+    return () => setAiPageContext(null);
+  }, [catFilter, filtered.length, assets.length, activeAssets.length, totalValue, t]);
 
   const openCreate = () => {
     setForm({ ...EMPTY }); setEditing(null);

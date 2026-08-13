@@ -425,9 +425,8 @@ export const en: Dictionary = {
     saveError: "Failed to save",
     selectedCount: "{count} products selected",
     deselect: "Clear",
-    selectedTotalValue: "Selected total value",
-    selectedIssued: "Selected issued",
-    selectedRemaining: "Selected remaining",
+    selectedLabel: "Selected",
+    selectedTotalsHint: "Selected totals are shown on the fields above",
   },
   transactions: {
     pageTitle: "Transaction Ledger",

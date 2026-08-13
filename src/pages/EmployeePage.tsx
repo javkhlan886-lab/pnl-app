@@ -24,6 +24,7 @@ import {
 import { LogOut, TableIcon, Plus, Pencil, Trash2, Users, ChevronLeft, BarChart2, Box, Receipt, ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake, Package } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import { getRecent, addRecent } from "@/lib/recentValues";
+import { setAiPageContext } from "@/lib/aiPageContext";
 
 interface Employee {
   _id?: string;
@@ -98,6 +99,16 @@ export default function EmployeePage() {
   const totalCost = totalSalary + totalND + totalNdsht;
   const engineerCount = employees.filter(e => e.type === "engineer").length;
   const staffCount = employees.filter(e => e.type === "staff").length;
+
+  useEffect(() => {
+    const lines = [
+      `Нийт ажилтан: ${employees.length} (${engineerCount} инженер, ${staffCount} ажилтан)`,
+      `Нийт цалин (идэвхтэй): ${fmt(totalSalary)} | НД: ${fmt(totalND)} | НДШТ: ${fmt(totalNdsht)}`,
+      `Нийт зардал (цалин+НД): ${fmt(totalCost)}`,
+    ];
+    setAiPageContext({ title: t.employees.pageTitle, lines });
+    return () => setAiPageContext(null);
+  }, [employees.length, engineerCount, staffCount, totalSalary, totalND, totalNdsht, totalCost, t]);
 
   const openCreate = () => {
     setForm(EMPTY); setEditing(null);

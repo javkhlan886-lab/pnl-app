@@ -185,6 +185,7 @@ export interface SystemInstructionInput {
   assets?: any[];
   receivables?: any[];
   employees?: any[];
+  products?: any[];
   /** Хэрэглэгчийн одоо харж байгаа дэлгэц (шүүлтүүрийн дараах дүн гэх мэт) */
   pageContext?: AiPageContext | null;
   /** UI дээр сонгосон хэл — хариултын хэлийг үүгээр тодорхойлно (анхны утга mn). */
@@ -214,6 +215,7 @@ export function buildSystemInstruction({
   assets,
   receivables,
   employees,
+  products,
   pageContext,
   locale = "mn",
 }: SystemInstructionInput): string {
@@ -369,6 +371,21 @@ export function buildSystemInstruction({
     });
   }
 
+  // ─── Бараа Бүтээгдэхүүн — бодит бичлэгүүд ──────────────────────────────────
+  if (products && products.length > 0) {
+    lines.push("", `═══ БАРАА БҮТЭЭГДЭХҮҮНИЙ ЖАГСААЛТ (${products.length} бичлэг) ═══`);
+    products.forEach((p) => {
+      const remaining = p.remainingQty ?? p.quantity - p.issuedQty;
+      lines.push(
+        `- ${p.name} | ${p.category} | ${p.unit || "нэгж"} | тоо: ${Number(p.quantity).toLocaleString("mn-MN")} | ` +
+          `нэгж үнэ: ${Number(p.price).toLocaleString("mn-MN")}${p.currency || "₮"} | ` +
+          `гарсан: ${Number(p.issuedQty).toLocaleString("mn-MN")} | үлдэгдэл: ${Number(remaining).toLocaleString("mn-MN")} | ` +
+          `статус: ${p.status === "active" ? "нээлттэй" : "дуусан"}` +
+          (p.description ? ` | тайлбар: ${p.description}` : "")
+      );
+    });
+  }
+
   // ─── Авлага & Зээл — бодит бичлэгүүд ────────────────────────────────────────
   if (receivables && receivables.length > 0) {
     lines.push("", `═══ АВЛАГА & ЗЭЭЛИЙН ЖАГСААЛТ (${receivables.length} бичлэг) ═══`);
@@ -433,7 +450,8 @@ export function buildSystemInstruction({
   const hasAnyData =
     summary || records.length > 0 || (transactions && transactions.length > 0) ||
     (expenses && expenses.length > 0) || (assets && assets.length > 0) ||
-    (receivables && receivables.length > 0) || (employees && employees.length > 0);
+    (receivables && receivables.length > 0) || (employees && employees.length > 0) ||
+    (products && products.length > 0);
   if (!hasAnyData) {
     lines.push(
       "",

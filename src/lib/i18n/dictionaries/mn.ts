@@ -426,9 +426,8 @@ export const mn = {
     saveError: "Хадгалахад алдаа гарлаа",
     selectedCount: "{count} бүтээгдэхүүн сонгогдсон",
     deselect: "Цуцлах",
-    selectedTotalValue: "Сонгосон нийт үнэ",
-    selectedIssued: "Сонгосон гарсан",
-    selectedRemaining: "Сонгосон үлдэгдэл",
+    selectedLabel: "Сонгосон",
+    selectedTotalsHint: "Дээрх талбаруудад сонгосон нийлбэрийг харуулж байна",
   },
   transactions: {
     pageTitle: "Гүйлгээний дэвтэр",

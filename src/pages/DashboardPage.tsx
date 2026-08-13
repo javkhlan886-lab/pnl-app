@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { PNLRecord } from "@/types";
 import { fmt, fmtDate } from "@/lib/utils";
 import { toMnt } from "@/lib/exchangeRates";
+import { setAiPageContext } from "@/lib/aiPageContext";
 import api from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -281,6 +282,35 @@ export default function DashboardPage() {
     return { income, expense, net: income - expense };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected, records]);
+
+  useEffect(() => {
+    const lines: string[] = [
+      `Идэвхтэй шүүлтүүр: статус=${statusFilter || "бүгд"}${dateFrom || dateTo ? ` · хугацаа ${dateFrom || "…"} — ${dateTo || "…"}` : ""}`,
+      `Харагдаж буй тайлан: ${filteredRecords.length} / Нийт: ${records.length}`,
+    ];
+    if (displaySummary) {
+      lines.push(
+        `Идэвхтэй тайлангийн орлого: ${fmt(displaySummary.pnlIncome, "₮")} | зардал: ${fmt(displaySummary.totalOperatingExpense, "₮")} | цэвэр ашиг: ${fmt(displaySummary.netProfit, "₮")} (маржин ${displaySummary.margin}%)`
+      );
+      if (displaySummary.pendingCount > 0) {
+        lines.push(`Хүлээгдэж буй: ${displaySummary.pendingCount} тайлан | ашиг: ${fmt(displaySummary.pendingProfit, "₮")}`);
+      }
+      if (displaySummary.completedCount > 0) {
+        lines.push(`Дуусан: ${displaySummary.completedCount} тайлан | ашиг: ${fmt(displaySummary.completedProfit, "₮")}`);
+      }
+    }
+    if (filteredSummary) {
+      lines.push(`Огнооны шүүлтүүрийн дүн: орлого ${fmt(filteredSummary.income, "₮")} | зардал ${fmt(filteredSummary.expense, "₮")} | цэвэр ${fmt(filteredSummary.net, "₮")}`);
+    }
+    if (selectedSummary) {
+      lines.push(`Сонгосон ${selected.size} тайлан: орлого ${fmt(selectedSummary.income, "₮")} | зардал ${fmt(selectedSummary.expense, "₮")} | цэвэр ${fmt(selectedSummary.net, "₮")}`);
+    }
+    setAiPageContext({ title: t.common.navDashboard, lines });
+    return () => setAiPageContext(null);
+  }, [
+    statusFilter, dateFrom, dateTo, filteredRecords.length, records.length,
+    displaySummary, filteredSummary, selectedSummary, selected.size, t,
+  ]);
 
   const NAV_ITEMS = [
     { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
