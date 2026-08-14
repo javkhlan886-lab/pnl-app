@@ -348,6 +348,37 @@ export default function ProductPage() {
           </div>
         </div>
 
+        {finishedProducts.length > 0 && (
+          <div className="mb-6">
+            <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
+              {t.products.finishedSectionTitle}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+              <div className="glass-card px-4 py-3 opacity-80">
+                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statQuantity}</p>
+                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{Math.round(finishedQuantity).toLocaleString("mn-MN")}</p>
+              </div>
+              <div className="glass-card px-4 py-3 opacity-80">
+                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotalValue}</p>
+                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{fmt(finishedValue)}</p>
+              </div>
+              <div className="glass-card px-4 py-3 opacity-80">
+                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statIssued}</p>
+                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{Math.round(finishedIssued).toLocaleString("mn-MN")}</p>
+              </div>
+              <div className="glass-card px-4 py-3 opacity-80">
+                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRevenue}</p>
+                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{fmt(finishedRevenue)}</p>
+              </div>
+              <div className="glass-card px-4 py-3 opacity-80">
+                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRemaining}</p>
+                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{Math.round(finishedRemaining).toLocaleString("mn-MN")}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {selected.size > 0 && (
           <div className="mb-6">
             <div className="flex items-center gap-1.5 mb-2">
@@ -379,37 +410,6 @@ export default function ProductPage() {
               <div className="glass-card glass-card-positive px-4 py-3 ring-1 ring-positive/50">
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRemaining}</p>
                 <p className="relative text-xl font-semibold text-positive stat-number">{Math.round(selectedRemaining).toLocaleString("mn-MN")}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {finishedProducts.length > 0 && (
-          <div className="mb-6">
-            <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
-              {t.products.finishedSectionTitle}
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-              <div className="glass-card px-4 py-3 opacity-80">
-                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statQuantity}</p>
-                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{Math.round(finishedQuantity).toLocaleString("mn-MN")}</p>
-              </div>
-              <div className="glass-card px-4 py-3 opacity-80">
-                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotalValue}</p>
-                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{fmt(finishedValue)}</p>
-              </div>
-              <div className="glass-card px-4 py-3 opacity-80">
-                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statIssued}</p>
-                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{Math.round(finishedIssued).toLocaleString("mn-MN")}</p>
-              </div>
-              <div className="glass-card px-4 py-3 opacity-80">
-                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRevenue}</p>
-                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{fmt(finishedRevenue)}</p>
-              </div>
-              <div className="glass-card px-4 py-3 opacity-80">
-                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRemaining}</p>
-                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{Math.round(finishedRemaining).toLocaleString("mn-MN")}</p>
               </div>
             </div>
           </div>
