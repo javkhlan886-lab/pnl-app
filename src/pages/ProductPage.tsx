@@ -640,7 +640,7 @@ export default function ProductPage() {
             <div className="bg-secondary/50 rounded-lg px-4 py-3 text-sm">
               <div className="flex justify-between py-1">
                 <span className="text-muted-foreground">{t.products.totalPriceLabel}</span>
-                <span className="font-medium">{fmt(form.price * form.quantity)}</span>
+                <span className="font-medium">{fmt(sellingPrice(form) * form.quantity)}</span>
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-muted-foreground">{t.products.remainingLabel}</span>
