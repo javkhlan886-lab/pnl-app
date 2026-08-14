@@ -421,7 +421,7 @@ export const zh: Dictionary = {
     editTitle: "编辑商品",
     newTitle: "新建商品",
     name: "商品名称 *",
-    namePlaceholder: "水泥 50kg",
+    namePlaceholder: "",
     category: "类别",
     description: "说明",
     descriptionPlaceholder: "商品说明",

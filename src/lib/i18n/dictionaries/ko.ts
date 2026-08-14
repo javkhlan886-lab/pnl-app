@@ -422,7 +422,7 @@ export const ko: Dictionary = {
     editTitle: "상품 수정",
     newTitle: "새 상품",
     name: "상품명 *",
-    namePlaceholder: "시멘트 50kg",
+    namePlaceholder: "",
     category: "분류",
     description: "설명",
     descriptionPlaceholder: "상품 설명",

@@ -423,7 +423,7 @@ export const mn = {
     editTitle: "Бүтээгдэхүүн засах",
     newTitle: "Шинэ бүтээгдэхүүн",
     name: "Бүтээгдэхүүний нэр *",
-    namePlaceholder: "Цемент 50кг",
+    namePlaceholder: "",
     category: "Ангилал",
     description: "Тодорхойлолт",
     descriptionPlaceholder: "Бүтээгдэхүүний тодорхойлолт",

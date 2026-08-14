@@ -422,7 +422,7 @@ export const en: Dictionary = {
     editTitle: "Edit product",
     newTitle: "New product",
     name: "Product name *",
-    namePlaceholder: "Cement 50kg",
+    namePlaceholder: "",
     category: "Category",
     description: "Description",
     descriptionPlaceholder: "Product description",

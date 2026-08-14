@@ -35,7 +35,7 @@ import { Combobox } from "@/components/ui/combobox";
 const CATEGORIES = ["Бараа", "Материал", "Бэлэн бүтээгдэхүүн", "Түүхий эд", "Бусад"];
 
 const EMPTY = {
-  name: "", category: "Бараа", description: "", unit: "",
+  name: "", category: "", description: "", unit: "",
   quantity: 0, price: 0, discountPercent: 0, issuedQty: 0, note: "", currency: "₮", status: "active",
 };
 
