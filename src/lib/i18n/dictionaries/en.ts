@@ -323,7 +323,8 @@ export const en: Dictionary = {
     interestRate: "Monthly interest rate (%)",
     startDate: "Start date",
     dueDate: "Due date",
-    accruedInterestNote: "Accrued interest: {amount} ({months} mo.)",
+    accruedInterestNote: "Accrued interest: {amount} ({days} days)",
+    accruedDaysLabel: "{days} days",
     saveError: "Failed to save",
   },
   workforce: {

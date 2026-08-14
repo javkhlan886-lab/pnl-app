@@ -322,7 +322,8 @@ export const zh: Dictionary = {
     interestRate: "月利率 (%)",
     startDate: "开始日期",
     dueDate: "到期日",
-    accruedInterestNote: "累计利息：{amount}（{months} 个月）",
+    accruedInterestNote: "累计利息：{amount}（{days} 天）",
+    accruedDaysLabel: "{days} 天",
     saveError: "保存失败",
   },
   workforce: {

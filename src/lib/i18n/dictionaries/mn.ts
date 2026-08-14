@@ -324,7 +324,8 @@ export const mn = {
     interestRate: "Сарын хүү (%)",
     startDate: "Эхлэх огноо",
     dueDate: "Дуусах огноо",
-    accruedInterestNote: "Хуримтлагдсан хүү: {amount} ({months} сар)",
+    accruedInterestNote: "Хуримтлагдсан хүү: {amount} ({days} хоног)",
+    accruedDaysLabel: "{days} хоног",
     saveError: "Хадгалахад алдаа гарлаа",
   },
   workforce: {

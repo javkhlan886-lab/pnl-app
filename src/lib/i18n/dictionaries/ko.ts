@@ -323,7 +323,8 @@ export const ko: Dictionary = {
     interestRate: "월 이자율 (%)",
     startDate: "시작일",
     dueDate: "만기일",
-    accruedInterestNote: "누적 이자: {amount} ({months}개월)",
+    accruedInterestNote: "누적 이자: {amount} ({days}일)",
+    accruedDaysLabel: "{days}일",
     saveError: "저장 실패",
   },
   workforce: {

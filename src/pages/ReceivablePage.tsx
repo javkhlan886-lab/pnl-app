@@ -38,22 +38,28 @@ const EMPTY = {
 const fmt = (n: number) => "₮" + Math.round(n).toLocaleString("mn-MN");
 
 // Сарын хүүг эхлэх огноогоос (эсвэл хуучин бичлэгүүдэд эхлэх огноо
-// байхгүй бол бүртгэсэн өдрөөс) өнөөдөр хүртэл, харин хугацаа дуусахад
-// хүрсэн бол дуусах огноогоор хязгаарлаж хуримтлуулна.
-const monthsBetween = (start?: string, endTs: number = Date.now()) => {
+// байхгүй бол бүртгэсэн өдрөөс) өнөөдөр хүртэлх бодит хоногоор тооцож,
+// харин хугацаа дуусахад хүрсэн бол дуусах огноогоор хязгаарлана.
+// Тодорхой байлгах үүднээс хоногоор (өдрөөр) тооцоолсноо хэрэглэгчид
+// шууд харуулна — сар рүү дугуйруулаад "яагаад ийм жижиг тоо гарав?"
+// гэсэн эргэлзээ үүсгэхээс сэргийлнэ.
+const daysBetween = (start?: string, endTs: number = Date.now()) => {
   if (!start) return 0;
   const s = new Date(start).getTime();
   if (Number.isNaN(s)) return 0;
-  const days = (endTs - s) / 86400000;
-  return Math.max(0, days / 30.4368);
+  return Math.max(0, (endTs - s) / 86400000);
 };
+
+const accrualEndTs = (item: any) => {
+  const dueTs = item.dueDate ? new Date(item.dueDate).getTime() : NaN;
+  return !Number.isNaN(dueTs) ? Math.min(Date.now(), dueTs) : Date.now();
+};
+
+const accruedDays = (item: any) => daysBetween(item.startDate || item.createdAt, accrualEndTs(item));
 
 const accruedInterest = (item: any) => {
   if (!item.interestRate) return 0;
-  const start = item.startDate || item.createdAt;
-  const dueTs = item.dueDate ? new Date(item.dueDate).getTime() : NaN;
-  const end = !Number.isNaN(dueTs) ? Math.min(Date.now(), dueTs) : Date.now();
-  return item.amount * (item.interestRate / 100) * monthsBetween(start, end);
+  return item.amount * (item.interestRate / 100) * (accruedDays(item) / 30.4368);
 };
 
 export default function ReceivablePage() {
@@ -348,7 +354,12 @@ export default function ReceivablePage() {
                       {item.interestRate > 0 ? `${item.interestRate}%` : "—"}
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground stat-number">
-                      {item.interestRate > 0 ? fmt(accruedInterest(item)) : "—"}
+                      {item.interestRate > 0 ? (
+                        <>
+                          {fmt(accruedInterest(item))}
+                          <div className="text-[10px] font-normal">{format(t.receivables.accruedDaysLabel, { days: Math.floor(accruedDays(item)).toString() })}</div>
+                        </>
+                      ) : "—"}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">{fmtDate(item.dueDate)}</TableCell>
                     <TableCell>
@@ -453,10 +464,7 @@ export default function ReceivablePage() {
                   <p className="text-xs text-muted-foreground">
                     {format(t.receivables.accruedInterestNote, {
                       amount: fmt(accruedInterest(form)),
-                      months: monthsBetween(
-                        (form as any).startDate || (form as any).createdAt,
-                        form.dueDate ? Math.min(Date.now(), new Date(form.dueDate).getTime()) : Date.now()
-                      ).toFixed(1),
+                      days: Math.floor(accruedDays(form)).toString(),
                     })}
                   </p>
                 )}
