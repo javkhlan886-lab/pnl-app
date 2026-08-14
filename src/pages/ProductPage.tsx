@@ -360,10 +360,7 @@ export default function ProductPage() {
           </div>
           <div className="glass-card glass-card-positive px-4 py-3">
             <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotalValue}</p>
-            <p className="relative text-xl font-semibold text-info stat-number">{fmt(totalValue)}</p>
-            {discountedValue(activeProducts) !== totalValue && (
-              <p className="relative text-xs text-muted-foreground mt-1">{format(t.products.statDiscountedValueSub, { amount: fmt(discountedValue(activeProducts)) })}</p>
-            )}
+            <p className="relative text-xl font-semibold text-info stat-number">{fmt(discountedValue(activeProducts))}</p>
           </div>
           <div className="glass-card glass-card-negative px-4 py-3">
             <p className="relative text-xs text-muted-foreground mb-1">{t.products.statIssued}</p>
@@ -392,10 +389,7 @@ export default function ProductPage() {
               </div>
               <div className="glass-card px-4 py-3 opacity-80">
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotalValue}</p>
-                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{fmt(finishedValue)}</p>
-                {discountedValue(finishedProducts) !== finishedValue && (
-                  <p className="relative text-xs text-muted-foreground mt-1">{format(t.products.statDiscountedValueSub, { amount: fmt(discountedValue(finishedProducts)) })}</p>
-                )}
+                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{fmt(discountedValue(finishedProducts))}</p>
               </div>
               <div className="glass-card px-4 py-3 opacity-80">
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statIssued}</p>
@@ -431,10 +425,7 @@ export default function ProductPage() {
               </div>
               <div className="glass-card glass-card-positive px-4 py-3 ring-1 ring-positive/50">
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotalValue}</p>
-                <p className="relative text-xl font-semibold text-info stat-number">{fmt(selectedTotalValue)}</p>
-                {discountedValue(selectedProducts) !== selectedTotalValue && (
-                  <p className="relative text-xs text-muted-foreground mt-1">{format(t.products.statDiscountedValueSub, { amount: fmt(discountedValue(selectedProducts)) })}</p>
-                )}
+                <p className="relative text-xl font-semibold text-info stat-number">{fmt(discountedValue(selectedProducts))}</p>
               </div>
               <div className="glass-card glass-card-negative px-4 py-3 ring-1 ring-positive/50">
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statIssued}</p>
