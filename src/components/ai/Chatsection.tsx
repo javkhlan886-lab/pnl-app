@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Sparkles, X, Send, Square, ChevronDown, Brain, AlertTriangle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { getFabPosition, saveFabPosition, type FabPosition } from "@/lib/chatFabPosition";
 import { getPNLList } from "@/lib/pnl";
 import { getCompanyUsers } from "@/lib/admin";
 import { getTransactions } from "@/lib/transaction";
@@ -54,6 +55,10 @@ export default function ChatSection() {
   const SCOPE_LABEL = t.chat.scope;
 
   const [open, setOpen] = useState(false);
+  const [fabPos, setFabPos] = useState<FabPosition | null>(() => getFabPosition());
+  const fabRef = useRef<HTMLButtonElement>(null);
+  const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number; moved: boolean } | null>(null);
+  const justDraggedRef = useRef(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -139,6 +144,27 @@ export default function ChatSection() {
   // Component unmount болоход хагас дуусаагүй stream-ийг зогсооно.
   useEffect(() => () => abortRef.current?.abort(), []);
 
+  // Дэлгэцийн хэмжээ өөрчлөгдөхөд (ж: тавтай эргүүлэх, цонх багасгах) товч
+  // дэлгэцээс гадуур гарахгүй байхаар байрлалыг хамгаалж хязгаарлана.
+  useEffect(() => {
+    if (!fabPos) return;
+    const onResize = () => {
+      const el = fabRef.current;
+      const w = el?.offsetWidth ?? 160;
+      const h = el?.offsetHeight ?? 48;
+      const maxX = Math.max(8, window.innerWidth - w - 8);
+      const maxY = Math.max(8, window.innerHeight - h - 8);
+      setFabPos((prev) => {
+        if (!prev) return prev;
+        const next = { x: Math.min(Math.max(8, prev.x), maxX), y: Math.min(Math.max(8, prev.y), maxY) };
+        if (next.x !== prev.x || next.y !== prev.y) saveFabPosition(next);
+        return next;
+      });
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [fabPos]);
+
   const stop = () => {
     abortRef.current?.abort();
     abortRef.current = null;
@@ -218,13 +244,56 @@ export default function ChatSection() {
   };
 
   if (!open) {
+    const clampPos = (x: number, y: number) => {
+      const el = fabRef.current;
+      const w = el?.offsetWidth ?? 160;
+      const h = el?.offsetHeight ?? 48;
+      const maxX = Math.max(8, window.innerWidth - w - 8);
+      const maxY = Math.max(8, window.innerHeight - h - 8);
+      return { x: Math.min(Math.max(8, x), maxX), y: Math.min(Math.max(8, y), maxY) };
+    };
+
+    const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+      const el = fabRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      dragRef.current = { startX: e.clientX, startY: e.clientY, origX: rect.left, origY: rect.top, moved: false };
+      el.setPointerCapture(e.pointerId);
+    };
+
+    const onPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+      const d = dragRef.current;
+      if (!d) return;
+      const dx = e.clientX - d.startX;
+      const dy = e.clientY - d.startY;
+      if (!d.moved && Math.hypot(dx, dy) < 5) return;
+      d.moved = true;
+      justDraggedRef.current = true;
+      setFabPos(clampPos(d.origX + dx, d.origY + dy));
+    };
+
+    const onPointerUp = () => {
+      const d = dragRef.current;
+      dragRef.current = null;
+      if (d?.moved) setFabPos((prev) => { if (prev) saveFabPosition(prev); return prev; });
+    };
+
     return (
       <button
-        onClick={() => setOpen(true)}
+        ref={fabRef}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        onClick={() => {
+          if (justDraggedRef.current) { justDraggedRef.current = false; return; }
+          setOpen(true);
+        }}
         title={t.chat.headerTitle}
-        className="fixed bottom-6 right-6 z-40 px-4 py-3 rounded-full flex items-center gap-2 text-sm font-medium
+        style={{ touchAction: "none", ...(fabPos ? { left: fabPos.x, top: fabPos.y, right: "auto", bottom: "auto" } : {}) }}
+        className={`fixed z-40 px-4 py-3 rounded-full flex items-center gap-2 text-sm font-medium select-none cursor-grab active:cursor-grabbing
                    bg-positive text-background shadow-[0_0_24px_color-mix(in_oklch,oklch(var(--positive))_40%,transparent)]
-                   hover:bg-positive/90 transition-colors"
+                   hover:bg-positive/90 transition-colors ${fabPos ? "" : "bottom-6 right-6"}`}
       >
         <Sparkles className="w-4 h-4" />
         {t.chat.fabLabel}
