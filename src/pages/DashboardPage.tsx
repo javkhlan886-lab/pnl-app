@@ -12,6 +12,7 @@ import { setAiPageContext } from "@/lib/aiPageContext";
 import { getHiddenFields, saveHiddenFields, getCollapsedSections, saveCollapsedSections } from "@/lib/dashboardHidden";
 import { useLayoutMode, toggleLayoutMode } from "@/lib/layoutMode";
 import { Sidebar } from "@/components/Sidebar";
+import { IncomeTrendChart } from "@/components/IncomeTrendChart";
 import api from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +27,7 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { PlusCircle, LogOut, Pencil, Trash2, Download, TrendingUp, TrendingDown, BarChart2, CheckCircle, Users, Box, Receipt, ArrowLeftRight, TableIcon, ChevronDown, ShieldCheck, HardHat, Handshake, Eye, EyeOff, Package, PanelLeft } from "lucide-react";
+import { PlusCircle, LogOut, Pencil, Trash2, Download, TrendingUp, TrendingDown, BarChart2, CheckCircle, Users, Box, Receipt, ArrowLeftRight, TableIcon, ChevronDown, ShieldCheck, HardHat, Handshake, Eye, EyeOff, Package, PanelLeft, Calendar } from "lucide-react";
 
 // ── Оруулсан хэрэглэгчийг харуулах туслах функцууд ──────────────────────────
 // owner талбарыг backend зөвхөн Level 1, 2 (admin, manager)-д илгээдэг.
@@ -83,6 +84,7 @@ export default function DashboardPage() {
   const [openStatusId, setOpenStatusId] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [dateMenuOpen, setDateMenuOpen] = useState(false);
   const [txSummary, setTxSummary] = useState<{ totalIncome: number; totalExpense: number } | null>(null);
   const [txBlurred, setTxBlurred] = useState(false);
   const [hiddenFields, setHiddenFields] = useState<Set<string>>(() => getHiddenFields());
@@ -304,6 +306,25 @@ export default function DashboardPage() {
 
   const displaySummary = summary || computedSummary;
 
+  // Сарын орлогын хандлага — идэвхтэй тайлангуудыг огноогоор нь сараар
+  // бүлэглэж, сүүлийн 6 сарыг он-цагийн дарааллаар харуулна.
+  const incomeTrend = useMemo(() => {
+    const buckets = new Map<string, number>();
+    records.forEach((r) => {
+      if ((r.status || "active") !== "active") return;
+      const month = (r.date || "").slice(0, 7);
+      if (!month) return;
+      buckets.set(month, (buckets.get(month) || 0) + totalIncome(r));
+    });
+    return [...buckets.keys()]
+      .sort()
+      .slice(-6)
+      .map((month) => {
+        const [, m] = month.split("-");
+        return { label: `${m}/${month.slice(2, 4)}`, value: buckets.get(month) || 0 };
+      });
+  }, [records]);
+
   // Толгойн статистик карт (`summary`) нь бүх датаг тооцдог тул огнооны
   // шүүлтүүрт хамаарахгүй — тиймээс шүүсэн `filteredRecords`-с тусад нь
   // өөрийн дүнг тооцоод харуулна.
@@ -371,6 +392,33 @@ export default function DashboardPage() {
 
   const headerActions = (
     <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+      {layoutMode === "sidebar" && (
+        <div className="relative">
+          <button onClick={() => setDateMenuOpen((v) => !v)}
+            className="h-9 px-3 rounded-lg border border-input bg-background text-xs flex items-center gap-2 hover:bg-secondary/50">
+            <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+            {dateFrom || dateTo ? `${dateFrom || "…"} — ${dateTo || "…"}` : t.dashboard.dateRangeAllTime}
+          </button>
+          {dateMenuOpen && (
+            <>
+              <div className="fixed inset-0 z-20" onClick={() => setDateMenuOpen(false)} />
+              <div className="absolute right-0 mt-1 z-30 bg-popover border border-border rounded-lg shadow-lg p-3 flex items-center gap-2 whitespace-nowrap">
+                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+                  className="h-8 px-2 text-xs rounded-lg border border-border bg-background" />
+                <span className="text-xs text-muted-foreground">—</span>
+                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+                  className="h-8 px-2 text-xs rounded-lg border border-border bg-background" />
+                {(dateFrom || dateTo) && (
+                  <button onClick={() => { setDateFrom(""); setDateTo(""); }}
+                    className="text-xs text-muted-foreground hover:text-foreground ml-1">
+                    {t.transactions.allFilter}
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
       <Button variant="outline" size="icon" onClick={toggleLayoutMode} title={t.common.layoutToggleTooltip}>
         <PanelLeft className="w-4 h-4" />
       </Button>
@@ -544,6 +592,13 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
+            )}
+
+            {layoutMode === "sidebar" && incomeTrend.length > 1 && (
+              <div className="glass-card px-4 py-4 mb-5">
+                <p className="text-xs font-medium text-muted-foreground mb-3">{t.dashboard.incomeTrendTitle}</p>
+                <IncomeTrendChart data={incomeTrend} formatValue={(n) => fmt(n, "₮")} />
+              </div>
             )}
 
             {summary && (

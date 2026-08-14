@@ -45,6 +45,8 @@ export const mn = {
     breakdownSectionTitle: "Зардлын задаргаа",
     completedSectionTitle: "Дуусан төслүүд",
     pendingSectionTitle: "Хүлээгдэж буй төслүүд",
+    incomeTrendTitle: "Орлогын график",
+    dateRangeAllTime: "Бүх хугацаа",
     statIncome: "Нийт орлого",
     statIncomeCount: "{count} тайлан",
     statOpEx: "Үйл ажиллагааны зардал",

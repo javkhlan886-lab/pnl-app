@@ -43,6 +43,8 @@ export const zh: Dictionary = {
     breakdownSectionTitle: "费用明细",
     completedSectionTitle: "已完成项目",
     pendingSectionTitle: "待处理项目",
+    incomeTrendTitle: "收入趋势",
+    dateRangeAllTime: "全部时间",
     statIncome: "总收入",
     statIncomeCount: "{count} 份报表",
     statOpEx: "运营费用",

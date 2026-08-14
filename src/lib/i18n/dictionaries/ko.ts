@@ -44,6 +44,8 @@ export const ko: Dictionary = {
     breakdownSectionTitle: "비용 내역",
     completedSectionTitle: "완료된 프로젝트",
     pendingSectionTitle: "대기 중 프로젝트",
+    incomeTrendTitle: "수입 추이",
+    dateRangeAllTime: "전체 기간",
     statIncome: "총 수입",
     statIncomeCount: "{count}건",
     statOpEx: "운영 비용",

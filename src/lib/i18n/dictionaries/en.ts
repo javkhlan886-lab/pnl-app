@@ -44,6 +44,8 @@ export const en: Dictionary = {
     breakdownSectionTitle: "Expense breakdown",
     completedSectionTitle: "Finished projects",
     pendingSectionTitle: "Pending projects",
+    incomeTrendTitle: "Income trend",
+    dateRangeAllTime: "All time",
     statIncome: "Total income",
     statIncomeCount: "{count} reports",
     statOpEx: "Operating expenses",
