@@ -112,10 +112,12 @@ export default function ProductPage() {
 
   const activeProducts = products.filter(p => p.status === "active");
   const finishedProducts = products.filter(p => p.status === "inactive");
+  const totalQuantity = activeProducts.reduce((s, p) => s + p.quantity, 0);
   const totalValue = activeProducts.reduce((s, p) => s + p.price * p.quantity, 0);
   const totalIssued = activeProducts.reduce((s, p) => s + p.issuedQty, 0);
   const totalRevenue = activeProducts.reduce((s, p) => s + p.issuedQty * p.price, 0);
   const totalRemaining = activeProducts.reduce((s, p) => s + p.remainingQty, 0);
+  const finishedQuantity = finishedProducts.reduce((s, p) => s + p.quantity, 0);
   const finishedValue = finishedProducts.reduce((s, p) => s + p.price * p.quantity, 0);
   const finishedIssued = finishedProducts.reduce((s, p) => s + p.issuedQty, 0);
   const finishedRevenue = finishedProducts.reduce((s, p) => s + p.issuedQty * p.price, 0);
@@ -136,6 +138,7 @@ export default function ProductPage() {
     );
   };
   const selectedProducts = filtered.filter(p => selected.has(p._id!));
+  const selectedQuantity = selectedProducts.reduce((s, p) => s + p.quantity, 0);
   const selectedTotalValue = selectedProducts.reduce((s, p) => s + p.price * p.quantity, 0);
   const selectedIssued = selectedProducts.reduce((s, p) => s + p.issuedQty, 0);
   const selectedRevenue = selectedProducts.reduce((s, p) => s + p.issuedQty * p.price, 0);
@@ -146,22 +149,22 @@ export default function ProductPage() {
     const lines: string[] = [
       `Идэвхтэй шүүлтүүр: ${catFilter || "бүгд"}${search.trim() ? ` · хайлт: "${search.trim()}"` : ""}`,
       `Харагдаж буй мөр: ${filtered.length} / Нийт: ${products.length}`,
-      `Нээлттэй бүтээгдэхүүн: ${activeProducts.length} ш | Нийт үнэ: ${fmt(totalValue)} | Гарсан: ${Math.round(totalIssued).toLocaleString("mn-MN")} | Орлого: ${fmt(totalRevenue)} | Үлдэгдэл: ${Math.round(totalRemaining).toLocaleString("mn-MN")}`,
+      `Нээлттэй бүтээгдэхүүн: ${activeProducts.length} ш | Нийт тоо: ${Math.round(totalQuantity).toLocaleString("mn-MN")} | Нийт үнэ: ${fmt(totalValue)} | Гарсан: ${Math.round(totalIssued).toLocaleString("mn-MN")} | Орлого: ${fmt(totalRevenue)} | Үлдэгдэл: ${Math.round(totalRemaining).toLocaleString("mn-MN")}`,
     ];
     if (finishedProducts.length > 0) {
       lines.push(
-        `Дуусан бүтээгдэхүүн: ${finishedProducts.length} ш | Нийт үнэ: ${fmt(finishedValue)} | Гарсан: ${Math.round(finishedIssued).toLocaleString("mn-MN")} | Орлого: ${fmt(finishedRevenue)} | Үлдэгдэл: ${Math.round(finishedRemaining).toLocaleString("mn-MN")}`
+        `Дуусан бүтээгдэхүүн: ${finishedProducts.length} ш | Нийт тоо: ${Math.round(finishedQuantity).toLocaleString("mn-MN")} | Нийт үнэ: ${fmt(finishedValue)} | Гарсан: ${Math.round(finishedIssued).toLocaleString("mn-MN")} | Орлого: ${fmt(finishedRevenue)} | Үлдэгдэл: ${Math.round(finishedRemaining).toLocaleString("mn-MN")}`
       );
     }
     if (selected.size > 0) {
       lines.push(
-        `Сонгосон ${selected.size} бүтээгдэхүүн: Нийт үнэ ${fmt(selectedTotalValue)} | Гарсан ${Math.round(selectedIssued).toLocaleString("mn-MN")} | Орлого: ${fmt(selectedRevenue)} | Үлдэгдэл ${Math.round(selectedRemaining).toLocaleString("mn-MN")}`
+        `Сонгосон ${selected.size} бүтээгдэхүүн: Нийт тоо ${Math.round(selectedQuantity).toLocaleString("mn-MN")} | Нийт үнэ ${fmt(selectedTotalValue)} | Гарсан ${Math.round(selectedIssued).toLocaleString("mn-MN")} | Орлого: ${fmt(selectedRevenue)} | Үлдэгдэл ${Math.round(selectedRemaining).toLocaleString("mn-MN")}`
       );
     }
     setAiPageContext({ title: t.products.pageTitle, lines });
     return () => setAiPageContext(null);
   }, [
-    catFilter, search, filtered.length, products.length,
+    catFilter, search, filtered.length, products.length, totalQuantity, finishedQuantity, selectedQuantity,
     activeProducts.length, totalValue, totalIssued, totalRevenue, totalRemaining,
     finishedProducts.length, finishedValue, finishedIssued, finishedRevenue, finishedRemaining,
     selected.size, selectedTotalValue, selectedIssued, selectedRevenue, selectedRemaining, t,
@@ -281,34 +284,64 @@ export default function ProductPage() {
       </nav>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {(() => {
-          const hasSelection = selected.size > 0;
-          const cardCls = hasSelection ? "ring-1 ring-positive/50" : "";
-          return (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 mb-3">
-              <div className={`glass-card px-4 py-3 ${cardCls}`}>
-                <p className="relative text-xs text-muted-foreground mb-1">{hasSelection ? t.products.selectedLabel : t.products.statTotal}</p>
-                <p className="relative text-xl font-semibold stat-number">{hasSelection ? selected.size : activeProducts.length}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 mb-3">
+          <div className="glass-card px-4 py-3">
+            <p className="relative text-xs text-muted-foreground mb-1">{t.products.statQuantity}</p>
+            <p className="relative text-xl font-semibold stat-number">{Math.round(totalQuantity).toLocaleString("mn-MN")}</p>
+          </div>
+          <div className="glass-card glass-card-positive px-4 py-3">
+            <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotalValue}</p>
+            <p className="relative text-xl font-semibold text-info stat-number">{fmt(totalValue)}</p>
+          </div>
+          <div className="glass-card glass-card-negative px-4 py-3">
+            <p className="relative text-xs text-muted-foreground mb-1">{t.products.statIssued}</p>
+            <p className="relative text-xl font-semibold text-negative stat-number">{Math.round(totalIssued).toLocaleString("mn-MN")}</p>
+          </div>
+          <div className="glass-card glass-card-positive px-4 py-3">
+            <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRevenue}</p>
+            <p className="relative text-xl font-semibold text-positive stat-number">{fmt(totalRevenue)}</p>
+          </div>
+          <div className="glass-card glass-card-positive px-4 py-3">
+            <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRemaining}</p>
+            <p className="relative text-xl font-semibold text-positive stat-number">{Math.round(totalRemaining).toLocaleString("mn-MN")}</p>
+          </div>
+        </div>
+
+        {selected.size > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-positive/60" />
+              <p className="text-xs font-medium text-positive">
+                {format(t.products.selectedCount, { count: String(selected.size) })}
+              </p>
+              <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground ml-auto">
+                {t.products.deselect}
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+              <div className="glass-card px-4 py-3 ring-1 ring-positive/50">
+                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statQuantity}</p>
+                <p className="relative text-xl font-semibold stat-number">{Math.round(selectedQuantity).toLocaleString("mn-MN")}</p>
               </div>
-              <div className={`glass-card glass-card-positive px-4 py-3 ${cardCls}`}>
-                <p className="relative text-xs text-muted-foreground mb-1">{hasSelection ? t.products.selectedLabel : t.products.statTotalValue}</p>
-                <p className="relative text-xl font-semibold text-info stat-number">{fmt(hasSelection ? selectedTotalValue : totalValue)}</p>
+              <div className="glass-card glass-card-positive px-4 py-3 ring-1 ring-positive/50">
+                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotalValue}</p>
+                <p className="relative text-xl font-semibold text-info stat-number">{fmt(selectedTotalValue)}</p>
               </div>
-              <div className={`glass-card glass-card-negative px-4 py-3 ${cardCls}`}>
-                <p className="relative text-xs text-muted-foreground mb-1">{hasSelection ? t.products.selectedLabel : t.products.statIssued}</p>
-                <p className="relative text-xl font-semibold text-negative stat-number">{Math.round(hasSelection ? selectedIssued : totalIssued).toLocaleString("mn-MN")}</p>
+              <div className="glass-card glass-card-negative px-4 py-3 ring-1 ring-positive/50">
+                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statIssued}</p>
+                <p className="relative text-xl font-semibold text-negative stat-number">{Math.round(selectedIssued).toLocaleString("mn-MN")}</p>
               </div>
-              <div className={`glass-card glass-card-positive px-4 py-3 ${cardCls}`}>
-                <p className="relative text-xs text-muted-foreground mb-1">{hasSelection ? t.products.selectedLabel : t.products.statRevenue}</p>
-                <p className="relative text-xl font-semibold text-positive stat-number">{fmt(hasSelection ? selectedRevenue : totalRevenue)}</p>
+              <div className="glass-card glass-card-positive px-4 py-3 ring-1 ring-positive/50">
+                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRevenue}</p>
+                <p className="relative text-xl font-semibold text-positive stat-number">{fmt(selectedRevenue)}</p>
               </div>
-              <div className={`glass-card glass-card-positive px-4 py-3 ${cardCls}`}>
-                <p className="relative text-xs text-muted-foreground mb-1">{hasSelection ? t.products.selectedLabel : t.products.statRemaining}</p>
-                <p className="relative text-xl font-semibold text-positive stat-number">{Math.round(hasSelection ? selectedRemaining : totalRemaining).toLocaleString("mn-MN")}</p>
+              <div className="glass-card glass-card-positive px-4 py-3 ring-1 ring-positive/50">
+                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRemaining}</p>
+                <p className="relative text-xl font-semibold text-positive stat-number">{Math.round(selectedRemaining).toLocaleString("mn-MN")}</p>
               </div>
             </div>
-          );
-        })()}
+          </div>
+        )}
 
         {finishedProducts.length > 0 && (
           <div className="mb-6">
@@ -318,8 +351,8 @@ export default function ProductPage() {
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
               <div className="glass-card px-4 py-3 opacity-80">
-                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotal}</p>
-                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{finishedProducts.length}</p>
+                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statQuantity}</p>
+                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{Math.round(finishedQuantity).toLocaleString("mn-MN")}</p>
               </div>
               <div className="glass-card px-4 py-3 opacity-80">
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotalValue}</p>
@@ -374,17 +407,6 @@ export default function ProductPage() {
           </div>
         ) : (
           <>
-          {selected.size > 0 && (
-            <div className="mb-3 flex items-center gap-3 bg-positive/10 border border-positive/25 rounded-lg px-4 py-2.5 flex-wrap">
-              <span className="text-sm text-positive font-medium">
-                {format(t.products.selectedCount, { count: String(selected.size) })}
-              </span>
-              <span className="text-xs text-muted-foreground">{t.products.selectedTotalsHint}</span>
-              <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground ml-auto">
-                {t.products.deselect}
-              </button>
-            </div>
-          )}
           <div className="glass-card overflow-x-auto">
             <Table>
               <TableHeader>
