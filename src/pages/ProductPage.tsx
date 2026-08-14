@@ -106,6 +106,7 @@ export default function ProductPage() {
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [catFilter, setCatFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"" | "active" | "inactive">("");
   const [search, setSearch] = useState("");
   const [quantityDisplay, setQuantityDisplay] = useState("");
   const [priceDisplay, setPriceDisplay] = useState("");
@@ -151,6 +152,7 @@ export default function ProductPage() {
 
   const filtered = products.filter(p => {
     if (catFilter && p.category !== catFilter) return false;
+    if (statusFilter && p.status !== statusFilter) return false;
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       if (!p.name.toLowerCase().includes(q) && !p.category.toLowerCase().includes(q) && !(p.description || "").toLowerCase().includes(q)) return false;
@@ -188,7 +190,7 @@ export default function ProductPage() {
   const finishedRevenue = finishedProducts.reduce((s, p) => s + p.issuedQty * sellingPrice(p), 0);
   const finishedRemaining = finishedProducts.reduce((s, p) => s + p.remainingQty, 0);
 
-  useEffect(() => { setSelected(new Set()); }, [catFilter, search]);
+  useEffect(() => { setSelected(new Set()); }, [catFilter, statusFilter, search]);
 
   const toggleOne = (id: string) => {
     setSelected(prev => {
@@ -316,6 +318,46 @@ export default function ProductPage() {
     try {
       await deleteProduct(id);
       setProducts(prev => prev.filter(p => p._id !== id));
+    } catch (err: any) {
+      alert(err.response?.data?.error || t.products.saveError);
+    }
+  };
+
+  // Сонгосон бараануудын хямдралыг цуцалж, зарагдсан хэмжээгээр хаана.
+  // Үлдэгдэл байвал тэр хэсгийг хямдралгүй, нэгж үнэтэй шинэ бараа
+  // болгон дахин нээнэ.
+  const handleRemoveDiscount = async () => {
+    const targets = products.filter(p => selected.has(p._id!));
+    try {
+      for (const p of targets) {
+        const soldQty = p.issuedQty;
+        const remaining = p.quantity - p.issuedQty;
+        const updated = await updateProduct(p._id, {
+          ...p, quantity: soldQty, status: "inactive",
+          discountPercent: 0, discountStartDate: "", discountEndDate: "",
+        });
+        setProducts(prev => prev.map(x => x._id === p._id ? updated : x));
+        if (remaining > 0) {
+          const created = await createProduct({
+            name: p.name, category: p.category, description: p.description, unit: p.unit,
+            quantity: remaining, price: p.price, discountPercent: 0, issuedQty: 0,
+            note: p.note, currency: p.currency, status: "active",
+          });
+          setProducts(prev => [created, ...prev]);
+        }
+      }
+      setSelected(new Set());
+    } catch (err: any) {
+      alert(err.response?.data?.error || t.products.saveError);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = [...selected];
+    try {
+      await Promise.all(ids.map(id => deleteProduct(id)));
+      setProducts(prev => prev.filter(p => !selected.has(p._id!)));
+      setSelected(new Set());
     } catch (err: any) {
       alert(err.response?.data?.error || t.products.saveError);
     }
@@ -486,9 +528,55 @@ export default function ProductPage() {
               <p className="text-xs font-medium text-positive">
                 {format(t.products.selectedCount, { count: String(selected.size) })}
               </p>
-              <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground ml-auto">
-                {t.products.deselect}
-              </button>
+              <div className="ml-auto flex items-center gap-3">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button className="text-xs text-muted-foreground hover:text-foreground">
+                      {t.products.removeDiscountButton}
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{t.products.removeDiscountConfirmTitle}</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {format(t.products.removeDiscountConfirmDesc, { count: String(selected.size) })}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleRemoveDiscount}
+                        className="bg-positive text-background hover:bg-positive/90">
+                        {t.products.removeDiscountConfirmAction}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button className="text-xs text-destructive hover:text-destructive/80">
+                      {t.products.bulkDeleteButton}
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{t.common.deleteConfirmTitle}</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {format(t.products.bulkDeleteConfirmDesc, { count: String(selected.size) })}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleBulkDelete}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        {t.common.delete}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground">
+                  {t.products.deselect}
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
               <div className="glass-card px-4 py-3 ring-1 ring-positive/50">
@@ -515,7 +603,7 @@ export default function ProductPage() {
           </div>
         )}
 
-        {/* Search + category filter */}
+        {/* Search + status/category filter */}
         <div className="flex items-center gap-2 mb-4 flex-wrap">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
@@ -523,6 +611,15 @@ export default function ProductPage() {
               placeholder={t.products.searchPlaceholder}
               className="h-8 w-56 pl-8 pr-3 text-xs rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring" />
           </div>
+          {(["active", "inactive"] as const).map(s => (
+            <button key={s} onClick={() => setStatusFilter(f => f === s ? "" : s)}
+              className={`h-8 px-3 text-xs rounded-lg border ${statusFilter === s
+                ? "bg-positive/15 text-positive border-positive/30"
+                : "bg-background text-muted-foreground border-border hover:bg-secondary/50"}`}>
+              {s === "active" ? t.products.filterActive : t.products.filterInactive}
+            </button>
+          ))}
+          <span className="w-px h-5 bg-border" />
           {["", ...topCategories].map(c => (
             <button key={c} onClick={() => setCatFilter(c)}
               className={`h-8 px-3 text-xs rounded-lg border ${catFilter === c
