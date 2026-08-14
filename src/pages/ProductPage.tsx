@@ -58,6 +58,29 @@ const sellingPrice = (p: any) => {
 
 const discountedValue = (list: any[]) => list.reduce((s, p) => s + sellingPrice(p) * p.quantity, 0);
 
+type SortKey =
+  | "index" | "name" | "category" | "unit" | "quantity" | "price"
+  | "sellingPrice" | "issuedQty" | "revenue" | "remainingQty" | "status";
+
+// Баганын толгой дээр дарахад ижил утгатай мөрүүд зэрэгцэн эрэмбэлэгдэж
+// харагдана (жишээ нь Ангилал, Төлөв баганаар эрэмбэлэхэд ижил утгатай
+// мөрүүд хажуу зэрэгцэнэ).
+const sortValue = (p: any, idx: number, key: SortKey): string | number => {
+  switch (key) {
+    case "index": return idx;
+    case "name": return (p.name || "").toLowerCase();
+    case "category": return (p.category || "").toLowerCase();
+    case "unit": return (p.unit || "").toLowerCase();
+    case "quantity": return p.quantity;
+    case "price": return p.price;
+    case "sellingPrice": return sellingPrice(p);
+    case "issuedQty": return p.issuedQty;
+    case "revenue": return p.issuedQty * sellingPrice(p);
+    case "remainingQty": return p.remainingQty;
+    case "status": return p.status;
+  }
+};
+
 const statusCls: Record<string, string> = {
   active: "bg-positive/15 text-positive hover:bg-positive/15",
   inactive: "bg-muted text-muted-foreground hover:bg-muted",
@@ -90,6 +113,8 @@ export default function ProductPage() {
   const [discountEnabled, setDiscountEnabled] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [openStatusId, setOpenStatusId] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const NAV_ITEMS = [
     { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
@@ -132,6 +157,23 @@ export default function ProductPage() {
     }
     return true;
   });
+
+  let sortedFiltered = filtered;
+  if (sortKey) {
+    const withIdx = filtered.map((p, i) => ({ p, v: sortValue(p, i, sortKey) }));
+    withIdx.sort((a, b) => {
+      const cmp = typeof a.v === "string" && typeof b.v === "string"
+        ? a.v.localeCompare(b.v)
+        : (a.v as number) - (b.v as number);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    sortedFiltered = withIdx.map(x => x.p);
+  }
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortKey(key); setSortDir("asc"); }
+  };
 
   const activeProducts = products.filter(p => p.status === "active");
   const finishedProducts = products.filter(p => p.status === "inactive");
@@ -300,6 +342,19 @@ export default function ProductPage() {
     } catch { alert(t.dashboard.exportErrorAlert); }
     finally { setExporting(false); }
   };
+
+  const SortableHead = ({ sortKeyName, label, align = "left", className = "" }: { sortKeyName: SortKey; label: string; align?: "left" | "right" | "center"; className?: string }) => (
+    <TableHead
+      onClick={() => toggleSort(sortKeyName)}
+      className={`cursor-pointer select-none whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold hover:text-foreground transition-colors px-1.5 ${
+        sortKey === sortKeyName ? "text-foreground" : "text-muted-foreground/80"
+      } ${align === "right" ? "text-right" : align === "center" ? "text-center" : ""} ${className}`}>
+      <span className={`inline-flex items-center gap-0.5 ${align === "right" ? "flex-row-reverse" : ""}`}>
+        {label}
+        <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${sortKey === sortKeyName ? "opacity-100" : "opacity-0"} ${sortKey === sortKeyName && sortDir === "desc" ? "rotate-180" : ""}`} />
+      </span>
+    </TableHead>
+  );
 
   const headerActions = (
     <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -500,22 +555,22 @@ export default function ProductPage() {
                   <TableHead className="w-8 px-1.5">
                     <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 cursor-pointer accent-positive" />
                   </TableHead>
-                  <TableHead className="w-6 px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colIndex}</TableHead>
-                  <TableHead className="px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colName}</TableHead>
-                  <TableHead className="px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colCategory}</TableHead>
-                  <TableHead className="px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colUnit}</TableHead>
-                  <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colQuantity}</TableHead>
-                  <TableHead className="text-center px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colPrice}</TableHead>
-                  <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colSellingPrice}</TableHead>
-                  <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colIssuedQty}</TableHead>
-                  <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colRevenue}</TableHead>
-                  <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colRemainingQty}</TableHead>
-                  <TableHead className="px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colStatus}</TableHead>
+                  <SortableHead sortKeyName="index" label={t.products.colIndex} className="w-6" />
+                  <SortableHead sortKeyName="name" label={t.products.colName} />
+                  <SortableHead sortKeyName="category" label={t.products.colCategory} />
+                  <SortableHead sortKeyName="unit" label={t.products.colUnit} />
+                  <SortableHead sortKeyName="quantity" label={t.products.colQuantity} align="right" />
+                  <SortableHead sortKeyName="price" label={t.products.colPrice} align="center" />
+                  <SortableHead sortKeyName="sellingPrice" label={t.products.colSellingPrice} align="right" />
+                  <SortableHead sortKeyName="issuedQty" label={t.products.colIssuedQty} align="right" />
+                  <SortableHead sortKeyName="revenue" label={t.products.colRevenue} align="right" />
+                  <SortableHead sortKeyName="remainingQty" label={t.products.colRemainingQty} align="right" />
+                  <SortableHead sortKeyName="status" label={t.products.colStatus} />
                   <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colActions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((p, idx) => (
+                {sortedFiltered.map((p, idx) => (
                   <TableRow key={p._id} className="border-border/50 hover:bg-secondary/30">
                     <TableCell className="px-1.5">
                       <input type="checkbox" checked={selected.has(p._id!)} onChange={() => toggleOne(p._id!)} className="w-4 h-4 cursor-pointer accent-positive" />
