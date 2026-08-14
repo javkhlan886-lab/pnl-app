@@ -30,28 +30,30 @@ import { Sidebar } from "@/components/Sidebar";
 
 const EMPTY = {
   type: "receivable" as "receivable" | "loan",
-  counterparty: "", unitPrice: 0, quantity: 1, amount: 0, dueDate: "",
+  counterparty: "", unitPrice: 0, amount: 0, startDate: "", dueDate: "",
   interestRate: 0, status: "current" as "current" | "near" | "overdue" | "paid",
   note: "",
 };
 
 const fmt = (n: number) => "₮" + Math.round(n).toLocaleString("mn-MN");
 
-// Сарын хүүг бүртгэсэн өдрөөс өнөөдрийг хүртэл хуримтлуулж тооцно —
-// хугацаа дуусах огноог бус, харин өнөөдрийг хүртэлх бодит хуримтлалыг
-// харуулна ("одоо нийт хэдэн төгрөгийн авлагатай/өртэй байгаа вэ" гэсэн
-// асуултад хариулна).
-const monthsElapsed = (createdAt?: string) => {
-  if (!createdAt) return 0;
-  const start = new Date(createdAt).getTime();
-  if (Number.isNaN(start)) return 0;
-  const days = (Date.now() - start) / 86400000;
+// Сарын хүүг эхлэх огноогоос (эсвэл хуучин бичлэгүүдэд эхлэх огноо
+// байхгүй бол бүртгэсэн өдрөөс) өнөөдөр хүртэл, харин хугацаа дуусахад
+// хүрсэн бол дуусах огноогоор хязгаарлаж хуримтлуулна.
+const monthsBetween = (start?: string, endTs: number = Date.now()) => {
+  if (!start) return 0;
+  const s = new Date(start).getTime();
+  if (Number.isNaN(s)) return 0;
+  const days = (endTs - s) / 86400000;
   return Math.max(0, days / 30.4368);
 };
 
 const accruedInterest = (item: any) => {
   if (!item.interestRate) return 0;
-  return item.amount * (item.interestRate / 100) * monthsElapsed(item.createdAt);
+  const start = item.startDate || item.createdAt;
+  const dueTs = item.dueDate ? new Date(item.dueDate).getTime() : NaN;
+  const end = !Number.isNaN(dueTs) ? Math.min(Date.now(), dueTs) : Date.now();
+  return item.amount * (item.interestRate / 100) * monthsBetween(start, end);
 };
 
 export default function ReceivablePage() {
@@ -77,7 +79,6 @@ export default function ReceivablePage() {
   const [exporting, setExporting] = useState(false);
   const [typeFilter, setTypeFilter] = useState<"" | "receivable" | "loan">("");
   const [unitPriceDisplay, setUnitPriceDisplay] = useState("");
-  const [quantityInput, setQuantityInput] = useState<number>(1);
   const [amountDisplay, setAmountDisplay] = useState("");
   const [, startTransition] = useTransition();
 
@@ -125,21 +126,19 @@ export default function ReceivablePage() {
   }, [typeFilter, filtered.length, items.length, totalReceivable, totalLoan, totalReceivableFinal, totalLoanFinal, overdueItems.length, t]);
 
   const openCreate = () => {
-    setForm({ ...EMPTY }); setEditing(null); setUnitPriceDisplay(""); setQuantityInput(1); setAmountDisplay(""); setOpen(true);
+    setForm({ ...EMPTY }); setEditing(null); setUnitPriceDisplay(""); setAmountDisplay(""); setOpen(true);
   };
   const openEdit = (item: any) => {
-    setForm({ ...item, dueDate: toDateInputValue(item.dueDate) }); setEditing(item._id);
+    setForm({ ...item, startDate: toDateInputValue(item.startDate), dueDate: toDateInputValue(item.dueDate) }); setEditing(item._id);
     setUnitPriceDisplay(item.unitPrice ? Number(item.unitPrice).toLocaleString("mn-MN") : "");
-    setQuantityInput(item.quantity || 1);
     setAmountDisplay(item.amount === 0 ? "" : item.amount.toLocaleString("mn-MN"));
     setOpen(true);
   };
 
   const handleSave = async () => {
-    const quantity = Math.max(1, Number(form.quantity || 1));
     const unitPrice = Number(form.unitPrice || 0);
-    const amount = Number(form.amount || unitPrice * quantity);
-    const payload = { ...form, unitPrice, quantity, amount };
+    const amount = Number(form.amount || unitPrice);
+    const payload = { ...form, unitPrice, amount };
     if (!payload.counterparty.trim() || payload.amount === 0) return;
     setSaving(true);
     try {
@@ -435,58 +434,39 @@ export default function ReceivablePage() {
                     const raw = e.target.value.replace(/[^0-9]/g, "");
                     const num = Number(raw) || 0;
                     setUnitPriceDisplay(num === 0 ? "" : num.toLocaleString("mn-MN"));
-                    setForm(f => {
-                      const qty = f.quantity || quantityInput || 1;
-                      const amount = num * qty;
-                      return { ...f, unitPrice: num, amount, quantity: qty };
-                    });
-                    setAmountDisplay(() => {
-                      const qty = quantityInput || 1;
-                      const total = (Number(raw) || 0) * qty;
-                      return total === 0 ? "" : total.toLocaleString("mn-MN");
-                    });
+                    setForm(f => ({ ...f, unitPrice: num, amount: num }));
+                    setAmountDisplay(num === 0 ? "" : num.toLocaleString("mn-MN"));
                   }} placeholder="0" />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">{t.receivables.quantity}</label>
-                <input type="number" min={1} className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
-                  value={quantityInput}
-                  onChange={e => {
-                    const q = Math.max(1, Number(e.target.value) || 1);
-                    setQuantityInput(q);
-                    setForm(f => {
-                      const unit = f.unitPrice || (Number(unitPriceDisplay.replace(/[^0-9]/g, "")) || 0);
-                      const amount = unit * q;
-                      return { ...f, quantity: q, amount };
-                    });
-                    setAmountDisplay(() => {
-                      const unit = Number(unitPriceDisplay.replace(/[^0-9]/g, "")) || 0;
-                      const total = unit * q;
-                      return total === 0 ? "" : total.toLocaleString("mn-MN");
-                    });
-                  }} />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">{t.receivables.totalAmount}</label>
-                <input readOnly className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right text-muted-foreground"
-                  value={amountDisplay} placeholder="0" />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.receivables.interestRate}</label>
                 <input type="number" min={0} step={0.1}
                   className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                   value={form.interestRate} onChange={e => setForm(f => ({ ...f, interestRate: Number(e.target.value) }))} />
+              </div>
+
+              <div className="sm:col-span-2 flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted-foreground">{t.receivables.totalAmount}</label>
+                <input readOnly className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right text-muted-foreground"
+                  value={amountDisplay} placeholder="0" />
                 {editing && (form as any).interestRate > 0 && (
                   <p className="text-xs text-muted-foreground">
                     {format(t.receivables.accruedInterestNote, {
                       amount: fmt(accruedInterest(form)),
-                      months: monthsElapsed((form as any).createdAt).toFixed(1),
+                      months: monthsBetween(
+                        (form as any).startDate || (form as any).createdAt,
+                        form.dueDate ? Math.min(Date.now(), new Date(form.dueDate).getTime()) : Date.now()
+                      ).toFixed(1),
                     })}
                   </p>
                 )}
               </div>
-              <div className="sm:col-span-2 flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted-foreground">{t.receivables.startDate}</label>
+                <input type="date" className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                  value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} />
+              </div>
+              <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.receivables.dueDate}</label>
                 <input type="date" className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                   value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} />
