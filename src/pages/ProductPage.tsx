@@ -47,9 +47,12 @@ const fmt = (n: number) => "₮" + Math.round(n).toLocaleString("mn-MN");
 // тооцогдоно, харин бараа материалын нөөцийн үнэ (Нийт үнийн дүн) хуучин
 // нэгж үнээрээ хэвээр үлдэнэ. Хямдрал зөвхөн эхлэх/дуусах хугацааны
 // хүрээнд идэвхтэй байна — хугацаанаас гадуур бол жинхэнэ үнээр тооцно.
+// Харин "Дуусан" (inactive) болсон бараа нь хаагдсан түүхэн бичлэг тул
+// хугацааны хязгаарлалтгүйгээр тухайн хямдралаараа зарагдсан хэвээр харагдана.
 const sellingPrice = (p: any) => {
   const pct = p.discountPercent || 0;
   if (pct <= 0) return p.price;
+  if (p.status === "inactive") return p.price * (1 - pct / 100);
   const now = Date.now();
   if (p.discountStartDate && new Date(p.discountStartDate).getTime() > now) return p.price;
   if (p.discountEndDate && new Date(p.discountEndDate).getTime() < now) return p.price;
@@ -116,6 +119,11 @@ export default function ProductPage() {
   const [openStatusId, setOpenStatusId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [bulkDiscountOpen, setBulkDiscountOpen] = useState(false);
+  const [bulkDiscountPercent, setBulkDiscountPercent] = useState(0);
+  const [bulkDiscountStart, setBulkDiscountStart] = useState("");
+  const [bulkDiscountEnd, setBulkDiscountEnd] = useState("");
+  const [bulkDiscountSaving, setBulkDiscountSaving] = useState(false);
 
   const NAV_ITEMS = [
     { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
@@ -326,16 +334,17 @@ export default function ProductPage() {
   // Сонгосон бараануудын хямдралыг цуцалж, зарагдсан хэмжээгээр хаана.
   // Үлдэгдэл байвал тэр хэсгийг хямдралгүй, нэгж үнэтэй шинэ бараа
   // болгон дахин нээнэ.
+  // Зөвхөн хямдралтай (discountPercent>0) сонгосон бараанд хамаарна.
+  // Хямдралын мэдээллийг арилгахгүй — хаагдсан бараа ямар хямдралаар,
+  // ямар үнээр зарагдсаныг түүхэн бичлэг болгон хадгалж үлдээнэ.
+  const discountedSelected = products.filter(p => selected.has(p._id!) && (p.discountPercent || 0) > 0);
+
   const handleRemoveDiscount = async () => {
-    const targets = products.filter(p => selected.has(p._id!));
     try {
-      for (const p of targets) {
+      for (const p of discountedSelected) {
         const soldQty = p.issuedQty;
         const remaining = p.quantity - p.issuedQty;
-        const updated = await updateProduct(p._id, {
-          ...p, quantity: soldQty, status: "inactive",
-          discountPercent: 0, discountStartDate: "", discountEndDate: "",
-        });
+        const updated = await updateProduct(p._id, { ...p, quantity: soldQty, status: "inactive" });
         setProducts(prev => prev.map(x => x._id === p._id ? updated : x));
         if (remaining > 0) {
           const created = await createProduct({
@@ -360,6 +369,33 @@ export default function ProductPage() {
       setSelected(new Set());
     } catch (err: any) {
       alert(err.response?.data?.error || t.products.saveError);
+    }
+  };
+
+  const openBulkDiscount = () => {
+    setBulkDiscountPercent(0); setBulkDiscountStart(""); setBulkDiscountEnd("");
+    setBulkDiscountOpen(true);
+  };
+
+  // Сонгосон бараа бүрт ижил хямдрал (хувь + хугацаа) нэг дор тохируулна.
+  const handleBulkApplyDiscount = async () => {
+    if (bulkDiscountPercent <= 0) return;
+    setBulkDiscountSaving(true);
+    try {
+      const targets = products.filter(p => selected.has(p._id!));
+      for (const p of targets) {
+        const updated = await updateProduct(p._id, {
+          ...p, discountPercent: bulkDiscountPercent,
+          discountStartDate: bulkDiscountStart, discountEndDate: bulkDiscountEnd,
+        });
+        setProducts(prev => prev.map(x => x._id === p._id ? updated : x));
+      }
+      setBulkDiscountOpen(false);
+      setSelected(new Set());
+    } catch (err: any) {
+      alert(err.response?.data?.error || t.products.saveError);
+    } finally {
+      setBulkDiscountSaving(false);
     }
   };
 
@@ -529,9 +565,13 @@ export default function ProductPage() {
                 {format(t.products.selectedCount, { count: String(selected.size) })}
               </p>
               <div className="ml-auto flex items-center gap-3">
+                <button onClick={openBulkDiscount} className="text-xs text-info hover:text-info/80">
+                  {t.products.applyDiscountButton}
+                </button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <button className="text-xs text-muted-foreground hover:text-foreground">
+                    <button disabled={discountedSelected.length === 0}
+                      className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-muted-foreground">
                       {t.products.removeDiscountButton}
                     </button>
                   </AlertDialogTrigger>
@@ -539,7 +579,7 @@ export default function ProductPage() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>{t.products.removeDiscountConfirmTitle}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        {format(t.products.removeDiscountConfirmDesc, { count: String(selected.size) })}
+                        {format(t.products.removeDiscountConfirmDesc, { count: String(discountedSelected.length) })}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -898,6 +938,46 @@ export default function ProductPage() {
             <Button onClick={handleSave} disabled={saving || !form.name.trim()}
               className="bg-positive text-background hover:bg-positive/90">
               {saving ? t.common.saving : editing ? t.common.save : t.common.add}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={bulkDiscountOpen} onOpenChange={setBulkDiscountOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t.products.applyDiscountDialogTitle}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 py-2">
+            <p className="text-xs text-muted-foreground">
+              {format(t.products.applyDiscountDialogDesc, { count: String(selected.size) })}
+            </p>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground">{t.products.discountPercent}</label>
+              <input type="number" min={0} max={100} step={0.1}
+                className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
+                value={bulkDiscountPercent || ""}
+                onChange={e => setBulkDiscountPercent(Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
+                placeholder="0" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted-foreground">{t.products.discountStartDate}</label>
+                <input type="date" className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                  value={bulkDiscountStart} onChange={e => setBulkDiscountStart(e.target.value)} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted-foreground">{t.products.discountEndDate}</label>
+                <input type="date" className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                  value={bulkDiscountEnd} onChange={e => setBulkDiscountEnd(e.target.value)} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkDiscountOpen(false)}>{t.common.cancel}</Button>
+            <Button onClick={handleBulkApplyDiscount} disabled={bulkDiscountSaving || bulkDiscountPercent <= 0}
+              className="bg-positive text-background hover:bg-positive/90">
+              {bulkDiscountSaving ? t.common.saving : t.products.applyDiscountSubmit}
             </Button>
           </DialogFooter>
         </DialogContent>
