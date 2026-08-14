@@ -414,6 +414,7 @@ export const ko: Dictionary = {
     colActions: "작업",
     statusActive: "열림",
     statusInactive: "완료",
+    cannotFinishWithRemaining: "이 상품은 아직 {count}개가 남아 있어 '완료'로 변경할 수 없습니다. 먼저 남은 재고를 모두 출고하세요.",
     deleteConfirmDesc: "{name}이(가) 삭제됩니다.",
     editTitle: "상품 수정",
     newTitle: "새 상품",

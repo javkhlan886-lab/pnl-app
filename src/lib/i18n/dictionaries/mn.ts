@@ -415,6 +415,7 @@ export const mn = {
     colActions: "Үйлдэл",
     statusActive: "Нээлттэй",
     statusInactive: "Дуусан",
+    cannotFinishWithRemaining: "Барааны үлдэгдэл {count} байгаа тул 'Дуусан' төлөвт шилжүүлэх боломжгүй. Эхлээд бүх барааг гаргаж дуусгана уу.",
     deleteConfirmDesc: "{name}-г устгана.",
     editTitle: "Бүтээгдэхүүн засах",
     newTitle: "Шинэ бүтээгдэхүүн",

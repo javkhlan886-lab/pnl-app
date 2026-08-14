@@ -413,6 +413,7 @@ export const zh: Dictionary = {
     colActions: "操作",
     statusActive: "开放",
     statusInactive: "已完成",
+    cannotFinishWithRemaining: "该商品仍有 {count} 件库存，无法标记为「已完成」。请先将剩余库存全部出库。",
     deleteConfirmDesc: "{name} 将被删除。",
     editTitle: "编辑商品",
     newTitle: "新建商品",

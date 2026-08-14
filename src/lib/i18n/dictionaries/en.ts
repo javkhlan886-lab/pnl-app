@@ -414,6 +414,7 @@ export const en: Dictionary = {
     colActions: "Actions",
     statusActive: "Open",
     statusInactive: "Finished",
+    cannotFinishWithRemaining: "This product still has {count} remaining, so it can't be marked \"Finished\". Issue out all remaining stock first.",
     deleteConfirmDesc: "{name} will be deleted.",
     editTitle: "Edit product",
     newTitle: "New product",

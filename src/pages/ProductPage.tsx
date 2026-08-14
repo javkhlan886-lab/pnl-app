@@ -182,6 +182,24 @@ export default function ProductPage() {
     setOpen(true);
   };
 
+  // Үлдэгдэл 0 болмогц статус автоматаар "Дуусан" болно — гараар "Дуусан"
+  // сонгоход үлдэгдэлтэй байвал handleStatusChange үүнийг хориглоно.
+  useEffect(() => {
+    const remaining = form.quantity - form.issuedQty;
+    if (remaining <= 0 && form.status !== "inactive") {
+      setForm(f => ({ ...f, status: "inactive" }));
+    }
+  }, [form.quantity, form.issuedQty]);
+
+  const handleStatusChange = (next: string) => {
+    const remaining = form.quantity - form.issuedQty;
+    if (next === "inactive" && remaining > 0) {
+      alert(format(t.products.cannotFinishWithRemaining, { count: remaining.toLocaleString("mn-MN") }));
+      return;
+    }
+    setForm(f => ({ ...f, status: next }));
+  };
+
   const handleSave = async () => {
     if (!form.name.trim()) return;
     setSaving(true);
@@ -559,7 +577,7 @@ export default function ProductPage() {
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.products.status}</label>
                 <select className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none"
-                  value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
+                  value={form.status} onChange={e => handleStatusChange(e.target.value)}>
                   <option value="active">{t.products.statusActive}</option>
                   <option value="inactive">{t.products.statusInactive}</option>
                 </select>
