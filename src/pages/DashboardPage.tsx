@@ -3,10 +3,9 @@ import { CompanyLogo } from "@/components/CompanyLogo";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getPNLList, deletePNL, updatePNL } from "@/lib/pnl";
 import { getTransactions } from "@/lib/transaction";
-import { getProducts } from "@/lib/product";
 import { logout } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
-import { PNLRecord, Transaction } from "@/types";
+import { PNLRecord } from "@/types";
 import { fmt, fmtDate } from "@/lib/utils";
 import { toMnt } from "@/lib/exchangeRates";
 import { setAiPageContext } from "@/lib/aiPageContext";
@@ -88,8 +87,6 @@ export default function DashboardPage() {
   const [dateMenuOpen, setDateMenuOpen] = useState(false);
   const [txSummary, setTxSummary] = useState<{ totalIncome: number; totalExpense: number } | null>(null);
   const [txBlurred, setTxBlurred] = useState(false);
-  const [topProducts, setTopProducts] = useState<any[]>([]);
-  const [recentTx, setRecentTx] = useState<Transaction[]>([]);
   const [hiddenFields, setHiddenFields] = useState<Set<string>>(() => getHiddenFields());
 
   const toggleFieldHidden = (id: string) => {
@@ -241,20 +238,6 @@ export default function DashboardPage() {
       .then(setRecords)
       .catch(() => setError(t.dashboard.loadError))
       .finally(() => setLoading(false));
-
-    getProducts()
-      .then((list: any[]) => {
-        const ranked = list
-          .filter((p) => p.status === "active")
-          .sort((a, b) => b.issuedQty * b.price - a.issuedQty * a.price)
-          .slice(0, 5);
-        setTopProducts(ranked);
-      })
-      .catch(() => setTopProducts([]));
-
-    getTransactions({ limit: 5 })
-      .then((r) => setRecentTx(r.transactions))
-      .catch(() => setRecentTx([]));
 
     loadSummary();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -611,95 +594,10 @@ export default function DashboardPage() {
             </div>
             )}
 
-            {layoutMode === "sidebar" && (incomeTrend.length > 1 || topProducts.length > 0) && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
-                {incomeTrend.length > 1 && (
-                  <div className="glass-card px-4 py-4">
-                    <p className="text-xs font-medium text-muted-foreground mb-3">{t.dashboard.incomeTrendTitle}</p>
-                    <IncomeTrendChart data={incomeTrend} formatValue={(n) => fmt(n, "₮")} />
-                  </div>
-                )}
-                {topProducts.length > 0 && (
-                  <div className="glass-card px-4 py-4">
-                    <p className="text-xs font-medium text-muted-foreground mb-3">{t.dashboard.topProductsTitle}</p>
-                    <div className="space-y-3">
-                      {topProducts.map((p) => {
-                        const revenue = p.issuedQty * p.price;
-                        const maxRevenue = (topProducts[0].issuedQty * topProducts[0].price) || 1;
-                        const pct = Math.max(4, Math.round((revenue / maxRevenue) * 100));
-                        return (
-                          <div key={p._id} className="flex items-center gap-3">
-                            <span className="text-xs w-24 truncate shrink-0" title={p.name}>{p.name}</span>
-                            <div className="flex-1 h-1.5 rounded-full bg-secondary/60 overflow-hidden">
-                              <div className="h-full bg-info rounded-full" style={{ width: `${pct}%` }} />
-                            </div>
-                            <span className="text-xs font-medium stat-number shrink-0">{fmt(revenue, "₮")}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {layoutMode === "sidebar" && (records.length > 0 || recentTx.length > 0) && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
-                {records.length > 0 && (
-                  <div id="recent-reports" className="glass-card px-4 py-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs font-medium text-muted-foreground">{t.dashboard.recentReportsTitle}</p>
-                      <button
-                        onClick={() => document.getElementById("records-table")?.scrollIntoView({ behavior: "smooth" })}
-                        className="text-xs text-info hover:underline">
-                        {t.common.viewAll}
-                      </button>
-                    </div>
-                    <div className="space-y-2.5">
-                      {[...records]
-                        .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
-                        .slice(0, 4)
-                        .map((r) => {
-                          const st = statusConfig[(r.status || "active") as "active" | "pending" | "closed"];
-                          return (
-                            <div key={r._id} className="flex items-center justify-between gap-2 text-xs">
-                              <div className="min-w-0">
-                                <p className="font-medium truncate">{r.contractNumber || r.company || "—"}</p>
-                                <p className="text-muted-foreground truncate">{r.company || ""}</p>
-                              </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <span className="stat-number font-medium">{fmt(totalIncome(r), "₮")}</span>
-                                <Badge className={`${st.cls} text-[10px]`}>{st.label}</Badge>
-                              </div>
-                            </div>
-                          );
-                        })}
-                    </div>
-                  </div>
-                )}
-                {recentTx.length > 0 && (
-                  <div className="glass-card px-4 py-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs font-medium text-muted-foreground">{t.dashboard.recentTxTitle}</p>
-                      <button onClick={() => navigate("/transactions")} className="text-xs text-info hover:underline">
-                        {t.common.viewAll}
-                      </button>
-                    </div>
-                    <div className="space-y-2.5">
-                      {recentTx.map((tx) => (
-                        <div key={tx._id} className="flex items-center justify-between gap-2 text-xs">
-                          <div className="min-w-0">
-                            <p className="font-medium truncate">{tx.description}</p>
-                            <p className="text-muted-foreground">{fmtDate(tx.date)}</p>
-                          </div>
-                          <span className={`stat-number font-medium shrink-0 ${tx.type === "income" ? "text-positive" : "text-negative"}`}>
-                            {tx.type === "income" ? "+" : "-"}{fmt(tx.amount, "₮")}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+            {layoutMode === "sidebar" && incomeTrend.length > 1 && (
+              <div className="glass-card px-4 py-4 mb-5">
+                <p className="text-xs font-medium text-muted-foreground mb-3">{t.dashboard.incomeTrendTitle}</p>
+                <IncomeTrendChart data={incomeTrend} formatValue={(n) => fmt(n, "₮")} />
               </div>
             )}
 
@@ -1040,7 +938,7 @@ export default function DashboardPage() {
             </Button>
           </div>
         ) : (
-          <div id="records-table" className="glass-card overflow-x-auto">
+          <div className="glass-card overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="border-border/50">
