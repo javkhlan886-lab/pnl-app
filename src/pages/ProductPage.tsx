@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { getRecent, addRecent } from "@/lib/recentValues";
+import { toDateInputValue } from "@/lib/utils";
 import { setAiPageContext } from "@/lib/aiPageContext";
 import { useLayoutMode } from "@/lib/layoutMode";
 import { Sidebar } from "@/components/Sidebar";
@@ -36,15 +37,35 @@ const CATEGORIES = ["Бараа", "Материал", "Бэлэн бүтээгд
 
 const EMPTY = {
   name: "", category: "", description: "", unit: "",
-  quantity: 0, price: 0, discountPercent: 0, issuedQty: 0, note: "", currency: "₮", status: "active",
+  quantity: 0, price: 0, discountPercent: 0, discountStartDate: "", discountEndDate: "",
+  issuedQty: 0, note: "", currency: "₮", status: "active",
 };
 
 const fmt = (n: number) => "₮" + Math.round(n).toLocaleString("mn-MN");
 
 // Хямдруулах хувиар тооцсон зарагдах үнэ — орлого зөвхөн энэ дүнгээр
 // тооцогдоно, харин бараа материалын нөөцийн үнэ (Нийт үнийн дүн) хуучин
-// нэгж үнээрээ хэвээр үлдэнэ.
-const sellingPrice = (p: any) => p.price * (1 - (p.discountPercent || 0) / 100);
+// нэгж үнээрээ хэвээр үлдэнэ. Хямдрал зөвхөн эхлэх/дуусах хугацааны
+// хүрээнд идэвхтэй байна — хугацаанаас гадуур бол жинхэнэ үнээр тооцно.
+const sellingPrice = (p: any) => {
+  const pct = p.discountPercent || 0;
+  if (pct <= 0) return p.price;
+  const now = Date.now();
+  if (p.discountStartDate && new Date(p.discountStartDate).getTime() > now) return p.price;
+  if (p.discountEndDate && new Date(p.discountEndDate).getTime() < now) return p.price;
+  return p.price * (1 - pct / 100);
+};
+
+// Хямдралтай бүтээгдэхүүнүүдийн дундаж хямдрал хувь — хямдралгүй
+// (0%) бараагаар дундаж утгыг "шингэлэхгүй" тул зөвхөн хямдралтай
+// бараануудаас тооцно.
+const avgDiscount = (list: any[]) => {
+  const discounted = list.filter((p) => (p.discountPercent || 0) > 0);
+  if (discounted.length === 0) return 0;
+  return discounted.reduce((s, p) => s + p.discountPercent, 0) / discounted.length;
+};
+
+const discountedValue = (list: any[]) => list.reduce((s, p) => s + sellingPrice(p) * p.quantity, 0);
 
 const statusCls: Record<string, string> = {
   active: "bg-positive/15 text-positive hover:bg-positive/15",
@@ -75,6 +96,7 @@ export default function ProductPage() {
   const [quantityDisplay, setQuantityDisplay] = useState("");
   const [priceDisplay, setPriceDisplay] = useState("");
   const [issuedDisplay, setIssuedDisplay] = useState("");
+  const [discountEnabled, setDiscountEnabled] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const NAV_ITEMS = [
@@ -181,13 +203,19 @@ export default function ProductPage() {
 
   const openCreate = () => {
     setForm({ ...EMPTY }); setEditing(null);
-    setQuantityDisplay(""); setPriceDisplay(""); setIssuedDisplay(""); setOpen(true);
+    setQuantityDisplay(""); setPriceDisplay(""); setIssuedDisplay(""); setDiscountEnabled(false); setOpen(true);
   };
   const openEdit = (p: any) => {
-    setForm({ ...p }); setEditing(p._id);
+    setForm({
+      ...p,
+      discountStartDate: toDateInputValue(p.discountStartDate),
+      discountEndDate: toDateInputValue(p.discountEndDate),
+    });
+    setEditing(p._id);
     setQuantityDisplay(p.quantity ? Number(p.quantity).toLocaleString("mn-MN") : "");
     setPriceDisplay(p.price ? Number(p.price).toLocaleString("mn-MN") : "");
     setIssuedDisplay(p.issuedQty ? Number(p.issuedQty).toLocaleString("mn-MN") : "");
+    setDiscountEnabled(!!p.discountPercent && p.discountPercent > 0);
     setOpen(true);
   };
 
@@ -218,11 +246,14 @@ export default function ProductPage() {
       addRecent("products", "description", form.description);
       addRecent("products", "unit", form.unit);
       addRecent("products", "note", form.note);
+      const payload = discountEnabled
+        ? form
+        : { ...form, discountPercent: 0, discountStartDate: "", discountEndDate: "" };
       if (editing) {
-        const updated = await updateProduct(editing, form);
+        const updated = await updateProduct(editing, payload);
         setProducts(prev => prev.map(p => p._id === editing ? updated : p));
       } else {
-        const created = await createProduct(form);
+        const created = await createProduct(payload);
         setProducts(prev => [created, ...prev]);
       }
       setOpen(false);
@@ -352,6 +383,14 @@ export default function ProductPage() {
             <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRemaining}</p>
             <p className="relative text-xl font-semibold text-positive stat-number">{Math.round(totalRemaining).toLocaleString("mn-MN")}</p>
           </div>
+          <div className="glass-card px-4 py-3">
+            <p className="relative text-xs text-muted-foreground mb-1">{t.products.statAvgDiscount}</p>
+            <p className="relative text-xl font-semibold stat-number">{avgDiscount(activeProducts) > 0 ? `${avgDiscount(activeProducts).toFixed(1)}%` : "—"}</p>
+          </div>
+          <div className="glass-card glass-card-positive px-4 py-3">
+            <p className="relative text-xs text-muted-foreground mb-1">{t.products.statDiscountedValue}</p>
+            <p className="relative text-xl font-semibold text-info stat-number">{fmt(discountedValue(activeProducts))}</p>
+          </div>
         </div>
 
         {finishedProducts.length > 0 && (
@@ -380,6 +419,14 @@ export default function ProductPage() {
               <div className="glass-card px-4 py-3 opacity-80">
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRemaining}</p>
                 <p className="relative text-xl font-semibold text-muted-foreground stat-number">{Math.round(finishedRemaining).toLocaleString("mn-MN")}</p>
+              </div>
+              <div className="glass-card px-4 py-3 opacity-80">
+                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statAvgDiscount}</p>
+                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{avgDiscount(finishedProducts) > 0 ? `${avgDiscount(finishedProducts).toFixed(1)}%` : "—"}</p>
+              </div>
+              <div className="glass-card px-4 py-3 opacity-80">
+                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statDiscountedValue}</p>
+                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{fmt(discountedValue(finishedProducts))}</p>
               </div>
             </div>
           </div>
@@ -416,6 +463,14 @@ export default function ProductPage() {
               <div className="glass-card glass-card-positive px-4 py-3 ring-1 ring-positive/50">
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRemaining}</p>
                 <p className="relative text-xl font-semibold text-positive stat-number">{Math.round(selectedRemaining).toLocaleString("mn-MN")}</p>
+              </div>
+              <div className="glass-card px-4 py-3 ring-1 ring-positive/50">
+                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statAvgDiscount}</p>
+                <p className="relative text-xl font-semibold stat-number">{avgDiscount(selectedProducts) > 0 ? `${avgDiscount(selectedProducts).toFixed(1)}%` : "—"}</p>
+              </div>
+              <div className="glass-card glass-card-positive px-4 py-3 ring-1 ring-positive/50">
+                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statDiscountedValue}</p>
+                <p className="relative text-xl font-semibold text-info stat-number">{fmt(discountedValue(selectedProducts))}</p>
               </div>
             </div>
           </div>
@@ -467,6 +522,8 @@ export default function ProductPage() {
                   <TableHead className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colUnit}</TableHead>
                   <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colQuantity}</TableHead>
                   <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colPrice}</TableHead>
+                  <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colDiscountPercent}</TableHead>
+                  <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colSellingPrice}</TableHead>
                   <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colIssuedQty}</TableHead>
                   <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colRevenue}</TableHead>
                   <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colRemainingQty}</TableHead>
@@ -489,6 +546,8 @@ export default function ProductPage() {
                     <TableCell className="text-muted-foreground text-sm">{p.unit || "—"}</TableCell>
                     <TableCell className="text-right stat-number">{Number(p.quantity).toLocaleString("mn-MN")}</TableCell>
                     <TableCell className="text-right stat-number">{fmt(p.price)}</TableCell>
+                    <TableCell className="text-right text-muted-foreground stat-number">{p.discountPercent > 0 ? `${p.discountPercent}%` : "—"}</TableCell>
+                    <TableCell className="text-right stat-number">{fmt(sellingPrice(p))}</TableCell>
                     <TableCell className="text-right text-negative stat-number">{Number(p.issuedQty).toLocaleString("mn-MN")}</TableCell>
                     <TableCell className="text-right text-positive stat-number">{fmt(p.issuedQty * sellingPrice(p))}</TableCell>
                     <TableCell className="text-right text-positive font-medium stat-number">{Number(p.remainingQty).toLocaleString("mn-MN")}</TableCell>
@@ -596,19 +655,45 @@ export default function ProductPage() {
                     setForm(f => ({ ...f, price: num }));
                   }} placeholder="0" />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">{t.products.discountPercent}</label>
-                <input type="number" min={0} max={100} step={0.1}
-                  className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
-                  value={form.discountPercent || ""}
-                  onChange={e => setForm(f => ({ ...f, discountPercent: Math.max(0, Math.min(100, Number(e.target.value) || 0)) }))}
-                  placeholder="0" />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">{t.products.sellingPrice}</label>
-                <input readOnly
-                  className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none text-right text-muted-foreground"
-                  value={fmt(sellingPrice(form))} />
+              <div className="sm:col-span-2 flex flex-col gap-2">
+                <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground cursor-pointer select-none">
+                  <input type="checkbox" className="w-4 h-4 cursor-pointer accent-positive"
+                    checked={discountEnabled}
+                    onChange={e => {
+                      const checked = e.target.checked;
+                      setDiscountEnabled(checked);
+                      if (!checked) setForm(f => ({ ...f, discountPercent: 0, discountStartDate: "", discountEndDate: "" }));
+                    }} />
+                  {t.products.discountEnabled}
+                </label>
+                {discountEnabled && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">{t.products.discountPercent}</label>
+                      <input type="number" min={0} max={100} step={0.1}
+                        className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
+                        value={form.discountPercent || ""}
+                        onChange={e => setForm(f => ({ ...f, discountPercent: Math.max(0, Math.min(100, Number(e.target.value) || 0)) }))}
+                        placeholder="0" />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">{t.products.sellingPrice}</label>
+                      <input readOnly
+                        className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none text-right text-muted-foreground"
+                        value={fmt(sellingPrice(form))} />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">{t.products.discountStartDate}</label>
+                      <input type="date" className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                        value={form.discountStartDate} onChange={e => setForm(f => ({ ...f, discountStartDate: e.target.value }))} />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">{t.products.discountEndDate}</label>
+                      <input type="date" className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                        value={form.discountEndDate} onChange={e => setForm(f => ({ ...f, discountEndDate: e.target.value }))} />
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.products.issuedQty}</label>
