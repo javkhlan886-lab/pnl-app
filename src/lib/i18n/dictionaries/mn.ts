@@ -34,6 +34,9 @@ export const mn = {
     statusPending: "Хүлээгдэж буй",
     statusClosed: "Дууссан",
     excelExport: "Excel татах",
+    prevPage: "Өмнөх",
+    nextPage: "Дараагийн",
+    pageIndicator: "Хуудас {page} / {pageCount}",
   },
   dashboard: {
     greeting: "Амжилт Хүсье, {name}",

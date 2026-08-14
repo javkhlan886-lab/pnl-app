@@ -33,6 +33,9 @@ export const en: Dictionary = {
     statusPending: "Pending",
     statusClosed: "Completed",
     excelExport: "Download Excel",
+    prevPage: "Previous",
+    nextPage: "Next",
+    pageIndicator: "Page {page} / {pageCount}",
   },
   dashboard: {
     greeting: "Welcome, {name}",

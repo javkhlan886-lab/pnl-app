@@ -33,6 +33,9 @@ export const ko: Dictionary = {
     statusPending: "대기 중",
     statusClosed: "완료됨",
     excelExport: "Excel 다운로드",
+    prevPage: "이전",
+    nextPage: "다음",
+    pageIndicator: "{page} / {pageCount} 페이지",
   },
   dashboard: {
     greeting: "환영합니다, {name}님",

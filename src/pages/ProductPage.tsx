@@ -43,6 +43,8 @@ const EMPTY = {
 
 const fmt = (n: number) => "₮" + Math.round(n).toLocaleString("mn-MN");
 
+const PAGE_SIZE = 20;
+
 // Хямдруулах хувиар тооцсон зарагдах үнэ — орлого зөвхөн энэ дүнгээр
 // тооцогдоно, харин бараа материалын нөөцийн үнэ (Нийт үнийн дүн) хуучин
 // нэгж үнээрээ хэвээр үлдэнэ. Хямдрал зөвхөн эхлэх/дуусах хугацааны
@@ -119,6 +121,7 @@ export default function ProductPage() {
   const [openStatusId, setOpenStatusId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [page, setPage] = useState(1);
   const [bulkDiscountOpen, setBulkDiscountOpen] = useState(false);
   const [bulkDiscountPercent, setBulkDiscountPercent] = useState(0);
   const [bulkDiscountStart, setBulkDiscountStart] = useState("");
@@ -179,6 +182,12 @@ export default function ProductPage() {
     });
     sortedFiltered = withIdx.map(x => x.p);
   }
+
+  const pageCount = Math.max(1, Math.ceil(sortedFiltered.length / PAGE_SIZE));
+  const pagedFiltered = sortedFiltered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  useEffect(() => { setPage(1); }, [catFilter, statusFilter, search, sortKey, sortDir]);
+  useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -707,7 +716,9 @@ export default function ProductPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedFiltered.map((p, idx) => (
+                {pagedFiltered.map((p, i) => {
+                  const idx = (page - 1) * PAGE_SIZE + i;
+                  return (
                   <TableRow key={p._id} className="border-border/50 hover:bg-secondary/30">
                     <TableCell className="px-1.5">
                       <input type="checkbox" checked={selected.has(p._id!)} onChange={() => toggleOne(p._id!)} className="w-4 h-4 cursor-pointer accent-positive" />
@@ -782,10 +793,24 @@ export default function ProductPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
+          {pageCount > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-4">
+              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>
+                {t.common.prevPage}
+              </Button>
+              <span className="text-xs text-muted-foreground stat-number">
+                {format(t.common.pageIndicator, { page: String(page), pageCount: String(pageCount) })}
+              </span>
+              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={page >= pageCount}>
+                {t.common.nextPage}
+              </Button>
+            </div>
+          )}
           </>
         )}
       </main>

@@ -33,6 +33,9 @@ export const zh: Dictionary = {
     statusPending: "待定",
     statusClosed: "已完成",
     excelExport: "下载 Excel",
+    prevPage: "上一页",
+    nextPage: "下一页",
+    pageIndicator: "第 {page} / {pageCount} 页",
   },
   dashboard: {
     greeting: "祝你成功，{name}",
