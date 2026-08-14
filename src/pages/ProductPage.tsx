@@ -114,9 +114,11 @@ export default function ProductPage() {
   const finishedProducts = products.filter(p => p.status === "inactive");
   const totalValue = activeProducts.reduce((s, p) => s + p.price * p.quantity, 0);
   const totalIssued = activeProducts.reduce((s, p) => s + p.issuedQty, 0);
+  const totalRevenue = activeProducts.reduce((s, p) => s + p.issuedQty * p.price, 0);
   const totalRemaining = activeProducts.reduce((s, p) => s + p.remainingQty, 0);
   const finishedValue = finishedProducts.reduce((s, p) => s + p.price * p.quantity, 0);
   const finishedIssued = finishedProducts.reduce((s, p) => s + p.issuedQty, 0);
+  const finishedRevenue = finishedProducts.reduce((s, p) => s + p.issuedQty * p.price, 0);
   const finishedRemaining = finishedProducts.reduce((s, p) => s + p.remainingQty, 0);
 
   useEffect(() => { setSelected(new Set()); }, [catFilter, search]);
@@ -136,6 +138,7 @@ export default function ProductPage() {
   const selectedProducts = filtered.filter(p => selected.has(p._id!));
   const selectedTotalValue = selectedProducts.reduce((s, p) => s + p.price * p.quantity, 0);
   const selectedIssued = selectedProducts.reduce((s, p) => s + p.issuedQty, 0);
+  const selectedRevenue = selectedProducts.reduce((s, p) => s + p.issuedQty * p.price, 0);
   const selectedRemaining = selectedProducts.reduce((s, p) => s + p.remainingQty, 0);
   const allSelected = filtered.length > 0 && filtered.every(p => selected.has(p._id!));
 
@@ -143,25 +146,25 @@ export default function ProductPage() {
     const lines: string[] = [
       `Идэвхтэй шүүлтүүр: ${catFilter || "бүгд"}${search.trim() ? ` · хайлт: "${search.trim()}"` : ""}`,
       `Харагдаж буй мөр: ${filtered.length} / Нийт: ${products.length}`,
-      `Нээлттэй бүтээгдэхүүн: ${activeProducts.length} ш | Нийт үнэ: ${fmt(totalValue)} | Гарсан: ${Math.round(totalIssued).toLocaleString("mn-MN")} | Үлдэгдэл: ${Math.round(totalRemaining).toLocaleString("mn-MN")}`,
+      `Нээлттэй бүтээгдэхүүн: ${activeProducts.length} ш | Нийт үнэ: ${fmt(totalValue)} | Гарсан: ${Math.round(totalIssued).toLocaleString("mn-MN")} | Орлого: ${fmt(totalRevenue)} | Үлдэгдэл: ${Math.round(totalRemaining).toLocaleString("mn-MN")}`,
     ];
     if (finishedProducts.length > 0) {
       lines.push(
-        `Дуусан бүтээгдэхүүн: ${finishedProducts.length} ш | Нийт үнэ: ${fmt(finishedValue)} | Гарсан: ${Math.round(finishedIssued).toLocaleString("mn-MN")} | Үлдэгдэл: ${Math.round(finishedRemaining).toLocaleString("mn-MN")}`
+        `Дуусан бүтээгдэхүүн: ${finishedProducts.length} ш | Нийт үнэ: ${fmt(finishedValue)} | Гарсан: ${Math.round(finishedIssued).toLocaleString("mn-MN")} | Орлого: ${fmt(finishedRevenue)} | Үлдэгдэл: ${Math.round(finishedRemaining).toLocaleString("mn-MN")}`
       );
     }
     if (selected.size > 0) {
       lines.push(
-        `Сонгосон ${selected.size} бүтээгдэхүүн: Нийт үнэ ${fmt(selectedTotalValue)} | Гарсан ${Math.round(selectedIssued).toLocaleString("mn-MN")} | Үлдэгдэл ${Math.round(selectedRemaining).toLocaleString("mn-MN")}`
+        `Сонгосон ${selected.size} бүтээгдэхүүн: Нийт үнэ ${fmt(selectedTotalValue)} | Гарсан ${Math.round(selectedIssued).toLocaleString("mn-MN")} | Орлого: ${fmt(selectedRevenue)} | Үлдэгдэл ${Math.round(selectedRemaining).toLocaleString("mn-MN")}`
       );
     }
     setAiPageContext({ title: t.products.pageTitle, lines });
     return () => setAiPageContext(null);
   }, [
     catFilter, search, filtered.length, products.length,
-    activeProducts.length, totalValue, totalIssued, totalRemaining,
-    finishedProducts.length, finishedValue, finishedIssued, finishedRemaining,
-    selected.size, selectedTotalValue, selectedIssued, selectedRemaining, t,
+    activeProducts.length, totalValue, totalIssued, totalRevenue, totalRemaining,
+    finishedProducts.length, finishedValue, finishedIssued, finishedRevenue, finishedRemaining,
+    selected.size, selectedTotalValue, selectedIssued, selectedRevenue, selectedRemaining, t,
   ]);
 
   const openCreate = () => {
@@ -282,7 +285,7 @@ export default function ProductPage() {
           const hasSelection = selected.size > 0;
           const cardCls = hasSelection ? "ring-1 ring-positive/50" : "";
           return (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 mb-3">
               <div className={`glass-card px-4 py-3 ${cardCls}`}>
                 <p className="relative text-xs text-muted-foreground mb-1">{hasSelection ? t.products.selectedLabel : t.products.statTotal}</p>
                 <p className="relative text-xl font-semibold stat-number">{hasSelection ? selected.size : activeProducts.length}</p>
@@ -294,6 +297,10 @@ export default function ProductPage() {
               <div className={`glass-card glass-card-negative px-4 py-3 ${cardCls}`}>
                 <p className="relative text-xs text-muted-foreground mb-1">{hasSelection ? t.products.selectedLabel : t.products.statIssued}</p>
                 <p className="relative text-xl font-semibold text-negative stat-number">{Math.round(hasSelection ? selectedIssued : totalIssued).toLocaleString("mn-MN")}</p>
+              </div>
+              <div className={`glass-card glass-card-positive px-4 py-3 ${cardCls}`}>
+                <p className="relative text-xs text-muted-foreground mb-1">{hasSelection ? t.products.selectedLabel : t.products.statRevenue}</p>
+                <p className="relative text-xl font-semibold text-positive stat-number">{fmt(hasSelection ? selectedRevenue : totalRevenue)}</p>
               </div>
               <div className={`glass-card glass-card-positive px-4 py-3 ${cardCls}`}>
                 <p className="relative text-xs text-muted-foreground mb-1">{hasSelection ? t.products.selectedLabel : t.products.statRemaining}</p>
@@ -309,7 +316,7 @@ export default function ProductPage() {
               <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
               {t.products.finishedSectionTitle}
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
               <div className="glass-card px-4 py-3 opacity-80">
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotal}</p>
                 <p className="relative text-xl font-semibold text-muted-foreground stat-number">{finishedProducts.length}</p>
@@ -321,6 +328,10 @@ export default function ProductPage() {
               <div className="glass-card px-4 py-3 opacity-80">
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statIssued}</p>
                 <p className="relative text-xl font-semibold text-muted-foreground stat-number">{Math.round(finishedIssued).toLocaleString("mn-MN")}</p>
+              </div>
+              <div className="glass-card px-4 py-3 opacity-80">
+                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRevenue}</p>
+                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{fmt(finishedRevenue)}</p>
               </div>
               <div className="glass-card px-4 py-3 opacity-80">
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRemaining}</p>
@@ -388,6 +399,7 @@ export default function ProductPage() {
                   <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colQuantity}</TableHead>
                   <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colPrice}</TableHead>
                   <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colIssuedQty}</TableHead>
+                  <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colRevenue}</TableHead>
                   <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colRemainingQty}</TableHead>
                   <TableHead className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colStatus}</TableHead>
                   <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colActions}</TableHead>
@@ -409,6 +421,7 @@ export default function ProductPage() {
                     <TableCell className="text-right stat-number">{Number(p.quantity).toLocaleString("mn-MN")}</TableCell>
                     <TableCell className="text-right stat-number">{fmt(p.price)}</TableCell>
                     <TableCell className="text-right text-negative stat-number">{Number(p.issuedQty).toLocaleString("mn-MN")}</TableCell>
+                    <TableCell className="text-right text-positive stat-number">{fmt(p.issuedQty * p.price)}</TableCell>
                     <TableCell className="text-right text-positive font-medium stat-number">{Number(p.remainingQty).toLocaleString("mn-MN")}</TableCell>
                     <TableCell>
                       <Badge className={statusCls[p.status]}>{statusLabel[p.status]}</Badge>
