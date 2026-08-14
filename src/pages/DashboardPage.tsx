@@ -802,18 +802,18 @@ export default function DashboardPage() {
             <p className="text-xs text-muted-foreground mb-3">
               {format(t.dashboard.filteredSummaryTitle, { count: String(filteredSummary.count) })}
             </p>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <div className="min-w-0">
                 <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredIncome}</p>
-                <p className="stat-number text-lg font-semibold text-positive">{fmt(filteredSummary.income, "₮")}</p>
+                <p className="stat-number text-lg font-semibold text-positive break-words">{fmt(filteredSummary.income, "₮")}</p>
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredExpense}</p>
-                <p className="stat-number text-lg font-semibold text-negative">{fmt(filteredSummary.expense, "₮")}</p>
+                <p className="stat-number text-lg font-semibold text-negative break-words">{fmt(filteredSummary.expense, "₮")}</p>
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredNet}</p>
-                <p className={`stat-number text-lg font-semibold ${filteredSummary.net >= 0 ? "text-positive" : "text-negative"}`}>
+                <p className={`stat-number text-lg font-semibold break-words ${filteredSummary.net >= 0 ? "text-positive" : "text-negative"}`}>
                   {fmt(filteredSummary.net, "₮")}
                 </p>
               </div>
@@ -831,18 +831,18 @@ export default function DashboardPage() {
                 {t.dashboard.deselect}
               </button>
             </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <div className="min-w-0">
                 <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredIncome}</p>
-                <p className="stat-number text-lg font-semibold text-positive">{fmt(selectedSummary.income, "₮")}</p>
+                <p className="stat-number text-lg font-semibold text-positive break-words">{fmt(selectedSummary.income, "₮")}</p>
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredExpense}</p>
-                <p className="stat-number text-lg font-semibold text-negative">{fmt(selectedSummary.expense, "₮")}</p>
+                <p className="stat-number text-lg font-semibold text-negative break-words">{fmt(selectedSummary.expense, "₮")}</p>
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredNet}</p>
-                <p className={`stat-number text-lg font-semibold ${selectedSummary.net >= 0 ? "text-positive" : "text-negative"}`}>
+                <p className={`stat-number text-lg font-semibold break-words ${selectedSummary.net >= 0 ? "text-positive" : "text-negative"}`}>
                   {fmt(selectedSummary.net, "₮")}
                 </p>
               </div>
