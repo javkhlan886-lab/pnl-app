@@ -111,6 +111,10 @@ export default function WorkforcePage() {
     try {
       addRecent("workforce", "name", form.name);
       addRecent("workforce", "skills", form.skills);
+      addRecent("workforce", "address", form.address);
+      addRecent("workforce", "phone", form.phone);
+      addRecent("workforce", "email", form.email);
+      addRecent("workforce", "note", form.note);
       if (editing) {
         const updated = await updateWorkforce(editing, form);
         setItems(prev => prev.map(i => i._id === editing ? updated : i));
@@ -285,16 +289,16 @@ export default function WorkforcePage() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">{t.workforce.address}</Label>
-              <Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder={t.workforce.addressPlaceholder} className="h-9 text-sm" />
+              <Combobox value={form.address} onChange={v => setForm(f => ({ ...f, address: v }))} options={getRecent("workforce", "address")} placeholder={t.workforce.addressPlaceholder} className="h-9 text-sm" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs">{t.workforce.phone}</Label>
-                <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="h-9 text-sm" />
+                <Combobox value={form.phone} onChange={v => setForm(f => ({ ...f, phone: v }))} options={getRecent("workforce", "phone")} className="h-9 text-sm" />
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs">{t.workforce.email}</Label>
-                <Input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="h-9 text-sm" />
+                <Combobox value={form.email} onChange={v => setForm(f => ({ ...f, email: v }))} options={getRecent("workforce", "email")} className="h-9 text-sm" />
               </div>
             </div>
             <div className="flex flex-col gap-1.5">
@@ -328,7 +332,7 @@ export default function WorkforcePage() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">{t.workforce.note}</Label>
-              <Input value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} className="h-9 text-sm" />
+              <Combobox value={form.note} onChange={v => setForm(f => ({ ...f, note: v }))} options={getRecent("workforce", "note")} className="h-9 text-sm" />
             </div>
           </div>
           <DialogFooter>

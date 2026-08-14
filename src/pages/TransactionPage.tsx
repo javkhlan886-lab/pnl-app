@@ -290,6 +290,7 @@ export default function TransactionPage() {
       };
       addCustomCategory(newTx.type === "income" ? "transactions_income" : "transactions_expense", newTx.category);
       addRecent("transactions", "description", payload.description);
+      addRecent("transactions", "note", payload.note);
       if (editingTxId) {
         await updateTransaction(editingTxId, payload);
       } else {
@@ -522,9 +523,10 @@ export default function TransactionPage() {
 
               <div className="space-y-1.5">
                 <Label className="text-xs">{t.transactions.noteLabel}</Label>
-                <Input
+                <Combobox
                   value={newTx.note}
-                  onChange={e => setNewTx(p => ({ ...p, note: e.target.value }))}
+                  onChange={(v) => setNewTx(p => ({ ...p, note: v }))}
+                  options={getRecent("transactions", "note")}
                   placeholder={t.transactions.notePlaceholder}
                   className="h-9 text-sm"
                 />

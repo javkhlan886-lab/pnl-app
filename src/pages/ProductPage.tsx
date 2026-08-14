@@ -210,6 +210,8 @@ export default function ProductPage() {
       addCustomCategory("products", form.category);
       addRecent("products", "name", form.name);
       addRecent("products", "description", form.description);
+      addRecent("products", "unit", form.unit);
+      addRecent("products", "note", form.note);
       if (editing) {
         const updated = await updateProduct(editing, form);
         setProducts(prev => prev.map(p => p._id === editing ? updated : p));
@@ -552,8 +554,10 @@ export default function ProductPage() {
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.products.unit}</label>
-                <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-                  value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}
+                <Combobox
+                  value={form.unit}
+                  onChange={(v) => setForm(f => ({ ...f, unit: v }))}
+                  options={getRecent("products", "unit")}
                   placeholder={t.products.unitPlaceholder} />
               </div>
               <div className="sm:col-span-2 flex flex-col gap-1.5">
@@ -607,8 +611,10 @@ export default function ProductPage() {
               </div>
               <div className="sm:col-span-2 flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.products.note}</label>
-                <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-                  value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} />
+                <Combobox
+                  value={form.note}
+                  onChange={(v) => setForm(f => ({ ...f, note: v }))}
+                  options={getRecent("products", "note")} />
               </div>
             </div>
             <div className="bg-secondary/50 rounded-lg px-4 py-3 text-sm">

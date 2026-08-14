@@ -18,11 +18,14 @@ export function Combobox({ value, onChange, options, placeholder, className, id 
   const wrapRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    function onClickOutside(e: MouseEvent) {
+    // pointerdown (mousedown+touchstart-той адил) — mobile browser дээр
+    // "mousedown" зарим үед хожимдож/алгасаж бас dropdown хаагдахгүй
+    // үлддэг асуудлаас сэргийлнэ.
+    function onClickOutside(e: PointerEvent) {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
     }
-    document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
+    document.addEventListener("pointerdown", onClickOutside);
+    return () => document.removeEventListener("pointerdown", onClickOutside);
   }, []);
 
   const filtered = value.trim()
@@ -35,6 +38,7 @@ export function Combobox({ value, onChange, options, placeholder, className, id 
         id={id}
         value={value}
         placeholder={placeholder}
+        autoComplete="off"
         onFocus={() => setOpen(true)}
         onChange={(e) => { onChange(e.target.value); setOpen(true); }}
         className={cn(
@@ -48,9 +52,9 @@ export function Combobox({ value, onChange, options, placeholder, className, id 
             <button
               key={opt}
               type="button"
-              onMouseDown={(e) => { e.preventDefault(); onChange(opt); setOpen(false); }}
+              onPointerDown={(e) => { e.preventDefault(); onChange(opt); setOpen(false); }}
               className={cn(
-                "w-full text-left px-3 py-1.5 text-sm hover:bg-secondary/50",
+                "w-full text-left px-3 py-2 text-sm hover:bg-secondary/50",
                 opt === value && "text-info font-medium"
               )}
             >

@@ -20,7 +20,6 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Combobox } from "@/components/ui/combobox";
 import { getRecent, addRecent } from "@/lib/recentValues";
@@ -109,6 +108,10 @@ export default function PartnerPage() {
       addRecent("partners", "offering", form.offering);
       addRecent("partners", "priceInfo", form.priceInfo);
       addRecent("partners", "collaboration", form.collaboration);
+      addRecent("partners", "address", form.address);
+      addRecent("partners", "phone", form.phone);
+      addRecent("partners", "email", form.email);
+      addRecent("partners", "note", form.note);
       if (editing) {
         const updated = await updatePartner(editing, form);
         setItems(prev => prev.map(i => i._id === editing ? updated : i));
@@ -281,16 +284,16 @@ export default function PartnerPage() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">{t.partners.address}</Label>
-              <Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder={t.partners.addressPlaceholder} className="h-9 text-sm" />
+              <Combobox value={form.address} onChange={v => setForm(f => ({ ...f, address: v }))} options={getRecent("partners", "address")} placeholder={t.partners.addressPlaceholder} className="h-9 text-sm" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs">{t.partners.phone}</Label>
-                <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="h-9 text-sm" />
+                <Combobox value={form.phone} onChange={v => setForm(f => ({ ...f, phone: v }))} options={getRecent("partners", "phone")} className="h-9 text-sm" />
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs">{t.partners.email}</Label>
-                <Input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="h-9 text-sm" />
+                <Combobox value={form.email} onChange={v => setForm(f => ({ ...f, email: v }))} options={getRecent("partners", "email")} className="h-9 text-sm" />
               </div>
             </div>
             <div className="flex flex-col gap-1.5">
@@ -317,7 +320,7 @@ export default function PartnerPage() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">{t.partners.note}</Label>
-              <Input value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} className="h-9 text-sm" />
+              <Combobox value={form.note} onChange={v => setForm(f => ({ ...f, note: v }))} options={getRecent("partners", "note")} className="h-9 text-sm" />
             </div>
           </div>
           <DialogFooter>

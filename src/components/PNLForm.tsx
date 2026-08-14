@@ -284,6 +284,8 @@ export default function PNLForm({ initial, id }: Props) {
       expenseRows: normalizedRows(data.expenseRows),
     };
 
+    addRecent("pnl", "company", payload.company);
+    addRecent("pnl", "contractNumber", payload.contractNumber || "");
     payload.incomeRows.forEach((row) => {
       addRecent("pnl_income", "name", row.name);
       addRecent("pnl_income", "note", row.note);
@@ -324,7 +326,7 @@ export default function PNLForm({ initial, id }: Props) {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-1.5">
               <Label>{t.pnlForm.company}</Label>
-              <Input value={data.company} onChange={(e) => setData({ ...data, company: e.target.value })} placeholder={t.pnlForm.companyPlaceholder} />
+              <Combobox value={data.company} onChange={(v) => setData({ ...data, company: v })} options={getRecent("pnl", "company")} placeholder={t.pnlForm.companyPlaceholder} />
             </div>
             <div className="space-y-1.5">
               <Label>{t.pnlForm.periodStart}</Label>
@@ -348,9 +350,10 @@ export default function PNLForm({ initial, id }: Props) {
                   {t.pnlForm.contractNumber}
                   <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-normal">{t.pnlForm.newBadge}</span>
                 </Label>
-                <Input
+                <Combobox
                   value={data.contractNumber || ""}
-                  onChange={(e) => setData({ ...data, contractNumber: e.target.value.toUpperCase() })}
+                  onChange={(v) => setData({ ...data, contractNumber: v.toUpperCase() })}
+                  options={getRecent("pnl", "contractNumber")}
                   placeholder="GCR-2024-001"
                   className="font-mono tracking-wide"
                 />
