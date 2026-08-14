@@ -432,6 +432,8 @@ export const mn = {
     quantity: "Тоо ширхэг",
     price: "Үнэ",
     unitPrice: "Нэгж үнэ",
+    discountPercent: "Хямдруулах хувь (%)",
+    sellingPrice: "Зарагдах үнэ",
     totalPriceLabel: "Нийт үнэ",
     remainingLabel: "Барааны эцсийн үлдэгдэл",
     issuedQty: "Гарсан барааны тоо",

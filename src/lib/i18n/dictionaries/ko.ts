@@ -431,6 +431,8 @@ export const ko: Dictionary = {
     quantity: "수량",
     price: "가격",
     unitPrice: "단가",
+    discountPercent: "할인율 (%)",
+    sellingPrice: "판매 가격",
     totalPriceLabel: "총 금액",
     remainingLabel: "최종 재고 수량",
     issuedQty: "출고 수량",

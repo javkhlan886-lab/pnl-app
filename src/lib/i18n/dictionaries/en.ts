@@ -431,6 +431,8 @@ export const en: Dictionary = {
     quantity: "Quantity",
     price: "Price",
     unitPrice: "Unit price",
+    discountPercent: "Discount (%)",
+    sellingPrice: "Selling price",
     totalPriceLabel: "Total price",
     remainingLabel: "Final remaining quantity",
     issuedQty: "Issued quantity",

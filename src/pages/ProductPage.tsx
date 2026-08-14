@@ -36,10 +36,15 @@ const CATEGORIES = ["Бараа", "Материал", "Бэлэн бүтээгд
 
 const EMPTY = {
   name: "", category: "Бараа", description: "", unit: "",
-  quantity: 0, price: 0, issuedQty: 0, note: "", currency: "₮", status: "active",
+  quantity: 0, price: 0, discountPercent: 0, issuedQty: 0, note: "", currency: "₮", status: "active",
 };
 
 const fmt = (n: number) => "₮" + Math.round(n).toLocaleString("mn-MN");
+
+// Хямдруулах хувиар тооцсон зарагдах үнэ — орлого зөвхөн энэ дүнгээр
+// тооцогдоно, харин бараа материалын нөөцийн үнэ (Нийт үнийн дүн) хуучин
+// нэгж үнээрээ хэвээр үлдэнэ.
+const sellingPrice = (p: any) => p.price * (1 - (p.discountPercent || 0) / 100);
 
 const statusCls: Record<string, string> = {
   active: "bg-positive/15 text-positive hover:bg-positive/15",
@@ -119,12 +124,12 @@ export default function ProductPage() {
   const totalQuantity = activeProducts.reduce((s, p) => s + p.quantity, 0);
   const totalValue = activeProducts.reduce((s, p) => s + p.price * p.quantity, 0);
   const totalIssued = activeProducts.reduce((s, p) => s + p.issuedQty, 0);
-  const totalRevenue = activeProducts.reduce((s, p) => s + p.issuedQty * p.price, 0);
+  const totalRevenue = activeProducts.reduce((s, p) => s + p.issuedQty * sellingPrice(p), 0);
   const totalRemaining = activeProducts.reduce((s, p) => s + p.remainingQty, 0);
   const finishedQuantity = finishedProducts.reduce((s, p) => s + p.quantity, 0);
   const finishedValue = finishedProducts.reduce((s, p) => s + p.price * p.quantity, 0);
   const finishedIssued = finishedProducts.reduce((s, p) => s + p.issuedQty, 0);
-  const finishedRevenue = finishedProducts.reduce((s, p) => s + p.issuedQty * p.price, 0);
+  const finishedRevenue = finishedProducts.reduce((s, p) => s + p.issuedQty * sellingPrice(p), 0);
   const finishedRemaining = finishedProducts.reduce((s, p) => s + p.remainingQty, 0);
 
   useEffect(() => { setSelected(new Set()); }, [catFilter, search]);
@@ -145,7 +150,7 @@ export default function ProductPage() {
   const selectedQuantity = selectedProducts.reduce((s, p) => s + p.quantity, 0);
   const selectedTotalValue = selectedProducts.reduce((s, p) => s + p.price * p.quantity, 0);
   const selectedIssued = selectedProducts.reduce((s, p) => s + p.issuedQty, 0);
-  const selectedRevenue = selectedProducts.reduce((s, p) => s + p.issuedQty * p.price, 0);
+  const selectedRevenue = selectedProducts.reduce((s, p) => s + p.issuedQty * sellingPrice(p), 0);
   const selectedRemaining = selectedProducts.reduce((s, p) => s + p.remainingQty, 0);
   const allSelected = filtered.length > 0 && filtered.every(p => selected.has(p._id!));
 
@@ -485,7 +490,7 @@ export default function ProductPage() {
                     <TableCell className="text-right stat-number">{Number(p.quantity).toLocaleString("mn-MN")}</TableCell>
                     <TableCell className="text-right stat-number">{fmt(p.price)}</TableCell>
                     <TableCell className="text-right text-negative stat-number">{Number(p.issuedQty).toLocaleString("mn-MN")}</TableCell>
-                    <TableCell className="text-right text-positive stat-number">{fmt(p.issuedQty * p.price)}</TableCell>
+                    <TableCell className="text-right text-positive stat-number">{fmt(p.issuedQty * sellingPrice(p))}</TableCell>
                     <TableCell className="text-right text-positive font-medium stat-number">{Number(p.remainingQty).toLocaleString("mn-MN")}</TableCell>
                     <TableCell>
                       <Badge className={statusCls[p.status]}>{statusLabel[p.status]}</Badge>
@@ -590,6 +595,20 @@ export default function ProductPage() {
                     setPriceDisplay(num === 0 ? "" : num.toLocaleString("mn-MN"));
                     setForm(f => ({ ...f, price: num }));
                   }} placeholder="0" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted-foreground">{t.products.discountPercent}</label>
+                <input type="number" min={0} max={100} step={0.1}
+                  className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
+                  value={form.discountPercent || ""}
+                  onChange={e => setForm(f => ({ ...f, discountPercent: Math.max(0, Math.min(100, Number(e.target.value) || 0)) }))}
+                  placeholder="0" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted-foreground">{t.products.sellingPrice}</label>
+                <input readOnly
+                  className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none text-right text-muted-foreground"
+                  value={fmt(sellingPrice(form))} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.products.issuedQty}</label>

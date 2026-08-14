@@ -430,6 +430,8 @@ export const zh: Dictionary = {
     quantity: "数量",
     price: "价格",
     unitPrice: "单价",
+    discountPercent: "折扣 (%)",
+    sellingPrice: "销售价",
     totalPriceLabel: "总金额",
     remainingLabel: "最终库存数量",
     issuedQty: "出库数量",
