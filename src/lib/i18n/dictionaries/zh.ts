@@ -409,7 +409,7 @@ export const zh: Dictionary = {
     colCategory: "类别",
     colUnit: "计量单位",
     colQuantity: "数量",
-    colPrice: "价格",
+    colPrice: "单价",
     colSellingPrice: "销售价",
     colIssuedQty: "售出数量",
     colRevenue: "收入",

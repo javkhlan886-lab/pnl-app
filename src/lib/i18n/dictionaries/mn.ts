@@ -411,7 +411,7 @@ export const mn = {
     colCategory: "Ангилал",
     colUnit: "Хэмжээ",
     colQuantity: "Тоо",
-    colPrice: "Үнэ",
+    colPrice: "Нэгж Үнэ",
     colSellingPrice: "Зарагдах үнэ",
     colIssuedQty: "Зарагдсан тоо",
     colRevenue: "Орлого",

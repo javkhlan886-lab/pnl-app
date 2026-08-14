@@ -410,7 +410,7 @@ export const en: Dictionary = {
     colCategory: "Category",
     colUnit: "Unit",
     colQuantity: "Qty",
-    colPrice: "Price",
+    colPrice: "Unit price",
     colSellingPrice: "Selling price",
     colIssuedQty: "Sold qty",
     colRevenue: "Revenue",

@@ -505,7 +505,7 @@ export default function ProductPage() {
                   <TableHead className="px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colCategory}</TableHead>
                   <TableHead className="px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colUnit}</TableHead>
                   <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colQuantity}</TableHead>
-                  <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colPrice}</TableHead>
+                  <TableHead className="text-center px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colPrice}</TableHead>
                   <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colSellingPrice}</TableHead>
                   <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colIssuedQty}</TableHead>
                   <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colRevenue}</TableHead>
@@ -528,7 +528,7 @@ export default function ProductPage() {
                     <TableCell className="px-1.5 text-muted-foreground text-sm">{p.category}</TableCell>
                     <TableCell className="px-1.5 text-muted-foreground text-sm">{p.unit || "—"}</TableCell>
                     <TableCell className="px-1.5 text-right stat-number">{Number(p.quantity).toLocaleString("mn-MN")}</TableCell>
-                    <TableCell className="px-1.5 text-right stat-number">{fmt(p.price)}</TableCell>
+                    <TableCell className="px-1.5 text-center stat-number">{fmt(p.price)}</TableCell>
                     <TableCell className="px-1.5 text-right stat-number">
                       <div className="flex items-center justify-end gap-1.5">
                         {p.discountPercent > 0 && sellingPrice(p) < p.price && (

@@ -410,7 +410,7 @@ export const ko: Dictionary = {
     colCategory: "분류",
     colUnit: "단위",
     colQuantity: "수량",
-    colPrice: "가격",
+    colPrice: "단가",
     colSellingPrice: "판매 가격",
     colIssuedQty: "판매량",
     colRevenue: "매출",
