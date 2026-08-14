@@ -25,6 +25,8 @@ import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, Receipt, BarChart
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { getRecent, addRecent } from "@/lib/recentValues";
 import { setAiPageContext } from "@/lib/aiPageContext";
+import { useLayoutMode } from "@/lib/layoutMode";
+import { Sidebar } from "@/components/Sidebar";
 import { Combobox } from "@/components/ui/combobox";
 
 // Чөлөөт текст утга — backend-д хадгалагддаг тул хэлээр орчуулахгүй.
@@ -42,9 +44,10 @@ const fmt = (n: number) => "₮" + Math.round(n).toLocaleString("mn-MN");
 
 export default function ExpensePage() {
   const navigate = useNavigate();
-  const { company, isAdmin } = useAuth();
+  const { company, isAdmin, user } = useAuth();
   const location = useLocation();
   const { t, locale } = useLocale();
+  const layoutMode = useLayoutMode();
 
   const statusMap: Record<string, { label: string; cls: string }> = {
     approved: { label: t.expenses.statusApproved, cls: "bg-positive/15 text-positive hover:bg-positive/15" },
@@ -169,57 +172,75 @@ export default function ExpensePage() {
     finally { setExporting(false); }
   };
 
+  const headerActions = (
+    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+      <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+        <Download className="w-4 h-4 mr-1.5" />
+        {exporting ? t.common.exportingLabel : t.common.excelExport}
+      </Button>
+      <Button onClick={openCreate} size="sm"
+        className="bg-positive text-background hover:bg-positive/90 shadow-[0_0_16px_color-mix(in_oklch,oklch(var(--positive))_35%,transparent)]">
+        <Plus className="w-4 h-4 mr-1.5" /> {t.expenses.addExpense}
+      </Button>
+      <Button variant="ghost" size="sm" onClick={logout}><LogOut className="w-4 h-4 mr-1.5" /> {t.common.logout}</Button>
+      <LanguageSwitcher />
+      <ThemeToggle />
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
+    <div className={layoutMode === "sidebar" ? "flex" : ""}>
+      {layoutMode === "sidebar" && (
+        <Sidebar navItems={NAV_ITEMS} activePath={location.pathname} onNavigate={navigate}
+          companyName={company?.name} productName={t.common.productName} userName={user?.name} liveLabel="LIVE" />
+      )}
+      <div className={layoutMode === "sidebar" ? "flex-1 min-w-0" : ""}>
       <header className="border-b border-border/50 px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-10 bg-background/80 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <CompanyLogo name={company?.name} className="cursor-pointer" onClick={() => navigate("/dashboard")} />
-          <button onClick={() => navigate("/dashboard")} className="text-muted-foreground hover:text-foreground">
-            <ChevronLeft className="w-5 h-5" />
-          </button>
+        {layoutMode === "sidebar" ? (
           <div>
             <h1 className="text-lg font-medium flex items-center gap-2">
               <Receipt className="w-5 h-5" /> {t.expenses.pageTitle}
             </h1>
             <p className="text-xs text-muted-foreground">{t.expenses.pageSubtitle}</p>
           </div>
-        </div>
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
-            <Download className="w-4 h-4 mr-1.5" />
-            {exporting ? t.common.exportingLabel : t.common.excelExport}
-          </Button>
-          <Button onClick={openCreate} size="sm"
-            className="bg-positive text-background hover:bg-positive/90 shadow-[0_0_16px_color-mix(in_oklch,oklch(var(--positive))_35%,transparent)]">
-            <Plus className="w-4 h-4 mr-1.5" /> {t.expenses.addExpense}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={logout}><LogOut className="w-4 h-4 mr-1.5" /> {t.common.logout}</Button>
-          <LanguageSwitcher />
-          <ThemeToggle />
-        </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <CompanyLogo name={company?.name} className="cursor-pointer" onClick={() => navigate("/dashboard")} />
+            <button onClick={() => navigate("/dashboard")} className="text-muted-foreground hover:text-foreground">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-lg font-medium flex items-center gap-2">
+                <Receipt className="w-5 h-5" /> {t.expenses.pageTitle}
+              </h1>
+              <p className="text-xs text-muted-foreground">{t.expenses.pageSubtitle}</p>
+            </div>
+          </div>
+        )}
+        {headerActions}
       </header>
 
-      {/* Module navigation */}
-      <nav className="border-b border-border/50 px-4 sm:px-6 overflow-x-auto">
-        <div className="max-w-6xl mx-auto flex items-center gap-1">
-          {NAV_ITEMS.map(item => {
-            const active = location.pathname === item.path;
-            return (
-              <button key={item.path}
-                onClick={() => navigate(item.path)}
-                className={`flex items-center gap-1.5 px-3.5 py-2.5 my-2 text-xs rounded-full transition-colors whitespace-nowrap ${
-                  active
-                    ? "nav-pill-active font-medium"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                }`}>
-                {item.icon}{item.label}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+              <nav className={`border-b border-border/50 px-4 sm:px-6 overflow-x-auto ${layoutMode === "sidebar" ? "md:hidden" : ""}`}>
+          <div className="max-w-6xl mx-auto flex items-center gap-1">
+            {NAV_ITEMS.map(item => {
+              const active = location.pathname === item.path;
+              return (
+                <button key={item.path}
+                  onClick={() => navigate(item.path)}
+                  className={`flex items-center gap-1.5 px-3.5 py-2.5 my-2 text-xs rounded-full transition-colors whitespace-nowrap ${
+                    active
+                      ? "nav-pill-active font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  }`}>
+                  {item.icon}{item.label}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className={layoutMode === "sidebar" ? "px-4 sm:px-6 py-6 sm:py-8" : "max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8"}>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <div className="glass-card glass-card-negative px-4 py-3">
             <p className="relative text-xs text-muted-foreground mb-1">{t.expenses.statApprovedTotal}</p>
@@ -336,6 +357,8 @@ export default function ExpensePage() {
           </div>
         )}
       </main>
+      </div>
+    </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">

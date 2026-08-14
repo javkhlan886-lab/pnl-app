@@ -14,6 +14,7 @@ export const mn = {
     navProducts: "Бараа Бүтээгдэхүүн",
     navAdmin: "Админ",
     productName: "P&L Удирдлага",
+    layoutToggleTooltip: "Page — хуудасны байршлыг сэлгэх (дээд навигац ↔ хажуугийн цэс)",
     exportAll: "Бүгдийг нь Export",
     exportSelected: "Export ({count})",
     exportingLabel: "Боловсруулж байна...",

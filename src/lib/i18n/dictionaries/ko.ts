@@ -13,6 +13,7 @@ export const ko: Dictionary = {
     navProducts: "재고 상품",
     navAdmin: "관리자",
     productName: "P&L 관리",
+    layoutToggleTooltip: "Page — 레이아웃 전환 (상단 내비게이션 ↔ 사이드바)",
     exportAll: "전체 내보내기",
     exportSelected: "내보내기 ({count})",
     exportingLabel: "처리 중...",

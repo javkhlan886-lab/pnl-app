@@ -15,6 +15,8 @@ import { getRecent, addRecent } from "@/lib/recentValues";
 import { fmtDate, toDateInputValue } from "@/lib/utils";
 import { Transaction, ContractSummary } from "@/types";
 import { setAiPageContext } from "@/lib/aiPageContext";
+import { useLayoutMode } from "@/lib/layoutMode";
+import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -74,9 +76,10 @@ const EMPTY_TX: NewTx = {
 
 export default function TransactionPage() {
   const navigate = useNavigate();
-  const { company, isAdmin } = useAuth();
+  const { company, isAdmin, user } = useAuth();
   const location = useLocation();
   const { t, locale } = useLocale();
+  const layoutMode = useLayoutMode();
 
   const [tab, setTab] = useState<Tab>("range");
   const [txs, setTxs] = useState<Transaction[]>([]);
@@ -353,60 +356,79 @@ export default function TransactionPage() {
     newTx.type === "income" ? "transactions_income" : "transactions_expense"
   );
 
+  const headerActions = (
+    <div className="flex items-center gap-2 flex-wrap">
+      <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImport} />
+      <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={importing}>
+        <Upload className="w-4 h-4 mr-1.5" />
+        {importing ? t.transactions.importingLabel : t.transactions.importLabel}
+      </Button>
+      <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+        <Download className="w-4 h-4 mr-1.5" />
+        {exporting ? t.common.exportingLabel : t.common.excelExport}
+      </Button>
+      <Button size="sm" onClick={openModal}
+        className="bg-positive text-background hover:bg-positive/90 shadow-[0_0_16px_color-mix(in_oklch,oklch(var(--positive))_35%,transparent)]">
+        <Plus className="w-4 h-4 mr-1.5" /> {t.transactions.newTx}
+      </Button>
+      <Button variant="ghost" size="sm" onClick={logout}>
+        <LogOut className="w-4 h-4 mr-1.5" /> {t.common.logout}
+      </Button>
+      <LanguageSwitcher />
+      <ThemeToggle />
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
+    <div className={layoutMode === "sidebar" ? "flex" : ""}>
+      {layoutMode === "sidebar" && (
+        <Sidebar navItems={NAV_ITEMS} activePath={location.pathname} onNavigate={navigate}
+          companyName={company?.name} productName={t.common.productName} userName={user?.name} liveLabel="LIVE" />
+      )}
+      <div className={layoutMode === "sidebar" ? "flex-1 min-w-0" : ""}>
       <header className="border-b border-border/50 px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-10 bg-background/80 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <CompanyLogo name={company?.name} className="cursor-pointer" onClick={() => navigate("/dashboard")} />
-          <button onClick={() => navigate("/dashboard")} className="text-muted-foreground hover:text-foreground">
-            <ChevronLeft className="w-5 h-5" />
-          </button>
+        {layoutMode === "sidebar" ? (
           <div>
             <h1 className="text-lg font-medium flex items-center gap-2">
               <TableIcon className="w-5 h-5" /> {t.transactions.pageTitle}
             </h1>
             <p className="text-xs text-muted-foreground">{t.transactions.pageSubtitle}</p>
           </div>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImport} />
-          <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={importing}>
-            <Upload className="w-4 h-4 mr-1.5" />
-            {importing ? t.transactions.importingLabel : t.transactions.importLabel}
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
-            <Download className="w-4 h-4 mr-1.5" />
-            {exporting ? t.common.exportingLabel : t.common.excelExport}
-          </Button>
-          <Button size="sm" onClick={openModal}
-            className="bg-positive text-background hover:bg-positive/90 shadow-[0_0_16px_color-mix(in_oklch,oklch(var(--positive))_35%,transparent)]">
-            <Plus className="w-4 h-4 mr-1.5" /> {t.transactions.newTx}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={logout}>
-            <LogOut className="w-4 h-4 mr-1.5" /> {t.common.logout}
-          </Button>
-          <LanguageSwitcher />
-          <ThemeToggle />
-        </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <CompanyLogo name={company?.name} className="cursor-pointer" onClick={() => navigate("/dashboard")} />
+            <button onClick={() => navigate("/dashboard")} className="text-muted-foreground hover:text-foreground">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-lg font-medium flex items-center gap-2">
+                <TableIcon className="w-5 h-5" /> {t.transactions.pageTitle}
+              </h1>
+              <p className="text-xs text-muted-foreground">{t.transactions.pageSubtitle}</p>
+            </div>
+          </div>
+        )}
+        {headerActions}
       </header>
 
-      <nav className="border-b border-border/50 px-4 sm:px-6 overflow-x-auto">
-        <div className="max-w-6xl mx-auto flex items-center gap-1">
-          {NAV_ITEMS.map(item => {
-            const active = location.pathname === item.path;
-            return (
-              <button key={item.path} onClick={() => navigate(item.path)}
-                className={`flex items-center gap-1.5 px-3.5 py-2.5 my-2 text-xs rounded-full transition-colors whitespace-nowrap ${
-                  active
-                    ? "nav-pill-active font-medium"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                }`}>
-                {item.icon}{item.label}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+              <nav className={`border-b border-border/50 px-4 sm:px-6 overflow-x-auto ${layoutMode === "sidebar" ? "md:hidden" : ""}`}>
+          <div className="max-w-6xl mx-auto flex items-center gap-1">
+            {NAV_ITEMS.map(item => {
+              const active = location.pathname === item.path;
+              return (
+                <button key={item.path} onClick={() => navigate(item.path)}
+                  className={`flex items-center gap-1.5 px-3.5 py-2.5 my-2 text-xs rounded-full transition-colors whitespace-nowrap ${
+                    active
+                      ? "nav-pill-active font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  }`}>
+                  {item.icon}{item.label}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -539,7 +561,7 @@ export default function TransactionPage() {
         </div>
       )}
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+      <main className={layoutMode === "sidebar" ? "px-4 sm:px-6 py-6" : "max-w-6xl mx-auto px-4 sm:px-6 py-6"}>
         {importResult && (
           <div className="mb-4 flex items-center gap-3 bg-positive/10 border border-positive/30 rounded-lg px-4 py-2.5">
             <span className="text-sm text-positive font-medium">
@@ -938,6 +960,8 @@ export default function TransactionPage() {
           </>
         )}
       </main>
+      </div>
+    </div>
     </div>
   );
 }

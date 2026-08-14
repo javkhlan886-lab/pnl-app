@@ -13,6 +13,7 @@ export const en: Dictionary = {
     navProducts: "Products",
     navAdmin: "Admin",
     productName: "P&L Management",
+    layoutToggleTooltip: "Page — switch layout (top nav ↔ sidebar)",
     exportAll: "Export all",
     exportSelected: "Export ({count})",
     exportingLabel: "Processing...",

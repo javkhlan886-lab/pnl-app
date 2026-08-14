@@ -13,6 +13,7 @@ export const zh: Dictionary = {
     navProducts: "商品库存",
     navAdmin: "管理员",
     productName: "P&L 管理系统",
+    layoutToggleTooltip: "Page — 切换布局（顶部导航 ↔ 侧边栏）",
     exportAll: "导出全部",
     exportSelected: "导出（{count}）",
     exportingLabel: "处理中...",

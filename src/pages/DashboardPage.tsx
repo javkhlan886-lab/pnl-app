@@ -10,6 +10,8 @@ import { fmt, fmtDate } from "@/lib/utils";
 import { toMnt } from "@/lib/exchangeRates";
 import { setAiPageContext } from "@/lib/aiPageContext";
 import { getHiddenFields, saveHiddenFields, getCollapsedSections, saveCollapsedSections } from "@/lib/dashboardHidden";
+import { useLayoutMode, toggleLayoutMode } from "@/lib/layoutMode";
+import { Sidebar } from "@/components/Sidebar";
 import api from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +26,7 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { PlusCircle, LogOut, Pencil, Trash2, Download, TrendingUp, TrendingDown, BarChart2, CheckCircle, Users, Box, Receipt, ArrowLeftRight, TableIcon, ChevronDown, ShieldCheck, HardHat, Handshake, Eye, EyeOff, Package } from "lucide-react";
+import { PlusCircle, LogOut, Pencil, Trash2, Download, TrendingUp, TrendingDown, BarChart2, CheckCircle, Users, Box, Receipt, ArrowLeftRight, TableIcon, ChevronDown, ShieldCheck, HardHat, Handshake, Eye, EyeOff, Package, PanelLeft } from "lucide-react";
 
 // ── Оруулсан хэрэглэгчийг харуулах туслах функцууд ──────────────────────────
 // owner талбарыг backend зөвхөн Level 1, 2 (admin, manager)-д илгээдэг.
@@ -64,6 +66,7 @@ export default function DashboardPage() {
   const location = useLocation();
   const { isAdmin, isManager, user, company } = useAuth();
   const { t, locale } = useLocale();
+  const layoutMode = useLayoutMode();
   // Level 1 (admin) ба Level 2 (manager) бүх хэрэглэгчийн датаг хардаг тул
   // тэдэнд "Оруулсан" багана болон хэрэглэгчээр шүүх сонголтыг үзүүлнэ.
   const canSeeOwner = isAdmin || isManager;
@@ -366,65 +369,84 @@ export default function DashboardPage() {
     ...(isAdmin ? [{ path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> }] : []),
   ];
 
+  const headerActions = (
+    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+      <Button variant="outline" size="icon" onClick={toggleLayoutMode} title={t.common.layoutToggleTooltip}>
+        <PanelLeft className="w-4 h-4" />
+      </Button>
+      <Button variant="outline" size="sm" onClick={exportExcel} disabled={exporting}>
+        <Download className="w-4 h-4 mr-1.5" />
+        {exporting
+          ? t.common.exportingLabel
+          : selected.size > 0
+            ? format(t.common.exportSelected, { count: String(selected.size) })
+            : t.common.exportAll}
+      </Button>
+      <Button onClick={() => navigate("/dashboard/new")} size="sm"
+        className="bg-positive text-background hover:bg-positive/90 shadow-[0_0_16px_color-mix(in_oklch,oklch(var(--positive))_35%,transparent)]">
+        <PlusCircle className="w-4 h-4 mr-1.5" />
+        {t.common.newReport}
+      </Button>
+      <Button variant="ghost" size="sm" onClick={logout}>
+        <LogOut className="w-4 h-4 mr-1.5" />
+        {t.common.logout}
+      </Button>
+      <LanguageSwitcher />
+      <ThemeToggle />
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
+    <div className={layoutMode === "sidebar" ? "flex" : ""}>
+      {layoutMode === "sidebar" && (
+        <Sidebar navItems={NAV_ITEMS} activePath={location.pathname} onNavigate={navigate}
+          companyName={company?.name} productName={t.common.productName} userName={user?.name} liveLabel="LIVE" />
+      )}
+      <div className={layoutMode === "sidebar" ? "flex-1 min-w-0" : ""}>
       <header className="border-b border-border/50 px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-10 bg-background/80 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <CompanyLogo name={company?.name} />
+        {layoutMode === "sidebar" ? (
           <div>
-            <h1 className="text-lg font-medium flex items-center gap-2">
-              {t.common.productName}
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full bg-positive/15 text-positive">
-                <span className="live-dot" /> LIVE
-              </span>
-            </h1>
+            <h1 className="text-lg font-medium">{t.common.productName}</h1>
             <p className="text-xs text-muted-foreground">{company?.name ?? ""}</p>
           </div>
-        </div>
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          <Button variant="outline" size="sm" onClick={exportExcel} disabled={exporting}>
-            <Download className="w-4 h-4 mr-1.5" />
-            {exporting
-              ? t.common.exportingLabel
-              : selected.size > 0
-                ? format(t.common.exportSelected, { count: String(selected.size) })
-                : t.common.exportAll}
-          </Button>
-          <Button onClick={() => navigate("/dashboard/new")} size="sm"
-            className="bg-positive text-background hover:bg-positive/90 shadow-[0_0_16px_color-mix(in_oklch,oklch(var(--positive))_35%,transparent)]">
-            <PlusCircle className="w-4 h-4 mr-1.5" />
-            {t.common.newReport}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={logout}>
-            <LogOut className="w-4 h-4 mr-1.5" />
-            {t.common.logout}
-          </Button>
-          <LanguageSwitcher />
-          <ThemeToggle />
-        </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <CompanyLogo name={company?.name} />
+            <div>
+              <h1 className="text-lg font-medium flex items-center gap-2">
+                {t.common.productName}
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full bg-positive/15 text-positive">
+                  <span className="live-dot" /> LIVE
+                </span>
+              </h1>
+              <p className="text-xs text-muted-foreground">{company?.name ?? ""}</p>
+            </div>
+          </div>
+        )}
+        {headerActions}
       </header>
 
-      {/* Module navigation */}
-      <nav className="border-b border-border/50 px-4 sm:px-6 overflow-x-auto">
-        <div className="max-w-6xl mx-auto flex items-center gap-1">
-          {NAV_ITEMS.map(item => {
-            const active = location.pathname === item.path;
-            return (
-              <button key={item.path}
-                onClick={() => navigate(item.path)}
-                className={`flex items-center gap-1.5 px-3.5 py-2.5 my-2 text-xs rounded-full transition-colors whitespace-nowrap ${
-                  active
-                    ? "nav-pill-active font-medium"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                }`}>
-                {item.icon}{item.label}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+              <nav className={`border-b border-border/50 px-4 sm:px-6 overflow-x-auto ${layoutMode === "sidebar" ? "md:hidden" : ""}`}>
+          <div className="max-w-6xl mx-auto flex items-center gap-1">
+            {NAV_ITEMS.map(item => {
+              const active = location.pathname === item.path;
+              return (
+                <button key={item.path}
+                  onClick={() => navigate(item.path)}
+                  className={`flex items-center gap-1.5 px-3.5 py-2.5 my-2 text-xs rounded-full transition-colors whitespace-nowrap ${
+                    active
+                      ? "nav-pill-active font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  }`}>
+                  {item.icon}{item.label}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className={layoutMode === "sidebar" ? "px-4 sm:px-6 py-6 sm:py-8" : "max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8"}>
         {user && (
           <div className="mb-6">
             <h2 className="text-xl font-semibold">
@@ -978,6 +1000,8 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+      </div>
+    </div>
     </div>
   );
 }
