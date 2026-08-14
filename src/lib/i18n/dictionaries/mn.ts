@@ -412,7 +412,6 @@ export const mn = {
     colUnit: "Хэмжээ",
     colQuantity: "Тоо",
     colPrice: "Үнэ",
-    colDiscountPercent: "Хямдрал (%)",
     colSellingPrice: "Зарагдах үнэ",
     colIssuedQty: "Зарагдсан",
     colRevenue: "Орлого",

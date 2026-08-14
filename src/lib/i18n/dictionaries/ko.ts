@@ -411,7 +411,6 @@ export const ko: Dictionary = {
     colUnit: "단위",
     colQuantity: "수량",
     colPrice: "가격",
-    colDiscountPercent: "할인율 (%)",
     colSellingPrice: "판매 가격",
     colIssuedQty: "판매",
     colRevenue: "매출",

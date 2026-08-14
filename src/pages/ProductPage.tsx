@@ -492,19 +492,18 @@ export default function ProductPage() {
                   <TableHead className="w-9">
                     <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 cursor-pointer accent-positive" />
                   </TableHead>
-                  <TableHead className="w-10 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colIndex}</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colName}</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colCategory}</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colUnit}</TableHead>
-                  <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colQuantity}</TableHead>
-                  <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colPrice}</TableHead>
-                  <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colDiscountPercent}</TableHead>
-                  <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colSellingPrice}</TableHead>
-                  <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colIssuedQty}</TableHead>
-                  <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colRevenue}</TableHead>
-                  <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colRemainingQty}</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colStatus}</TableHead>
-                  <TableHead className="text-right text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colActions}</TableHead>
+                  <TableHead className="w-10 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colIndex}</TableHead>
+                  <TableHead className="whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colName}</TableHead>
+                  <TableHead className="whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colCategory}</TableHead>
+                  <TableHead className="whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colUnit}</TableHead>
+                  <TableHead className="text-right whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colQuantity}</TableHead>
+                  <TableHead className="text-right whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colPrice}</TableHead>
+                  <TableHead className="text-right whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colSellingPrice}</TableHead>
+                  <TableHead className="text-right whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colIssuedQty}</TableHead>
+                  <TableHead className="text-right whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colRevenue}</TableHead>
+                  <TableHead className="text-right whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colRemainingQty}</TableHead>
+                  <TableHead className="whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colStatus}</TableHead>
+                  <TableHead className="text-right whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colActions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -522,8 +521,14 @@ export default function ProductPage() {
                     <TableCell className="text-muted-foreground text-sm">{p.unit || "—"}</TableCell>
                     <TableCell className="text-right stat-number">{Number(p.quantity).toLocaleString("mn-MN")}</TableCell>
                     <TableCell className="text-right stat-number">{fmt(p.price)}</TableCell>
-                    <TableCell className="text-right text-muted-foreground stat-number">{p.discountPercent > 0 ? `${p.discountPercent}%` : "—"}</TableCell>
-                    <TableCell className="text-right stat-number">{fmt(sellingPrice(p))}</TableCell>
+                    <TableCell className="text-right stat-number">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {p.discountPercent > 0 && sellingPrice(p) < p.price && (
+                          <span className="text-[10px] font-medium text-negative bg-negative/10 rounded px-1 py-0.5">-{p.discountPercent}%</span>
+                        )}
+                        {fmt(sellingPrice(p))}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-right text-negative stat-number">{Number(p.issuedQty).toLocaleString("mn-MN")}</TableCell>
                     <TableCell className="text-right text-positive stat-number">{fmt(p.issuedQty * sellingPrice(p))}</TableCell>
                     <TableCell className="text-right text-positive font-medium stat-number">{Number(p.remainingQty).toLocaleString("mn-MN")}</TableCell>
