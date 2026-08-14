@@ -21,7 +21,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, Box, BarChart2, Users, Receipt,
+  LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, ChevronDown, Box, BarChart2, Users, Receipt,
   ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake, Package, Search,
 } from "lucide-react";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
@@ -89,6 +89,7 @@ export default function ProductPage() {
   const [issuedDisplay, setIssuedDisplay] = useState("");
   const [discountEnabled, setDiscountEnabled] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [openStatusId, setOpenStatusId] = useState<string | null>(null);
 
   const NAV_ITEMS = [
     { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
@@ -226,6 +227,22 @@ export default function ProductPage() {
       return;
     }
     setForm(f => ({ ...f, status: next }));
+  };
+
+  // Хүснэгтэн дэх мөр бүрийн төлвийг цонх нээхгүйгээр шууд солих.
+  const handleInlineStatusChange = async (p: any, next: string) => {
+    const remaining = p.quantity - p.issuedQty;
+    if (next === "inactive" && remaining > 0) {
+      alert(format(t.products.cannotFinishWithRemaining, { count: remaining.toLocaleString("mn-MN") }));
+      return;
+    }
+    setOpenStatusId(null);
+    try {
+      const updated = await updateProduct(p._id, { ...p, status: next });
+      setProducts(prev => prev.map(x => x._id === p._id ? updated : x));
+    } catch (err: any) {
+      alert(err.response?.data?.error || t.products.saveError);
+    }
   };
 
   const handleSave = async () => {
@@ -480,39 +497,39 @@ export default function ProductPage() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border/50 bg-secondary/40 hover:bg-secondary/40">
-                  <TableHead className="w-9">
+                  <TableHead className="w-9 px-2">
                     <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 cursor-pointer accent-positive" />
                   </TableHead>
-                  <TableHead className="w-10 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colIndex}</TableHead>
-                  <TableHead className="whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colName}</TableHead>
-                  <TableHead className="whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colCategory}</TableHead>
-                  <TableHead className="whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colUnit}</TableHead>
-                  <TableHead className="text-right whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colQuantity}</TableHead>
-                  <TableHead className="text-right whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colPrice}</TableHead>
-                  <TableHead className="text-right whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colSellingPrice}</TableHead>
-                  <TableHead className="text-right whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colIssuedQty}</TableHead>
-                  <TableHead className="text-right whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colRevenue}</TableHead>
-                  <TableHead className="text-right whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colRemainingQty}</TableHead>
-                  <TableHead className="whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colStatus}</TableHead>
-                  <TableHead className="text-right whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colActions}</TableHead>
+                  <TableHead className="w-8 px-2 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colIndex}</TableHead>
+                  <TableHead className="px-2 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colName}</TableHead>
+                  <TableHead className="px-2 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colCategory}</TableHead>
+                  <TableHead className="text-right px-2 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colQuantity}</TableHead>
+                  <TableHead className="text-right px-2 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colPrice}</TableHead>
+                  <TableHead className="text-right px-2 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colSellingPrice}</TableHead>
+                  <TableHead className="text-right px-2 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colRevenue}</TableHead>
+                  <TableHead className="text-right px-2 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colRemainingQty}</TableHead>
+                  <TableHead className="px-2 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colStatus}</TableHead>
+                  <TableHead className="text-right px-2 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colActions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.map((p, idx) => (
                   <TableRow key={p._id} className="border-border/50 hover:bg-secondary/30">
-                    <TableCell>
+                    <TableCell className="px-2">
                       <input type="checkbox" checked={selected.has(p._id!)} onChange={() => toggleOne(p._id!)} className="w-4 h-4 cursor-pointer accent-positive" />
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-xs">{idx + 1}</TableCell>
-                    <TableCell>
+                    <TableCell className="px-2 text-muted-foreground text-xs">{idx + 1}</TableCell>
+                    <TableCell className="px-2">
                       <div className="font-medium">{p.name}</div>
                       {p.description && <div className="text-xs text-muted-foreground">{p.description}</div>}
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{p.category}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{p.unit || "—"}</TableCell>
-                    <TableCell className="text-right stat-number">{Number(p.quantity).toLocaleString("mn-MN")}</TableCell>
-                    <TableCell className="text-right stat-number">{fmt(p.price)}</TableCell>
-                    <TableCell className="text-right stat-number">
+                    <TableCell className="px-2 text-muted-foreground text-sm">{p.category}</TableCell>
+                    <TableCell className="px-2 text-right stat-number">
+                      {Number(p.quantity).toLocaleString("mn-MN")}
+                      {p.unit && <span className="text-[10px] text-muted-foreground ml-1">{p.unit}</span>}
+                    </TableCell>
+                    <TableCell className="px-2 text-right stat-number">{fmt(p.price)}</TableCell>
+                    <TableCell className="px-2 text-right stat-number">
                       <div className="flex items-center justify-end gap-1.5">
                         {p.discountPercent > 0 && sellingPrice(p) < p.price && (
                           <span className="text-[10px] font-medium text-negative bg-negative/10 rounded px-1 py-0.5">-{p.discountPercent}%</span>
@@ -520,13 +537,32 @@ export default function ProductPage() {
                         {fmt(sellingPrice(p))}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right text-negative stat-number">{Number(p.issuedQty).toLocaleString("mn-MN")}</TableCell>
-                    <TableCell className="text-right text-positive stat-number">{fmt(p.issuedQty * sellingPrice(p))}</TableCell>
-                    <TableCell className="text-right text-positive font-medium stat-number">{Number(p.remainingQty).toLocaleString("mn-MN")}</TableCell>
-                    <TableCell>
-                      <Badge className={statusCls[p.status]}>{statusLabel[p.status]}</Badge>
+                    <TableCell className="px-2 text-right text-positive stat-number">
+                      {fmt(p.issuedQty * sellingPrice(p))}
+                      <div className="text-[10px] text-negative font-normal">{Number(p.issuedQty).toLocaleString("mn-MN")} {t.products.colIssuedQty.toLowerCase()}</div>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="px-2 text-right text-positive font-medium stat-number">{Number(p.remainingQty).toLocaleString("mn-MN")}</TableCell>
+                    <TableCell className="px-2">
+                      <div className="relative inline-block">
+                        <button type="button"
+                          onClick={() => setOpenStatusId(openStatusId === p._id ? null : p._id!)}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusCls[p.status]}`}>
+                          {statusLabel[p.status]}
+                          <ChevronDown className="w-3 h-3 opacity-60" />
+                        </button>
+                        {openStatusId === p._id && (
+                          <div className="absolute top-full left-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-20 py-1 min-w-32">
+                            {(["active", "inactive"] as const).map(s => (
+                              <button key={s} type="button" onClick={() => handleInlineStatusChange(p, s)}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-secondary/50 text-left">
+                                <Badge className={statusCls[s]}>{statusLabel[s]}</Badge>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-2 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
                           <Pencil className="w-4 h-4" />
