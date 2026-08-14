@@ -126,6 +126,19 @@ export default function ProductPage() {
   const finishedRevenue = finishedProducts.reduce((s, p) => s + p.issuedQty * p.price, 0);
   const finishedRemaining = finishedProducts.reduce((s, p) => s + p.remainingQty, 0);
 
+  // Тус бүтээгдэхүүний гарсан тоог өдрөөр нь бүртгэдэг түүх одоогоор
+  // байхгүй (зөвхөн нэг л "нийт гарсан тоо" талбар хадгалагддаг) тул
+  // "сүүлийн 7 хоногт хамгийн их гарсан" гэдгийг сүүлд шинэчлэгдсэн
+  // (updatedAt) бүтээгдэхүүнүүдийн дундаас гарсан тоогоор нь эрэмбэлж
+  // ойролцоогоор тооцно.
+  const topIssuedRecent = useMemo(() => {
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    return products
+      .filter((p) => p.issuedQty > 0 && new Date(p.updatedAt || p.createdAt || 0).getTime() >= weekAgo)
+      .sort((a, b) => b.issuedQty - a.issuedQty)
+      .slice(0, 5);
+  }, [products]);
+
   useEffect(() => { setSelected(new Set()); }, [catFilter, search]);
 
   const toggleOne = (id: string) => {
@@ -347,6 +360,34 @@ export default function ProductPage() {
             <p className="relative text-xl font-semibold text-positive stat-number">{Math.round(totalRemaining).toLocaleString("mn-MN")}</p>
           </div>
         </div>
+
+        {topIssuedRecent.length > 0 && (
+          <div className="mb-6">
+            <p className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-negative/60" />
+              {t.products.topIssuedTitle}
+            </p>
+            <p className="text-[11px] text-muted-foreground mb-2">{t.products.topIssuedHint}</p>
+            <div className="glass-card px-4 py-4">
+              <div className="space-y-3">
+                {topIssuedRecent.map((p, idx) => {
+                  const maxIssued = topIssuedRecent[0].issuedQty || 1;
+                  const pct = Math.max(4, Math.round((p.issuedQty / maxIssued) * 100));
+                  return (
+                    <div key={p._id} className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground w-4 shrink-0">{idx + 1}</span>
+                      <span className="text-xs w-28 truncate shrink-0" title={p.name}>{p.name}</span>
+                      <div className="flex-1 h-1.5 rounded-full bg-secondary/60 overflow-hidden">
+                        <div className="h-full bg-negative rounded-full" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-xs font-medium stat-number shrink-0">{Number(p.issuedQty).toLocaleString("mn-MN")}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
         {finishedProducts.length > 0 && (
           <div className="mb-6">

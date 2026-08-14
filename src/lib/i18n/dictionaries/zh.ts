@@ -400,6 +400,8 @@ export const zh: Dictionary = {
     statRevenue: "收入",
     statRemaining: "累计库存",
     finishedSectionTitle: "已完成商品",
+    topIssuedTitle: "近7天出库最多的5件商品",
+    topIssuedHint: "近似值 — 按最近更新商品中的出库数量排序",
     noProducts: "尚未添加商品",
     addFirstProduct: "添加第一件商品",
     searchPlaceholder: "搜索 — 名称、类别、说明...",

@@ -401,6 +401,8 @@ export const ko: Dictionary = {
     statRevenue: "매출",
     statRemaining: "총 재고량",
     finishedSectionTitle: "완료된 상품",
+    topIssuedTitle: "최근 7일간 출고량 상위 5개 상품",
+    topIssuedHint: "근사치 — 최근 수정된 상품 중 출고 수량 기준으로 정렬",
     noProducts: "등록된 상품이 없습니다",
     addFirstProduct: "첫 상품 추가하기",
     searchPlaceholder: "검색 — 이름, 분류, 설명...",

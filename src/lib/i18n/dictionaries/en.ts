@@ -401,6 +401,8 @@ export const en: Dictionary = {
     statRevenue: "Revenue",
     statRemaining: "Total remaining",
     finishedSectionTitle: "Finished products",
+    topIssuedTitle: "Top 5 most-issued products (last 7 days)",
+    topIssuedHint: "Approximate — ranked by issued quantity among recently updated products",
     noProducts: "No products yet",
     addFirstProduct: "Add your first product",
     searchPlaceholder: "Search — name, category, description...",
