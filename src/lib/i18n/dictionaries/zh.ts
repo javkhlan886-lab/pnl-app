@@ -78,6 +78,8 @@ export const zh: Dictionary = {
     hideField: "隐藏此字段",
     hiddenFieldsCount: "已隐藏 {count} 个字段",
     showAllFields: "全部显示",
+    hideSection: "收起此部分",
+    showSection: "展开此部分",
     ownerFilterLabel: "录入人",
     noRecords: "暂无报表",
     createFirstReport: "创建新报表",

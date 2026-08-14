@@ -80,6 +80,8 @@ export const mn = {
     hideField: "Энэ талбарыг нуух",
     hiddenFieldsCount: "{count} талбар нуугдсан",
     showAllFields: "Бүгдийг харуулах",
+    hideSection: "Энэ мөрийг нуух",
+    showSection: "Энэ мөрийг харуулах",
     ownerFilterLabel: "Оруулсан",
     noRecords: "Тайлан байхгүй байна",
     createFirstReport: "Шинэ тайлан үүсгэх",

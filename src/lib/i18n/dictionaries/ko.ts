@@ -79,6 +79,8 @@ export const ko: Dictionary = {
     hideField: "이 항목 숨기기",
     hiddenFieldsCount: "{count}개 항목 숨김",
     showAllFields: "모두 표시",
+    hideSection: "이 섹션 접기",
+    showSection: "이 섹션 펼치기",
     ownerFilterLabel: "입력자",
     noRecords: "보고서가 없습니다",
     createFirstReport: "새 보고서 만들기",

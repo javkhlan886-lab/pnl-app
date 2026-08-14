@@ -79,6 +79,8 @@ export const en: Dictionary = {
     hideField: "Hide this field",
     hiddenFieldsCount: "{count} fields hidden",
     showAllFields: "Show all",
+    hideSection: "Collapse this section",
+    showSection: "Expand this section",
     ownerFilterLabel: "Entered by",
     noRecords: "No reports yet",
     createFirstReport: "Create a report",

@@ -9,7 +9,7 @@ import { PNLRecord } from "@/types";
 import { fmt, fmtDate } from "@/lib/utils";
 import { toMnt } from "@/lib/exchangeRates";
 import { setAiPageContext } from "@/lib/aiPageContext";
-import { getHiddenFields, saveHiddenFields } from "@/lib/dashboardHidden";
+import { getHiddenFields, saveHiddenFields, getCollapsedSections, saveCollapsedSections } from "@/lib/dashboardHidden";
 import api from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -101,6 +101,25 @@ export default function DashboardPage() {
       title={t.dashboard.hideField}
       className="absolute top-1.5 right-1.5 z-10 text-muted-foreground/40 hover:text-destructive transition-colors">
       <EyeOff className="w-3 h-3" />
+    </button>
+  );
+
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => getCollapsedSections());
+  const toggleSection = (id: string) => {
+    setCollapsedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      saveCollapsedSections(next);
+      return next;
+    });
+  };
+  // Мөрийн гарчгийн ард гарч ирэх бүхэл бүлгийг нуух/харуулах товч.
+  const SectionHideBtn = ({ id }: { id: string }) => (
+    <button
+      onClick={() => toggleSection(id)}
+      title={collapsedSections.has(id) ? t.dashboard.showSection : t.dashboard.hideSection}
+      className="text-muted-foreground hover:text-foreground ml-auto">
+      <ChevronDown className={`w-3.5 h-3.5 transition-transform ${collapsedSections.has(id) ? "-rotate-90" : ""}`} />
     </button>
   );
 
@@ -447,10 +466,12 @@ export default function DashboardPage() {
               </div>
             )}
 
-            <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 mb-2">
               <span className="w-1.5 h-1.5 rounded-full bg-positive/60" />
-              {t.dashboard.mainSectionTitle}
-            </p>
+              <p className="text-xs font-medium text-muted-foreground">{t.dashboard.mainSectionTitle}</p>
+              <SectionHideBtn id="main" />
+            </div>
+            {!collapsedSections.has("main") && (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-5">
               {!hiddenFields.has("income") && (
                 <div className="glass-card glass-card-positive px-3.5 py-3">
@@ -501,13 +522,16 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
+            )}
 
             {summary && (
               <>
-                <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 mb-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-negative/60" />
-                  {t.dashboard.breakdownSectionTitle}
-                </p>
+                  <p className="text-xs font-medium text-muted-foreground">{t.dashboard.breakdownSectionTitle}</p>
+                  <SectionHideBtn id="breakdown" />
+                </div>
+                {!collapsedSections.has("breakdown") && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-5">
                   {!hiddenFields.has("projectExpense") && (
                     <div className="glass-card glass-card-negative px-3.5 py-3">
@@ -556,15 +580,18 @@ export default function DashboardPage() {
                     </div>
                   )}
                 </div>
+                )}
               </>
             )}
 
             {displaySummary.completedCount > 0 && (
               <>
-                <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 mb-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-positive/60" />
-                  {t.dashboard.completedSectionTitle}
-                </p>
+                  <p className="text-xs font-medium text-muted-foreground">{t.dashboard.completedSectionTitle}</p>
+                  <SectionHideBtn id="completed" />
+                </div>
+                {!collapsedSections.has("completed") && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
                   {!hiddenFields.has("completedIncome") && (
                     <div className="glass-card glass-card-positive px-3.5 py-3">
@@ -600,15 +627,18 @@ export default function DashboardPage() {
                     </div>
                   )}
                 </div>
+                )}
               </>
             )}
 
             {displaySummary.pendingCount > 0 && (
               <>
-                <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 mb-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400/70" />
-                  {t.dashboard.pendingSectionTitle}
-                </p>
+                  <p className="text-xs font-medium text-muted-foreground">{t.dashboard.pendingSectionTitle}</p>
+                  <SectionHideBtn id="pending" />
+                </div>
+                {!collapsedSections.has("pending") && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
                   {!hiddenFields.has("pendingIncome") && (
                     <div className="glass-card px-3.5 py-3">
@@ -644,6 +674,7 @@ export default function DashboardPage() {
                     </div>
                   )}
                 </div>
+                )}
               </>
             )}
 
@@ -658,7 +689,9 @@ export default function DashboardPage() {
                     className="text-muted-foreground hover:text-foreground">
                     {txBlurred ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
+                  <SectionHideBtn id="tx" />
                 </div>
+                {!collapsedSections.has("tx") && (
                 <div className={`grid grid-cols-1 sm:grid-cols-3 gap-3 ${txBlurred ? "section-blurred" : ""}`}>
                 {!hiddenFields.has("txIncome") && (
                   <div className="glass-card glass-card-positive px-3.5 py-3">
@@ -691,6 +724,7 @@ export default function DashboardPage() {
                   </div>
                 )}
                 </div>
+                )}
               </div>
             )}
           </>
