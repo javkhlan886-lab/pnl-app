@@ -13,6 +13,13 @@ import { Separator } from "@/components/ui/separator";
 import { Plus, Trash2, Save, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { useLocale, format } from "@/hooks/useLocale";
 import type { Dictionary } from "@/lib/i18n/dictionary-type";
+import { getRecent, addRecent } from "@/lib/recentValues";
+import { Combobox } from "@/components/ui/combobox";
+
+// Хүснэгтийн нягт мөрөнд багтаах — Combobox-ийн үндсэн хүрээ/дэвсгэрийг
+// арилгаж, орчны бусад <input>-тай ижил "хилгүй, тунгалаг" харагдацтай болгоно.
+const rowComboboxClassName =
+  "h-auto py-0 px-0 border-0 rounded-none bg-transparent shadow-none text-[13px] focus:outline-none focus:ring-0";
 
 const defaultIncome: Row[] = [
   { name: "Гэрээт ажлын орлого", note: "Угсралт, суурилуулалт", unitPrice: 0, quantity: 1, amount: 0 },
@@ -125,21 +132,21 @@ const RowSection = ({ type, label, rows, currency, total, onUpdate, onAdd, onDel
       {rows.map((r, i) => (
         <div key={i} className="grid grid-cols-12 gap-0 px-3 py-1.5 border-b last:border-0 hover:bg-muted/20 items-center">
           <div className="col-span-3 pr-2">
-            <input
+            <Combobox
               value={r.name}
+              onChange={(v) => onUpdate(i, "name", v)}
+              options={getRecent(type === "incomeRows" ? "pnl_income" : "pnl_expense", "name")}
               placeholder={t.pnlForm.namePlaceholder}
-              onChange={(e) => onUpdate(i, "name", e.target.value)}
-              onFocus={(e) => e.currentTarget.select()}
-              style={{ width: "100%", background: "transparent", border: "none", outline: "none", fontSize: "13px", color: "inherit" }}
+              className={rowComboboxClassName}
             />
           </div>
-          <div className="col-span-2 pr-2">
-            <input
+          <div className="col-span-2 pr-2 opacity-60">
+            <Combobox
               value={r.note}
+              onChange={(v) => onUpdate(i, "note", v)}
+              options={getRecent(type === "incomeRows" ? "pnl_income" : "pnl_expense", "note")}
               placeholder={t.pnlForm.notePlaceholder}
-              onChange={(e) => onUpdate(i, "note", e.target.value)}
-              onFocus={(e) => e.currentTarget.select()}
-              style={{ width: "100%", background: "transparent", border: "none", outline: "none", fontSize: "13px", color: "inherit", opacity: 0.6 }}
+              className={rowComboboxClassName}
             />
           </div>
           <div className="col-span-1 flex justify-center">
@@ -276,6 +283,15 @@ export default function PNLForm({ initial, id }: Props) {
       incomeRows: normalizedRows(data.incomeRows),
       expenseRows: normalizedRows(data.expenseRows),
     };
+
+    payload.incomeRows.forEach((row) => {
+      addRecent("pnl_income", "name", row.name);
+      addRecent("pnl_income", "note", row.note);
+    });
+    payload.expenseRows.forEach((row) => {
+      addRecent("pnl_expense", "name", row.name);
+      addRecent("pnl_expense", "note", row.note);
+    });
 
     setSaving(true);
     try {
