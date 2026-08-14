@@ -497,39 +497,39 @@ export default function ProductPage() {
             <Table>
               <TableHeader>
                 <TableRow className="border-border/50 bg-secondary/40 hover:bg-secondary/40">
-                  <TableHead className="w-9 px-2">
+                  <TableHead className="w-8 px-1.5">
                     <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 cursor-pointer accent-positive" />
                   </TableHead>
-                  <TableHead className="w-8 px-2 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colIndex}</TableHead>
-                  <TableHead className="px-2 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colName}</TableHead>
-                  <TableHead className="px-2 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colCategory}</TableHead>
-                  <TableHead className="text-right px-2 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colQuantity}</TableHead>
-                  <TableHead className="text-right px-2 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colPrice}</TableHead>
-                  <TableHead className="text-right px-2 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colSellingPrice}</TableHead>
-                  <TableHead className="text-right px-2 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colRevenue}</TableHead>
-                  <TableHead className="text-right px-2 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colRemainingQty}</TableHead>
-                  <TableHead className="px-2 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colStatus}</TableHead>
-                  <TableHead className="text-right px-2 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colActions}</TableHead>
+                  <TableHead className="w-6 px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colIndex}</TableHead>
+                  <TableHead className="px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colName}</TableHead>
+                  <TableHead className="px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colCategory}</TableHead>
+                  <TableHead className="px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colUnit}</TableHead>
+                  <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colQuantity}</TableHead>
+                  <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colPrice}</TableHead>
+                  <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colSellingPrice}</TableHead>
+                  <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colIssuedQty}</TableHead>
+                  <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colRevenue}</TableHead>
+                  <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colRemainingQty}</TableHead>
+                  <TableHead className="px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colStatus}</TableHead>
+                  <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colActions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.map((p, idx) => (
                   <TableRow key={p._id} className="border-border/50 hover:bg-secondary/30">
-                    <TableCell className="px-2">
+                    <TableCell className="px-1.5">
                       <input type="checkbox" checked={selected.has(p._id!)} onChange={() => toggleOne(p._id!)} className="w-4 h-4 cursor-pointer accent-positive" />
                     </TableCell>
-                    <TableCell className="px-2 text-muted-foreground text-xs">{idx + 1}</TableCell>
-                    <TableCell className="px-2">
+                    <TableCell className="px-1.5 text-muted-foreground text-xs">{idx + 1}</TableCell>
+                    <TableCell className="px-1.5">
                       <div className="font-medium">{p.name}</div>
                       {p.description && <div className="text-xs text-muted-foreground">{p.description}</div>}
                     </TableCell>
-                    <TableCell className="px-2 text-muted-foreground text-sm">{p.category}</TableCell>
-                    <TableCell className="px-2 text-right stat-number">
-                      {Number(p.quantity).toLocaleString("mn-MN")}
-                      {p.unit && <span className="text-[10px] text-muted-foreground ml-1">{p.unit}</span>}
-                    </TableCell>
-                    <TableCell className="px-2 text-right stat-number">{fmt(p.price)}</TableCell>
-                    <TableCell className="px-2 text-right stat-number">
+                    <TableCell className="px-1.5 text-muted-foreground text-sm">{p.category}</TableCell>
+                    <TableCell className="px-1.5 text-muted-foreground text-sm">{p.unit || "—"}</TableCell>
+                    <TableCell className="px-1.5 text-right stat-number">{Number(p.quantity).toLocaleString("mn-MN")}</TableCell>
+                    <TableCell className="px-1.5 text-right stat-number">{fmt(p.price)}</TableCell>
+                    <TableCell className="px-1.5 text-right stat-number">
                       <div className="flex items-center justify-end gap-1.5">
                         {p.discountPercent > 0 && sellingPrice(p) < p.price && (
                           <span className="text-[10px] font-medium text-negative bg-negative/10 rounded px-1 py-0.5">-{p.discountPercent}%</span>
@@ -537,12 +537,10 @@ export default function ProductPage() {
                         {fmt(sellingPrice(p))}
                       </div>
                     </TableCell>
-                    <TableCell className="px-2 text-right text-positive stat-number">
-                      {fmt(p.issuedQty * sellingPrice(p))}
-                      <div className="text-[10px] text-negative font-normal">{Number(p.issuedQty).toLocaleString("mn-MN")} {t.products.colIssuedQty.toLowerCase()}</div>
-                    </TableCell>
-                    <TableCell className="px-2 text-right text-positive font-medium stat-number">{Number(p.remainingQty).toLocaleString("mn-MN")}</TableCell>
-                    <TableCell className="px-2">
+                    <TableCell className="px-1.5 text-right text-negative stat-number">{Number(p.issuedQty).toLocaleString("mn-MN")}</TableCell>
+                    <TableCell className="px-1.5 text-right text-positive stat-number">{fmt(p.issuedQty * sellingPrice(p))}</TableCell>
+                    <TableCell className="px-1.5 text-right text-positive font-medium stat-number">{Number(p.remainingQty).toLocaleString("mn-MN")}</TableCell>
+                    <TableCell className="px-1.5">
                       <div className="relative inline-block">
                         <button type="button"
                           onClick={() => setOpenStatusId(openStatusId === p._id ? null : p._id!)}
@@ -562,7 +560,7 @@ export default function ProductPage() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="px-2 text-right">
+                    <TableCell className="px-1.5 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
                           <Pencil className="w-4 h-4" />
