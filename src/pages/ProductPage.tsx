@@ -56,15 +56,6 @@ const sellingPrice = (p: any) => {
   return p.price * (1 - pct / 100);
 };
 
-// Хямдралтай бүтээгдэхүүнүүдийн дундаж хямдрал хувь — хямдралгүй
-// (0%) бараагаар дундаж утгыг "шингэлэхгүй" тул зөвхөн хямдралтай
-// бараануудаас тооцно.
-const avgDiscount = (list: any[]) => {
-  const discounted = list.filter((p) => (p.discountPercent || 0) > 0);
-  if (discounted.length === 0) return 0;
-  return discounted.reduce((s, p) => s + p.discountPercent, 0) / discounted.length;
-};
-
 const discountedValue = (list: any[]) => list.reduce((s, p) => s + sellingPrice(p) * p.quantity, 0);
 
 const statusCls: Record<string, string> = {
@@ -370,6 +361,9 @@ export default function ProductPage() {
           <div className="glass-card glass-card-positive px-4 py-3">
             <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotalValue}</p>
             <p className="relative text-xl font-semibold text-info stat-number">{fmt(totalValue)}</p>
+            {discountedValue(activeProducts) !== totalValue && (
+              <p className="relative text-xs text-muted-foreground mt-1">{format(t.products.statDiscountedValueSub, { amount: fmt(discountedValue(activeProducts)) })}</p>
+            )}
           </div>
           <div className="glass-card glass-card-negative px-4 py-3">
             <p className="relative text-xs text-muted-foreground mb-1">{t.products.statIssued}</p>
@@ -382,14 +376,6 @@ export default function ProductPage() {
           <div className="glass-card glass-card-positive px-4 py-3">
             <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRemaining}</p>
             <p className="relative text-xl font-semibold text-positive stat-number">{Math.round(totalRemaining).toLocaleString("mn-MN")}</p>
-          </div>
-          <div className="glass-card px-4 py-3">
-            <p className="relative text-xs text-muted-foreground mb-1">{t.products.statAvgDiscount}</p>
-            <p className="relative text-xl font-semibold stat-number">{avgDiscount(activeProducts) > 0 ? `${avgDiscount(activeProducts).toFixed(1)}%` : "—"}</p>
-          </div>
-          <div className="glass-card glass-card-positive px-4 py-3">
-            <p className="relative text-xs text-muted-foreground mb-1">{t.products.statDiscountedValue}</p>
-            <p className="relative text-xl font-semibold text-info stat-number">{fmt(discountedValue(activeProducts))}</p>
           </div>
         </div>
 
@@ -407,6 +393,9 @@ export default function ProductPage() {
               <div className="glass-card px-4 py-3 opacity-80">
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotalValue}</p>
                 <p className="relative text-xl font-semibold text-muted-foreground stat-number">{fmt(finishedValue)}</p>
+                {discountedValue(finishedProducts) !== finishedValue && (
+                  <p className="relative text-xs text-muted-foreground mt-1">{format(t.products.statDiscountedValueSub, { amount: fmt(discountedValue(finishedProducts)) })}</p>
+                )}
               </div>
               <div className="glass-card px-4 py-3 opacity-80">
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statIssued}</p>
@@ -419,14 +408,6 @@ export default function ProductPage() {
               <div className="glass-card px-4 py-3 opacity-80">
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRemaining}</p>
                 <p className="relative text-xl font-semibold text-muted-foreground stat-number">{Math.round(finishedRemaining).toLocaleString("mn-MN")}</p>
-              </div>
-              <div className="glass-card px-4 py-3 opacity-80">
-                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statAvgDiscount}</p>
-                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{avgDiscount(finishedProducts) > 0 ? `${avgDiscount(finishedProducts).toFixed(1)}%` : "—"}</p>
-              </div>
-              <div className="glass-card px-4 py-3 opacity-80">
-                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statDiscountedValue}</p>
-                <p className="relative text-xl font-semibold text-muted-foreground stat-number">{fmt(discountedValue(finishedProducts))}</p>
               </div>
             </div>
           </div>
@@ -451,6 +432,9 @@ export default function ProductPage() {
               <div className="glass-card glass-card-positive px-4 py-3 ring-1 ring-positive/50">
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotalValue}</p>
                 <p className="relative text-xl font-semibold text-info stat-number">{fmt(selectedTotalValue)}</p>
+                {discountedValue(selectedProducts) !== selectedTotalValue && (
+                  <p className="relative text-xs text-muted-foreground mt-1">{format(t.products.statDiscountedValueSub, { amount: fmt(discountedValue(selectedProducts)) })}</p>
+                )}
               </div>
               <div className="glass-card glass-card-negative px-4 py-3 ring-1 ring-positive/50">
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statIssued}</p>
@@ -463,14 +447,6 @@ export default function ProductPage() {
               <div className="glass-card glass-card-positive px-4 py-3 ring-1 ring-positive/50">
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRemaining}</p>
                 <p className="relative text-xl font-semibold text-positive stat-number">{Math.round(selectedRemaining).toLocaleString("mn-MN")}</p>
-              </div>
-              <div className="glass-card px-4 py-3 ring-1 ring-positive/50">
-                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statAvgDiscount}</p>
-                <p className="relative text-xl font-semibold stat-number">{avgDiscount(selectedProducts) > 0 ? `${avgDiscount(selectedProducts).toFixed(1)}%` : "—"}</p>
-              </div>
-              <div className="glass-card glass-card-positive px-4 py-3 ring-1 ring-positive/50">
-                <p className="relative text-xs text-muted-foreground mb-1">{t.products.statDiscountedValue}</p>
-                <p className="relative text-xl font-semibold text-info stat-number">{fmt(discountedValue(selectedProducts))}</p>
               </div>
             </div>
           </div>
