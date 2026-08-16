@@ -6,6 +6,7 @@ import { getCompanyUsers, changePnlLevel } from "@/lib/admin";
 import { logout } from "@/lib/auth";
 import { useLocale, format } from "@/hooks/useLocale";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { LayoutToggleButton } from "@/components/LayoutToggleButton";
 import { User } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   LogOut, ChevronLeft, ShieldCheck, BarChart2, Users, Box, Receipt,
-  ArrowLeftRight, TableIcon, HardHat, Handshake, Package,
+  ArrowLeftRight, TableIcon, HardHat, Handshake, Package, Search,
 } from "lucide-react";
 import { useLayoutMode } from "@/lib/layoutMode";
 import { Sidebar } from "@/components/Sidebar";
@@ -34,6 +35,7 @@ export default function AdminUsersPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [assignFor, setAssignFor] = useState<User | null>(null);
   const [assignPicked, setAssignPicked] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState("");
 
   const LEVEL_LABEL: Record<1 | 2 | 3 | 4, string> = {
     1: t.admin.level1,
@@ -93,11 +95,18 @@ export default function AdminUsersPage() {
   const otherUsers = (target: User) =>
     (users ?? []).filter((u) => u.id !== target.id && u.role === "company_user");
 
+  const filteredUsers = (users ?? []).filter((u) => u.role === "company_user").filter((u) => {
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    return (u.name || "").toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q);
+  });
+
   const headerActions = (
     <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
       <Button variant="ghost" size="sm" onClick={logout}>
         <LogOut className="w-4 h-4 mr-1.5" /> {t.common.logout}
       </Button>
+      <LayoutToggleButton />
       <LanguageSwitcher />
       <ThemeToggle />
     </div>
@@ -164,6 +173,18 @@ export default function AdminUsersPage() {
 
             {error && <p className="text-sm text-destructive mb-3">{error}</p>}
 
+            {users === null ? (
+              <div className="text-center py-20 text-muted-foreground text-sm">{t.common.loading}</div>
+            ) : (
+            <>
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)}
+                  placeholder={t.admin.searchPlaceholder}
+                  className="h-8 w-56 pl-8 pr-3 text-xs rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring" />
+              </div>
+            </div>
             <div className="glass-card overflow-x-auto">
             <Table>
               <TableHeader>
@@ -175,8 +196,7 @@ export default function AdminUsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(users ?? [])
-                  .filter((u) => u.role === "company_user")
+                {filteredUsers
                   .map((u) => {
                     const level = (u.pnlLevel ?? 4) as 1 | 2 | 3 | 4;
                     return (
@@ -216,7 +236,7 @@ export default function AdminUsersPage() {
                       </TableRow>
                     );
                   })}
-                {users && users.filter((u) => u.role === "company_user").length === 0 && (
+                {filteredUsers.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
                       {t.admin.noUsers}
@@ -226,6 +246,8 @@ export default function AdminUsersPage() {
               </TableBody>
             </Table>
             </div>
+            </>
+            )}
           </>
         )}
       </main>

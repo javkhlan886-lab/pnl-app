@@ -5,6 +5,7 @@ import { logout } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocale, format } from "@/hooks/useLocale";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { LayoutToggleButton } from "@/components/LayoutToggleButton";
 import {
   getTransactions, getContractSummary, importTransactions,
   exportTransactions, deleteTransaction, createTransaction, updateTransaction,
@@ -12,6 +13,7 @@ import {
 import { getPNLList } from "@/lib/pnl";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { getRecent, addRecent } from "@/lib/recentValues";
+import { toast } from "@/lib/toast";
 import { fmtDate, toDateInputValue } from "@/lib/utils";
 import { Transaction, ContractSummary } from "@/types";
 import { setAiPageContext } from "@/lib/aiPageContext";
@@ -247,7 +249,7 @@ export default function TransactionPage() {
       setImportResult(result);
       loadTxs();
     } catch {
-      alert(t.transactions.importError);
+      toast.error(t.transactions.importError);
     } finally {
       setImporting(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -259,15 +261,30 @@ export default function TransactionPage() {
     try {
       await exportTransactions({ dateFrom: dateFrom || undefined, dateTo: dateTo || undefined, locale });
     } catch {
-      alert(t.transactions.exportError);
+      toast.error(t.transactions.exportError);
     } finally {
       setExporting(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    await deleteTransaction(id);
-    loadTxs();
+    try {
+      await deleteTransaction(id);
+      loadTxs();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || t.transactions.saveError);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = [...selected];
+    try {
+      await Promise.all(ids.map((id) => deleteTransaction(id)));
+      setSelected(new Set());
+      loadTxs();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || t.transactions.saveError);
+    }
   };
 
   const handleSave = async () => {
@@ -349,7 +366,7 @@ export default function TransactionPage() {
   const handleContractExport = async () => {
     if (!contractData) return;
     try { await exportTransactions({ contractNumber: contractData.contractNumber, locale }); }
-    catch { alert(t.transactions.exportError); }
+    catch { toast.error(t.transactions.exportError); }
   };
 
   const categories = mergeCategories(
@@ -375,6 +392,7 @@ export default function TransactionPage() {
       <Button variant="ghost" size="sm" onClick={logout}>
         <LogOut className="w-4 h-4 mr-1.5" /> {t.common.logout}
       </Button>
+      <LayoutToggleButton />
       <LanguageSwitcher />
       <ThemeToggle />
     </div>
@@ -686,9 +704,33 @@ export default function TransactionPage() {
                   <span className="text-sm font-medium stat-number">
                     {t.transactions.selectedTotal}: {fmtSigned(selectedNet)}
                   </span>
-                  <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground ml-auto">
-                    {t.transactions.deselect}
-                  </button>
+                  <div className="ml-auto flex items-center gap-3">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button className="text-xs text-destructive hover:text-destructive/80">
+                          {t.transactions.bulkDeleteButton}
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>{t.common.deleteConfirmTitle}</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {format(t.transactions.bulkDeleteConfirmDesc, { count: String(selected.size) })}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleBulkDelete}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            {t.common.delete}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                    <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground">
+                      {t.transactions.deselect}
+                    </button>
+                  </div>
                 </div>
               )}
               <div className="glass-card overflow-x-auto">

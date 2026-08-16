@@ -7,6 +7,7 @@ import { logout } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocale, format } from "@/hooks/useLocale";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { LayoutToggleButton } from "@/components/LayoutToggleButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -21,9 +22,10 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, ArrowLeftRight, BarChart2, Users, Box, Receipt, Download, ShieldCheck, HardHat, Handshake, Package } from "lucide-react";
+import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, ArrowLeftRight, BarChart2, Users, Box, Receipt, Download, ShieldCheck, HardHat, Handshake, Package, Search, ChevronDown } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import { getRecent, addRecent } from "@/lib/recentValues";
+import { toast } from "@/lib/toast";
 import { setAiPageContext } from "@/lib/aiPageContext";
 import { useLayoutMode } from "@/lib/layoutMode";
 import { Sidebar } from "@/components/Sidebar";
@@ -62,6 +64,33 @@ const accruedInterest = (item: any) => {
   return item.amount * (item.interestRate / 100) * (accruedDays(item) / 30.4368);
 };
 
+// Хугацаа хэтэрсэн гэдгийг статусаас үл хамааран дуусах огноогоор шууд
+// тодорхойлно — хэрэглэгч статусыг гараар "Хэтэрсэн" болгож шинэчлээгүй
+// байсан ч дуусах хугацаа өнгөрсөн бол шүүлтүүрт харагдана. Аль хэдийн
+// "Төлөгдсөн" болсон бичлэгийг оруулахгүй.
+const isOverdue = (item: any) => {
+  if (!item.dueDate || item.status === "paid") return false;
+  const due = new Date(item.dueDate).getTime();
+  return !Number.isNaN(due) && due < Date.now();
+};
+
+const PAGE_SIZE = 20;
+
+type SortKey = "index" | "counterparty" | "type" | "amount" | "interestRate" | "accruedInterest" | "dueDate" | "status";
+
+const sortValue = (item: any, idx: number, key: SortKey): string | number => {
+  switch (key) {
+    case "index": return idx;
+    case "counterparty": return (item.counterparty || "").toLowerCase();
+    case "type": return item.type;
+    case "amount": return item.amount;
+    case "interestRate": return item.interestRate || 0;
+    case "accruedInterest": return accruedInterest(item);
+    case "dueDate": return item.dueDate ? new Date(item.dueDate).getTime() : 0;
+    case "status": return item.status;
+  }
+};
+
 export default function ReceivablePage() {
   const navigate = useNavigate();
   const { company, isAdmin, user } = useAuth();
@@ -78,14 +107,22 @@ export default function ReceivablePage() {
 
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ ...EMPTY });
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [typeFilter, setTypeFilter] = useState<"" | "receivable" | "loan">("");
+  const [overdueFilter, setOverdueFilter] = useState(false);
+  const [search, setSearch] = useState("");
   const [unitPriceDisplay, setUnitPriceDisplay] = useState("");
   const [amountDisplay, setAmountDisplay] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [openStatusId, setOpenStatusId] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [page, setPage] = useState(1);
   const [, startTransition] = useTransition();
 
   const NAV_ITEMS = [
@@ -103,12 +140,65 @@ export default function ReceivablePage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    try { setItems(await getReceivables()); } finally { setLoading(false); }
+    try {
+      setItems(await getReceivables());
+      setError(null);
+    } catch {
+      setError(t.receivables.loadError);
+    } finally { setLoading(false); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  const filtered = typeFilter ? items.filter(i => i.type === typeFilter) : items;
+  const filtered = items.filter(i => {
+    if (typeFilter && i.type !== typeFilter) return false;
+    if (overdueFilter && !isOverdue(i)) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      if (!(i.counterparty || "").toLowerCase().includes(q) && !(i.note || "").toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  let sortedFiltered = filtered;
+  if (sortKey) {
+    const withIdx = filtered.map((i, idx) => ({ i, v: sortValue(i, idx, sortKey) }));
+    withIdx.sort((a, b) => {
+      const cmp = typeof a.v === "string" && typeof b.v === "string"
+        ? a.v.localeCompare(b.v)
+        : (a.v as number) - (b.v as number);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    sortedFiltered = withIdx.map(x => x.i);
+  }
+
+  const pageCount = Math.max(1, Math.ceil(sortedFiltered.length / PAGE_SIZE));
+  const pagedFiltered = sortedFiltered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  useEffect(() => { setPage(1); }, [typeFilter, overdueFilter, search, sortKey, sortDir]);
+  useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
+  useEffect(() => { setSelected(new Set()); }, [typeFilter, overdueFilter, search]);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortKey(key); setSortDir("asc"); }
+  };
+
+  const toggleOne = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const toggleAll = () => {
+    setSelected(prev =>
+      filtered.length > 0 && filtered.every(i => prev.has(i._id!)) ? new Set() : new Set(filtered.map(i => i._id!))
+    );
+  };
+  const allSelected = filtered.length > 0 && filtered.every(i => selected.has(i._id!));
+
   const receivables = items.filter(i => i.type === "receivable" && i.status !== "paid");
   const loans = items.filter(i => i.type === "loan" && i.status !== "paid");
   const overdueItems = items.filter(i => i.status === "overdue");
@@ -149,6 +239,7 @@ export default function ReceivablePage() {
     setSaving(true);
     try {
       addRecent("receivables", "counterparty", payload.counterparty);
+      addRecent("receivables", "note", payload.note);
       setForm(payload);
       if (editing) {
         const updated = await updateReceivable(editing, payload);
@@ -159,13 +250,35 @@ export default function ReceivablePage() {
       }
       setOpen(false);
     } catch (err: any) {
-      alert(err.response?.data?.error || t.receivables.saveError);
+      toast.error(err.response?.data?.error || t.receivables.saveError);
     } finally { setSaving(false); }
   };
 
   const handleDelete = async (id: string) => {
     await deleteReceivable(id);
     setItems(prev => prev.filter(i => i._id !== id));
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = [...selected];
+    try {
+      await Promise.all(ids.map(id => deleteReceivable(id)));
+      setItems(prev => prev.filter(i => !selected.has(i._id!)));
+      setSelected(new Set());
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || t.receivables.saveError);
+    }
+  };
+
+  // Хүснэгтэн дэх мөр бүрийн төлвийг цонх нээхгүйгээр шууд солих.
+  const handleInlineStatusChange = async (item: any, next: string) => {
+    setOpenStatusId(null);
+    try {
+      const updated = await updateReceivable(item._id, { ...item, status: next });
+      setItems(prev => prev.map(x => x._id === item._id ? updated : x));
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || t.receivables.saveError);
+    }
   };
 
   const handleExport = async () => {
@@ -186,9 +299,22 @@ export default function ReceivablePage() {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-    } catch { alert(t.dashboard.exportErrorAlert); }
+    } catch { toast.error(t.dashboard.exportErrorAlert); }
     finally { setExporting(false); }
   };
+
+  const SortableHead = ({ sortKeyName, label, align = "left", className = "" }: { sortKeyName: SortKey; label: string; align?: "left" | "right" | "center"; className?: string }) => (
+    <TableHead
+      onClick={() => toggleSort(sortKeyName)}
+      className={`cursor-pointer select-none whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold hover:text-foreground transition-colors px-1.5 ${
+        sortKey === sortKeyName ? "text-foreground" : "text-muted-foreground/80"
+      } ${align === "right" ? "text-right" : align === "center" ? "text-center" : ""} ${className}`}>
+      <span className={`inline-flex items-center gap-0.5 ${align === "right" ? "flex-row-reverse" : ""}`}>
+        {label}
+        <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${sortKey === sortKeyName ? "opacity-100" : "opacity-0"} ${sortKey === sortKeyName && sortDir === "desc" ? "rotate-180" : ""}`} />
+      </span>
+    </TableHead>
+  );
 
   const headerActions = (
     <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -201,6 +327,7 @@ export default function ReceivablePage() {
         <Plus className="w-4 h-4 mr-1.5" /> {t.receivables.add}
       </Button>
       <Button variant="ghost" size="sm" onClick={logout}><LogOut className="w-4 h-4 mr-1.5" /> {t.common.logout}</Button>
+      <LayoutToggleButton />
       <LanguageSwitcher />
       <ThemeToggle />
     </div>
@@ -256,6 +383,11 @@ export default function ReceivablePage() {
         </nav>
 
       <main className={layoutMode === "sidebar" ? "px-4 sm:px-6 py-6 sm:py-8" : "max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8"}>
+        {error && (
+          <div className="mb-4 flex items-center gap-3 bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-6">
           <div className="glass-card glass-card-positive px-4 py-3">
             <p className="relative text-xs text-muted-foreground mb-1">{t.receivables.statTotalReceivable}</p>
@@ -297,7 +429,51 @@ export default function ReceivablePage() {
           </div>
         </div>
 
+        {selected.size > 0 && (
+          <div className="mb-4">
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-positive/60" />
+              <p className="text-xs font-medium text-positive">
+                {format(t.receivables.selectedCount, { count: String(selected.size) })}
+              </p>
+              <div className="ml-auto flex items-center gap-3">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button className="text-xs text-destructive hover:text-destructive/80">
+                      {t.receivables.bulkDeleteButton}
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{t.common.deleteConfirmTitle}</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {format(t.receivables.bulkDeleteConfirmDesc, { count: String(selected.size) })}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleBulkDelete}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        {t.common.delete}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground">
+                  {t.receivables.deselect}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center gap-2 mb-4 flex-wrap">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder={t.receivables.searchPlaceholder}
+              className="h-8 w-56 pl-8 pr-3 text-xs rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring" />
+          </div>
           {(["", "receivable", "loan"] as const).map(f => (
             <button key={f} onClick={() => startTransition(() => setTypeFilter(f))}
               className={`h-8 px-3 text-xs rounded-lg border ${typeFilter === f
@@ -306,6 +482,13 @@ export default function ReceivablePage() {
               {f === "" ? t.common.all : f === "receivable" ? t.receivables.typeReceivable : t.receivables.typeLoan}
             </button>
           ))}
+          <span className="w-px h-5 bg-border" />
+          <button onClick={() => setOverdueFilter(v => !v)}
+            className={`h-8 px-3 text-xs rounded-lg border ${overdueFilter
+              ? "bg-negative/15 text-negative border-negative/30"
+              : "bg-background text-muted-foreground border-border hover:bg-secondary/50"}`}>
+            {t.receivables.filterOverdue}
+          </button>
         </div>
 
         {loading ? (
@@ -322,38 +505,49 @@ export default function ReceivablePage() {
             </div>
           </div>
         ) : (
+          <>
           <div className="glass-card overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="border-border/50">
-                  <TableHead>{t.receivables.colCounterparty}</TableHead>
-                  <TableHead>{t.receivables.colType}</TableHead>
-                  <TableHead className="text-right">{t.receivables.colAmount}</TableHead>
-                  <TableHead className="text-right">{t.receivables.colInterestRate}</TableHead>
-                  <TableHead className="text-right">{t.receivables.colAccruedInterest}</TableHead>
-                  <TableHead>{t.receivables.colDueDate}</TableHead>
-                  <TableHead>{t.receivables.colStatus}</TableHead>
-                  <TableHead className="text-right">{t.receivables.colActions}</TableHead>
+                <TableRow className="border-border/50 bg-secondary/40 hover:bg-secondary/40">
+                  <TableHead className="w-8 px-1.5">
+                    <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 cursor-pointer accent-positive" />
+                  </TableHead>
+                  <SortableHead sortKeyName="index" label={t.receivables.colIndex} className="w-6" />
+                  <SortableHead sortKeyName="counterparty" label={t.receivables.colCounterparty} />
+                  <SortableHead sortKeyName="type" label={t.receivables.colType} />
+                  <SortableHead sortKeyName="amount" label={t.receivables.colAmount} align="right" />
+                  <SortableHead sortKeyName="interestRate" label={t.receivables.colInterestRate} align="right" />
+                  <SortableHead sortKeyName="accruedInterest" label={t.receivables.colAccruedInterest} align="right" />
+                  <SortableHead sortKeyName="dueDate" label={t.receivables.colDueDate} />
+                  <SortableHead sortKeyName="status" label={t.receivables.colStatus} />
+                  <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.receivables.colActions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map(item => (
+                {pagedFiltered.map((item, i) => {
+                  const idx = (page - 1) * PAGE_SIZE + i;
+                  return (
                   <TableRow key={item._id} className="border-border/50 hover:bg-secondary/30">
-                    <TableCell className="font-medium blur-number">{item.counterparty}</TableCell>
-                    <TableCell>
+                    <TableCell className="px-1.5">
+                      <input type="checkbox" checked={selected.has(item._id!)} onChange={() => toggleOne(item._id!)} className="w-4 h-4 cursor-pointer accent-positive" />
+                    </TableCell>
+                    <TableCell className="px-1.5 text-muted-foreground text-xs">{idx + 1}</TableCell>
+                    <TableCell className="px-1.5 font-medium blur-number">{item.counterparty}</TableCell>
+                    <TableCell className="px-1.5">
                       <Badge className={item.type === "receivable"
                         ? "bg-positive/15 text-positive hover:bg-positive/15"
                         : "bg-negative/15 text-negative hover:bg-negative/15"}>
                         {item.type === "receivable" ? t.receivables.typeReceivable : t.receivables.typeLoan}
                       </Badge>
                     </TableCell>
-                    <TableCell className={`text-right font-medium stat-number ${item.type === "receivable" ? "text-positive" : "text-negative"}`}>
+                    <TableCell className={`px-1.5 text-right font-medium stat-number ${item.type === "receivable" ? "text-positive" : "text-negative"}`}>
                       {fmt(item.amount)}
                     </TableCell>
-                    <TableCell className="text-right text-muted-foreground">
+                    <TableCell className="px-1.5 text-right text-muted-foreground">
                       {item.interestRate > 0 ? `${item.interestRate}%` : "—"}
                     </TableCell>
-                    <TableCell className="text-right text-muted-foreground stat-number">
+                    <TableCell className="px-1.5 text-right text-muted-foreground stat-number">
                       {item.interestRate > 0 ? (
                         <>
                           {fmt(accruedInterest(item))}
@@ -361,11 +555,28 @@ export default function ReceivablePage() {
                         </>
                       ) : "—"}
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{fmtDate(item.dueDate)}</TableCell>
-                    <TableCell>
-                      <Badge className={statusMap[item.status].cls}>{statusMap[item.status].label}</Badge>
+                    <TableCell className="px-1.5 text-muted-foreground text-sm">{fmtDate(item.dueDate)}</TableCell>
+                    <TableCell className="px-1.5">
+                      <div className="relative inline-block">
+                        <button type="button"
+                          onClick={() => setOpenStatusId(openStatusId === item._id ? null : item._id!)}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusMap[item.status].cls}`}>
+                          {statusMap[item.status].label}
+                          <ChevronDown className="w-3 h-3 opacity-60" />
+                        </button>
+                        {openStatusId === item._id && (
+                          <div className="absolute top-full left-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-20 py-1 min-w-32">
+                            {(["current", "near", "overdue", "paid"] as const).map(s => (
+                              <button key={s} type="button" onClick={() => handleInlineStatusChange(item, s)}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-secondary/50 text-left">
+                                <Badge className={statusMap[s].cls}>{statusMap[s].label}</Badge>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="px-1.5 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="icon" onClick={() => openEdit(item)}>
                           <Pencil className="w-4 h-4" />
@@ -393,10 +604,25 @@ export default function ReceivablePage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
+          {pageCount > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-4">
+              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>
+                {t.common.prevPage}
+              </Button>
+              <span className="text-xs text-muted-foreground stat-number">
+                {format(t.common.pageIndicator, { page: String(page), pageCount: String(pageCount) })}
+              </span>
+              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={page >= pageCount}>
+                {t.common.nextPage}
+              </Button>
+            </div>
+          )}
+          </>
         )}
       </main>
       </div>
@@ -478,6 +704,13 @@ export default function ReceivablePage() {
                 <label className="text-xs font-medium text-muted-foreground">{t.receivables.dueDate}</label>
                 <input type="date" className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                   value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} />
+              </div>
+              <div className="sm:col-span-2 flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted-foreground">{t.receivables.note}</label>
+                <Combobox
+                  value={form.note}
+                  onChange={(v) => setForm(f => ({ ...f, note: v }))}
+                  options={getRecent("receivables", "note")} />
               </div>
             </div>
           </div>

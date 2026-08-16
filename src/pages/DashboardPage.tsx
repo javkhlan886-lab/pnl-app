@@ -9,8 +9,10 @@ import { PNLRecord } from "@/types";
 import { fmt, fmtDate } from "@/lib/utils";
 import { toMnt } from "@/lib/exchangeRates";
 import { setAiPageContext } from "@/lib/aiPageContext";
+import { toast } from "@/lib/toast";
 import { getHiddenFields, saveHiddenFields, getCollapsedSections, saveCollapsedSections } from "@/lib/dashboardHidden";
-import { useLayoutMode, toggleLayoutMode } from "@/lib/layoutMode";
+import { useLayoutMode } from "@/lib/layoutMode";
+import { LayoutToggleButton } from "@/components/LayoutToggleButton";
 import { Sidebar } from "@/components/Sidebar";
 import { IncomeTrendChart } from "@/components/IncomeTrendChart";
 import api from "@/lib/axios";
@@ -27,7 +29,7 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { PlusCircle, LogOut, Pencil, Trash2, Download, TrendingUp, TrendingDown, BarChart2, CheckCircle, Users, Box, Receipt, ArrowLeftRight, TableIcon, ChevronDown, ShieldCheck, HardHat, Handshake, Eye, EyeOff, Package, PanelLeft, Calendar } from "lucide-react";
+import { PlusCircle, LogOut, Pencil, Trash2, Download, TrendingUp, TrendingDown, BarChart2, CheckCircle, Users, Box, Receipt, ArrowLeftRight, TableIcon, ChevronDown, ShieldCheck, HardHat, Handshake, Eye, EyeOff, Package, Search } from "lucide-react";
 
 // ── Оруулсан хэрэглэгчийг харуулах туслах функцууд ──────────────────────────
 // owner талбарыг backend зөвхөн Level 1, 2 (admin, manager)-д илгээдэг.
@@ -62,6 +64,10 @@ const ownerColor = (r: PNLRecord) => {
   return OWNER_COLORS[h % OWNER_COLORS.length];
 };
 
+type SortKey = "orgName" | "contractNumber" | "status" | "income" | "netProfit" | "date";
+
+const PAGE_SIZE = 20;
+
 export default function DashboardPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -84,7 +90,10 @@ export default function DashboardPage() {
   const [openStatusId, setOpenStatusId] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [dateMenuOpen, setDateMenuOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [page, setPage] = useState(1);
   const [txSummary, setTxSummary] = useState<{ totalIncome: number; totalExpense: number } | null>(null);
   const [txBlurred, setTxBlurred] = useState(false);
   const [hiddenFields, setHiddenFields] = useState<Set<string>>(() => getHiddenFields());
@@ -138,7 +147,7 @@ export default function DashboardPage() {
     ? ownerScoped.filter((r) => (r.status || "active") === statusFilter)
     : ownerScoped;
 
-  const filteredRecords = statusScoped.filter((r) => {
+  const dateScoped = statusScoped.filter((r) => {
     if (!dateFrom && !dateTo) return true;
     if (!r.date) return false;
     // r.date талбар бүтэн ISO timestamp ("2026-08-09T00:00:00.000Z") байж
@@ -149,6 +158,57 @@ export default function DashboardPage() {
     if (dateTo && day > dateTo) return false;
     return true;
   });
+
+  const filteredRecords = dateScoped.filter((r) => {
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    return (r.company || "").toLowerCase().includes(q) || (r.contractNumber || "").toLowerCase().includes(q);
+  });
+
+  const sortValue = (r: PNLRecord, key: SortKey): string | number => {
+    switch (key) {
+      case "orgName": return (r.company || "").toLowerCase();
+      case "contractNumber": return (r.contractNumber || "").toLowerCase();
+      case "status": return r.status || "active";
+      case "income": return totalIncome(r);
+      case "netProfit": return netProfit(r);
+      case "date": return r.updatedAt || "";
+    }
+  };
+
+  let sortedRecords = filteredRecords;
+  if (sortKey) {
+    const withVal = filteredRecords.map((r) => ({ r, v: sortValue(r, sortKey) }));
+    withVal.sort((a, b) => {
+      const cmp = typeof a.v === "string" && typeof b.v === "string"
+        ? a.v.localeCompare(b.v)
+        : (a.v as number) - (b.v as number);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    sortedRecords = withVal.map((x) => x.r);
+  }
+
+  const pageCount = Math.max(1, Math.ceil(sortedRecords.length / PAGE_SIZE));
+  const pagedRecords = sortedRecords.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(key); setSortDir("asc"); }
+  };
+
+  useEffect(() => { setPage(1); }, [statusFilter, ownerFilter, dateFrom, dateTo, search, sortKey, sortDir]);
+  useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
+
+  const SortableHead = ({ sortKeyName, label, align = "left" }: { sortKeyName: SortKey; label: string; align?: "left" | "right" | "center" }) => (
+    <TableHead
+      onClick={() => toggleSort(sortKeyName)}
+      className={`cursor-pointer select-none whitespace-nowrap ${align === "right" ? "text-right" : align === "center" ? "text-center" : ""} ${sortKey === sortKeyName ? "text-foreground" : ""}`}>
+      <span className={`inline-flex items-center gap-0.5 ${align === "right" ? "flex-row-reverse" : ""}`}>
+        {label}
+        <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${sortKey === sortKeyName ? "opacity-100" : "opacity-0"} ${sortKey === sortKeyName && sortDir === "desc" ? "rotate-180" : ""}`} />
+      </span>
+    </TableHead>
+  );
 
   // Dropdown-д харагдах хэрэглэгчдийн жагсаалт — бичлэгийн тооны дарааллаар.
   const ownerOptions = useMemo(() => {
@@ -205,7 +265,7 @@ export default function DashboardPage() {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch {
-      alert(t.dashboard.exportErrorAlert);
+      toast.error(t.dashboard.exportErrorAlert);
     } finally {
       setExporting(false);
     }
@@ -244,17 +304,37 @@ export default function DashboardPage() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    await deletePNL(id);
-    setRecords((prev) => prev.filter((r) => r._id !== id));
-    setSelected((prev) => { const n = new Set(prev); n.delete(id); return n; });
-    loadSummary();
+    try {
+      await deletePNL(id);
+      setRecords((prev) => prev.filter((r) => r._id !== id));
+      setSelected((prev) => { const n = new Set(prev); n.delete(id); return n; });
+      loadSummary();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || t.dashboard.saveError);
+    }
   };
 
   const handleStatusChange = async (id: string, status: "active" | "pending" | "closed") => {
-    await updatePNL(id, { status });
-    setRecords(prev => prev.map(r => r._id === id ? { ...r, status } : r));
     setOpenStatusId(null);
-    loadSummary();
+    try {
+      await updatePNL(id, { status });
+      setRecords(prev => prev.map(r => r._id === id ? { ...r, status } : r));
+      loadSummary();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || t.dashboard.saveError);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = [...selected];
+    try {
+      await Promise.all(ids.map((id) => deletePNL(id)));
+      setRecords((prev) => prev.filter((r) => !selected.has(r._id!)));
+      setSelected(new Set());
+      loadSummary();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || t.dashboard.saveError);
+    }
   };
 
   const statusConfig = {
@@ -392,36 +472,7 @@ export default function DashboardPage() {
 
   const headerActions = (
     <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-      {layoutMode === "sidebar" && (
-        <div className="relative">
-          <button onClick={() => setDateMenuOpen((v) => !v)}
-            className="h-9 px-3 rounded-lg border border-input bg-background text-xs flex items-center gap-2 hover:bg-secondary/50">
-            <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-            {dateFrom || dateTo ? `${dateFrom || "…"} — ${dateTo || "…"}` : t.dashboard.dateRangeAllTime}
-          </button>
-          {dateMenuOpen && (
-            <>
-              <div className="fixed inset-0 z-20" onClick={() => setDateMenuOpen(false)} />
-              <div className="absolute right-0 mt-1 z-30 bg-popover border border-border rounded-lg shadow-lg p-3 flex items-center gap-2 whitespace-nowrap">
-                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-                  className="h-8 px-2 text-xs rounded-lg border border-border bg-background" />
-                <span className="text-xs text-muted-foreground">—</span>
-                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-                  className="h-8 px-2 text-xs rounded-lg border border-border bg-background" />
-                {(dateFrom || dateTo) && (
-                  <button onClick={() => { setDateFrom(""); setDateTo(""); }}
-                    className="text-xs text-muted-foreground hover:text-foreground ml-1">
-                    {t.transactions.allFilter}
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      )}
-      <Button variant="outline" size="icon" onClick={toggleLayoutMode} title={t.common.layoutToggleTooltip}>
-        <PanelLeft className="w-4 h-4" />
-      </Button>
+      <LayoutToggleButton />
       <Button variant="outline" size="sm" onClick={exportExcel} disabled={exporting}>
         <Download className="w-4 h-4 mr-1.5" />
         {exporting
@@ -807,6 +858,16 @@ export default function DashboardPage() {
           </>
         )}
 
+        {/* Хайлт */}
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder={t.dashboard.searchPlaceholder}
+              className="h-8 w-56 pl-8 pr-3 text-xs rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring" />
+          </div>
+        </div>
+
         {/* Status filter */}
         <div className="flex items-center gap-2 mb-4 flex-wrap">
           {(["", "active", "pending", "closed"] as const).map(s => (
@@ -904,9 +965,33 @@ export default function DashboardPage() {
               <p className="text-xs text-positive font-medium">
                 {format(t.dashboard.selectedCount, { count: String(selected.size) })}
               </p>
-              <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground ml-auto">
-                {t.dashboard.deselect}
-              </button>
+              <div className="ml-auto flex items-center gap-3">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button className="text-xs text-destructive hover:text-destructive/80">
+                      {t.dashboard.bulkDeleteButton}
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{t.common.deleteConfirmTitle}</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {format(t.dashboard.bulkDeleteConfirmDesc, { count: String(selected.size) })}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleBulkDelete}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        {t.common.delete}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground">
+                  {t.dashboard.deselect}
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div className="min-w-0">
@@ -945,18 +1030,18 @@ export default function DashboardPage() {
                   <TableHead className="w-10">
                     <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 cursor-pointer accent-positive" />
                   </TableHead>
-                  <TableHead>{t.dashboard.colOrgName}</TableHead>
+                  <SortableHead sortKeyName="orgName" label={t.dashboard.colOrgName} />
                   {canSeeOwner && <TableHead>{t.dashboard.colOwner}</TableHead>}
-                  <TableHead>{t.dashboard.colContractNumber}</TableHead>
-                  <TableHead>{t.dashboard.colStatus}</TableHead>
-                  <TableHead className="text-right">{t.dashboard.colTotalIncome}</TableHead>
-                  <TableHead className="text-right">{t.dashboard.colNetProfit}</TableHead>
-                  <TableHead>{t.dashboard.colDate}</TableHead>
+                  <SortableHead sortKeyName="contractNumber" label={t.dashboard.colContractNumber} />
+                  <SortableHead sortKeyName="status" label={t.dashboard.colStatus} />
+                  <SortableHead sortKeyName="income" label={t.dashboard.colTotalIncome} align="right" />
+                  <SortableHead sortKeyName="netProfit" label={t.dashboard.colNetProfit} align="right" />
+                  <SortableHead sortKeyName="date" label={t.dashboard.colDate} />
                   <TableHead className="text-right">{t.dashboard.colActions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRecords.map((r) => {
+                {pagedRecords.map((r) => {
                   const income = totalIncome(r);
                   const profit = netProfit(r);
                   const isSelected = selected.has(r._id!);
@@ -1052,6 +1137,19 @@ export default function DashboardPage() {
                 })}
               </TableBody>
             </Table>
+          </div>
+        )}
+        {!loading && records.length > 0 && pageCount > 1 && (
+          <div className="flex items-center justify-center gap-3 mt-4">
+            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>
+              {t.common.prevPage}
+            </Button>
+            <span className="text-xs text-muted-foreground stat-number">
+              {format(t.common.pageIndicator, { page: String(page), pageCount: String(pageCount) })}
+            </span>
+            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={page >= pageCount}>
+              {t.common.nextPage}
+            </Button>
           </div>
         )}
       </main>

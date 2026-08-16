@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { logout } from "@/lib/auth";
 import { useLocale, format } from "@/hooks/useLocale";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { LayoutToggleButton } from "@/components/LayoutToggleButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -22,15 +23,17 @@ import {
 } from "@/components/ui/dialog";
 import {
   LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, ChevronDown, Box, BarChart2, Users, Receipt,
-  ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake, Package, Search,
+  ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake, Package, Search, EyeOff,
 } from "lucide-react";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { getRecent, addRecent } from "@/lib/recentValues";
 import { toDateInputValue } from "@/lib/utils";
+import { toast } from "@/lib/toast";
 import { setAiPageContext } from "@/lib/aiPageContext";
 import { useLayoutMode } from "@/lib/layoutMode";
 import { Sidebar } from "@/components/Sidebar";
 import { Combobox } from "@/components/ui/combobox";
+import { getHiddenFields, saveHiddenFields, getCollapsedSections, saveCollapsedSections } from "@/lib/dashboardHidden";
 
 // Чөлөөт текст утга — backend-д хадгалагддаг тул хэлээр орчуулахгүй.
 const CATEGORIES = ["Бараа", "Материал", "Бэлэн бүтээгдэхүүн", "Түүхий эд", "Бусад"];
@@ -127,6 +130,44 @@ export default function ProductPage() {
   const [bulkDiscountStart, setBulkDiscountStart] = useState("");
   const [bulkDiscountEnd, setBulkDiscountEnd] = useState("");
   const [bulkDiscountSaving, setBulkDiscountSaving] = useState(false);
+  const [hiddenFields, setHiddenFields] = useState<Set<string>>(() => getHiddenFields("products"));
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => getCollapsedSections("products"));
+
+  const toggleFieldHidden = (id: string) => {
+    setHiddenFields(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      saveHiddenFields(next, "products");
+      return next;
+    });
+  };
+  const showAllFields = () => { setHiddenFields(new Set()); saveHiddenFields(new Set(), "products"); };
+  const toggleSection = (id: string) => {
+    setCollapsedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      saveCollapsedSections(next, "products");
+      return next;
+    });
+  };
+
+  // Карт бүрийн буланд гарч ирэх жижиг "нуух" товч (Dashboard-той ижил хэв маяг).
+  const HideFieldBtn = ({ id }: { id: string }) => (
+    <button
+      onClick={() => toggleFieldHidden(id)}
+      title={t.dashboard.hideField}
+      className="absolute top-1.5 right-1.5 z-10 text-muted-foreground/40 hover:text-destructive transition-colors">
+      <EyeOff className="w-3 h-3" />
+    </button>
+  );
+  const SectionHideBtn = ({ id }: { id: string }) => (
+    <button
+      onClick={() => toggleSection(id)}
+      title={collapsedSections.has(id) ? t.dashboard.showSection : t.dashboard.hideSection}
+      className="text-muted-foreground hover:text-foreground ml-2">
+      <ChevronDown className={`w-3.5 h-3.5 transition-transform ${collapsedSections.has(id) ? "-rotate-90" : ""}`} />
+    </button>
+  );
 
   const NAV_ITEMS = [
     { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
@@ -284,7 +325,7 @@ export default function ProductPage() {
   const handleStatusChange = (next: string) => {
     const remaining = form.quantity - form.issuedQty;
     if (next === "inactive" && remaining > 0) {
-      alert(format(t.products.cannotFinishWithRemaining, { count: remaining.toLocaleString("mn-MN") }));
+      toast.error(format(t.products.cannotFinishWithRemaining, { count: remaining.toLocaleString("mn-MN") }));
       return;
     }
     setForm(f => ({ ...f, status: next }));
@@ -294,7 +335,7 @@ export default function ProductPage() {
   const handleInlineStatusChange = async (p: any, next: string) => {
     const remaining = p.quantity - p.issuedQty;
     if (next === "inactive" && remaining > 0) {
-      alert(format(t.products.cannotFinishWithRemaining, { count: remaining.toLocaleString("mn-MN") }));
+      toast.error(format(t.products.cannotFinishWithRemaining, { count: remaining.toLocaleString("mn-MN") }));
       return;
     }
     setOpenStatusId(null);
@@ -302,7 +343,7 @@ export default function ProductPage() {
       const updated = await updateProduct(p._id, { ...p, status: next });
       setProducts(prev => prev.map(x => x._id === p._id ? updated : x));
     } catch (err: any) {
-      alert(err.response?.data?.error || t.products.saveError);
+      toast.error(err.response?.data?.error || t.products.saveError);
     }
   };
 
@@ -327,7 +368,7 @@ export default function ProductPage() {
       }
       setOpen(false);
     } catch (err: any) {
-      alert(err.response?.data?.error || t.products.saveError);
+      toast.error(err.response?.data?.error || t.products.saveError);
     } finally { setSaving(false); }
   };
 
@@ -336,7 +377,7 @@ export default function ProductPage() {
       await deleteProduct(id);
       setProducts(prev => prev.filter(p => p._id !== id));
     } catch (err: any) {
-      alert(err.response?.data?.error || t.products.saveError);
+      toast.error(err.response?.data?.error || t.products.saveError);
     }
   };
 
@@ -366,7 +407,7 @@ export default function ProductPage() {
       }
       setSelected(new Set());
     } catch (err: any) {
-      alert(err.response?.data?.error || t.products.saveError);
+      toast.error(err.response?.data?.error || t.products.saveError);
     }
   };
 
@@ -377,7 +418,7 @@ export default function ProductPage() {
       setProducts(prev => prev.filter(p => !selected.has(p._id!)));
       setSelected(new Set());
     } catch (err: any) {
-      alert(err.response?.data?.error || t.products.saveError);
+      toast.error(err.response?.data?.error || t.products.saveError);
     }
   };
 
@@ -402,7 +443,7 @@ export default function ProductPage() {
       setBulkDiscountOpen(false);
       setSelected(new Set());
     } catch (err: any) {
-      alert(err.response?.data?.error || t.products.saveError);
+      toast.error(err.response?.data?.error || t.products.saveError);
     } finally {
       setBulkDiscountSaving(false);
     }
@@ -426,7 +467,7 @@ export default function ProductPage() {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-    } catch { alert(t.dashboard.exportErrorAlert); }
+    } catch { toast.error(t.dashboard.exportErrorAlert); }
     finally { setExporting(false); }
   };
 
@@ -454,6 +495,7 @@ export default function ProductPage() {
         <Plus className="w-4 h-4 mr-1.5" /> {t.products.addProduct}
       </Button>
       <Button variant="ghost" size="sm" onClick={logout}><LogOut className="w-4 h-4 mr-1.5" /> {t.common.logout}</Button>
+      <LayoutToggleButton />
       <LanguageSwitcher />
       <ThemeToggle />
     </div>
@@ -512,27 +554,53 @@ export default function ProductPage() {
         </nav>
 
       <main className={layoutMode === "sidebar" ? "px-4 sm:px-6 py-6 sm:py-8" : "max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8"}>
+        {hiddenFields.size > 0 && (
+          <div className="mb-4 flex items-center gap-3 bg-secondary/40 border border-border/50 rounded-lg px-4 py-2.5">
+            <span className="text-xs text-muted-foreground">
+              {format(t.dashboard.hiddenFieldsCount, { count: String(hiddenFields.size) })}
+            </span>
+            <button onClick={showAllFields} className="text-xs text-info hover:underline ml-auto">
+              {t.dashboard.showAllFields}
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 mb-3">
+          {!hiddenFields.has("quantity") && (
           <div className="glass-card px-4 py-3">
+            <HideFieldBtn id="quantity" />
             <p className="relative text-xs text-muted-foreground mb-1">{t.products.statQuantity}</p>
             <p className="relative text-xl font-semibold stat-number">{Math.round(totalQuantity).toLocaleString("mn-MN")}</p>
           </div>
+          )}
+          {!hiddenFields.has("totalValue") && (
           <div className="glass-card glass-card-positive px-4 py-3">
+            <HideFieldBtn id="totalValue" />
             <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotalValue}</p>
             <p className="relative text-xl font-semibold text-info stat-number">{fmt(discountedValue(activeProducts))}</p>
           </div>
+          )}
+          {!hiddenFields.has("issued") && (
           <div className="glass-card glass-card-negative px-4 py-3">
+            <HideFieldBtn id="issued" />
             <p className="relative text-xs text-muted-foreground mb-1">{t.products.statIssued}</p>
             <p className="relative text-xl font-semibold text-negative stat-number">{Math.round(totalIssued).toLocaleString("mn-MN")}</p>
           </div>
+          )}
+          {!hiddenFields.has("revenue") && (
           <div className="glass-card glass-card-positive px-4 py-3">
+            <HideFieldBtn id="revenue" />
             <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRevenue}</p>
             <p className="relative text-xl font-semibold text-positive stat-number">{fmt(totalRevenue)}</p>
           </div>
+          )}
+          {!hiddenFields.has("remaining") && (
           <div className="glass-card glass-card-positive px-4 py-3">
+            <HideFieldBtn id="remaining" />
             <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRemaining}</p>
             <p className="relative text-xl font-semibold text-positive stat-number">{Math.round(totalRemaining).toLocaleString("mn-MN")}</p>
           </div>
+          )}
         </div>
 
         {finishedProducts.length > 0 && (
@@ -540,29 +608,47 @@ export default function ProductPage() {
             <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
               {t.products.finishedSectionTitle}
+              <SectionHideBtn id="finished" />
             </p>
+            {!collapsedSections.has("finished") && (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+              {!hiddenFields.has("finishedQuantity") && (
               <div className="glass-card px-4 py-3 opacity-80">
+                <HideFieldBtn id="finishedQuantity" />
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statQuantity}</p>
                 <p className="relative text-xl font-semibold text-muted-foreground stat-number">{Math.round(finishedQuantity).toLocaleString("mn-MN")}</p>
               </div>
+              )}
+              {!hiddenFields.has("finishedTotalValue") && (
               <div className="glass-card px-4 py-3 opacity-80">
+                <HideFieldBtn id="finishedTotalValue" />
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statTotalValue}</p>
                 <p className="relative text-xl font-semibold text-muted-foreground stat-number">{fmt(discountedValue(finishedProducts))}</p>
               </div>
+              )}
+              {!hiddenFields.has("finishedIssued") && (
               <div className="glass-card px-4 py-3 opacity-80">
+                <HideFieldBtn id="finishedIssued" />
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statIssued}</p>
                 <p className="relative text-xl font-semibold text-muted-foreground stat-number">{Math.round(finishedIssued).toLocaleString("mn-MN")}</p>
               </div>
+              )}
+              {!hiddenFields.has("finishedRevenue") && (
               <div className="glass-card px-4 py-3 opacity-80">
+                <HideFieldBtn id="finishedRevenue" />
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRevenue}</p>
                 <p className="relative text-xl font-semibold text-muted-foreground stat-number">{fmt(finishedRevenue)}</p>
               </div>
+              )}
+              {!hiddenFields.has("finishedRemaining") && (
               <div className="glass-card px-4 py-3 opacity-80">
+                <HideFieldBtn id="finishedRemaining" />
                 <p className="relative text-xs text-muted-foreground mb-1">{t.products.statRemaining}</p>
                 <p className="relative text-xl font-semibold text-muted-foreground stat-number">{Math.round(finishedRemaining).toLocaleString("mn-MN")}</p>
               </div>
+              )}
             </div>
+            )}
           </div>
         )}
 

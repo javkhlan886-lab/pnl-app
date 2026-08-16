@@ -4,8 +4,9 @@ import { CompanyLogo } from "@/components/CompanyLogo";
 import { getWorkforce, createWorkforce, updateWorkforce, deleteWorkforce } from "@/lib/workforce";
 import { logout } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
-import { useLocale } from "@/hooks/useLocale";
+import { useLocale, format } from "@/hooks/useLocale";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { LayoutToggleButton } from "@/components/LayoutToggleButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -24,10 +25,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Combobox } from "@/components/ui/combobox";
 import { getRecent, addRecent } from "@/lib/recentValues";
+import { toast } from "@/lib/toast";
 import { setAiPageContext } from "@/lib/aiPageContext";
 import { useLayoutMode } from "@/lib/layoutMode";
 import { Sidebar } from "@/components/Sidebar";
-import { LogOut, Plus, Pencil, Trash2, ChevronLeft, BarChart2, Users, Box, Receipt, ArrowLeftRight, TableIcon, ShieldCheck, HardHat, Handshake, Package } from "lucide-react";
+import { LogOut, Plus, Pencil, Trash2, ChevronLeft, ChevronDown, BarChart2, Users, Box, Receipt, ArrowLeftRight, TableIcon, ShieldCheck, HardHat, Handshake, Package, Search, Download } from "lucide-react";
 
 interface WorkforceRecord {
   _id?: string;
@@ -47,11 +49,32 @@ const EMPTY: WorkforceRecord = {
 
 const fmt = (n: number) => "₮" + Math.round(n).toLocaleString("mn-MN");
 
+const PAGE_SIZE = 20;
+
+type SortKey = "index" | "name" | "phone" | "skills" | "rate" | "status";
+
+// Баганын толгой дээр дарахад ижил утгатай мөрүүд зэрэгцэн эрэмбэлэгдэж харагдана.
+const sortValue = (item: WorkforceRecord, idx: number, key: SortKey): string | number => {
+  switch (key) {
+    case "index": return idx;
+    case "name": return (item.name || "").toLowerCase();
+    case "phone": return (item.phone || "").toLowerCase();
+    case "skills": return (item.skills || "").toLowerCase();
+    case "rate": return item.rate;
+    case "status": return item.status;
+  }
+};
+
+const statusCls: Record<string, string> = {
+  active: "bg-positive/15 text-positive hover:bg-positive/15",
+  inactive: "bg-muted text-muted-foreground hover:bg-muted",
+};
+
 export default function WorkforcePage() {
   const navigate = useNavigate();
   const { company, isAdmin, user } = useAuth();
   const location = useLocation();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const layoutMode = useLayoutMode();
 
   const statusLabel: Record<string, string> = {
@@ -73,16 +96,28 @@ export default function WorkforcePage() {
 
   const [items, setItems] = useState<WorkforceRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<WorkforceRecord>(EMPTY);
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [rateDisplay, setRateDisplay] = useState("");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"" | "active" | "inactive">("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [openStatusId, setOpenStatusId] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [page, setPage] = useState(1);
+  const [exporting, setExporting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
-    try { setItems(await getWorkforce()); } finally { setLoading(false); }
-  }, []);
+    setError(null);
+    try { setItems(await getWorkforce()); }
+    catch { setError(t.workforce.loadError); }
+    finally { setLoading(false); }
+  }, [t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -95,6 +130,53 @@ export default function WorkforcePage() {
     setAiPageContext({ title: t.workforce.pageTitle, lines });
     return () => setAiPageContext(null);
   }, [items.length, activeCount, t]);
+
+  const filtered = items.filter(i => {
+    if (statusFilter && i.status !== statusFilter) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      if (!i.name.toLowerCase().includes(q) && !(i.phone || "").toLowerCase().includes(q) && !(i.skills || "").toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  let sortedFiltered = filtered;
+  if (sortKey) {
+    const withIdx = filtered.map((item, i) => ({ item, v: sortValue(item, i, sortKey) }));
+    withIdx.sort((a, b) => {
+      const cmp = typeof a.v === "string" && typeof b.v === "string"
+        ? a.v.localeCompare(b.v)
+        : (a.v as number) - (b.v as number);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    sortedFiltered = withIdx.map(x => x.item);
+  }
+
+  const pageCount = Math.max(1, Math.ceil(sortedFiltered.length / PAGE_SIZE));
+  const pagedFiltered = sortedFiltered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  useEffect(() => { setPage(1); }, [statusFilter, search, sortKey, sortDir]);
+  useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
+  useEffect(() => { setSelected(new Set()); }, [statusFilter, search]);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortKey(key); setSortDir("asc"); }
+  };
+
+  const toggleOne = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const toggleAll = () => {
+    setSelected(prev =>
+      filtered.length > 0 && filtered.every(i => prev.has(i._id!)) ? new Set() : new Set(filtered.map(i => i._id!))
+    );
+  };
+  const allSelected = filtered.length > 0 && filtered.every(i => selected.has(i._id!));
 
   const openCreate = () => {
     setForm(EMPTY); setEditing(null); setRateDisplay(""); setOpen(true);
@@ -124,7 +206,7 @@ export default function WorkforcePage() {
       }
       setOpen(false);
     } catch (err: any) {
-      alert(err.response?.data?.error || t.workforce.saveError);
+      toast.error(err.response?.data?.error || t.workforce.saveError);
     } finally { setSaving(false); }
   };
 
@@ -133,13 +215,75 @@ export default function WorkforcePage() {
     setItems(prev => prev.filter(i => i._id !== id));
   };
 
+  // Хүснэгтэн дэх мөр бүрийн төлвийг цонх нээхгүйгээр шууд солих.
+  const handleInlineStatusChange = async (item: WorkforceRecord, next: WorkforceRecord["status"]) => {
+    setOpenStatusId(null);
+    try {
+      const updated = await updateWorkforce(item._id!, { ...item, status: next });
+      setItems(prev => prev.map(x => x._id === item._id ? updated : x));
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || t.workforce.saveError);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = [...selected];
+    try {
+      await Promise.all(ids.map(id => deleteWorkforce(id)));
+      setItems(prev => prev.filter(i => !selected.has(i._id!)));
+      setSelected(new Set());
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || t.workforce.saveError);
+    }
+  };
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const token = localStorage.getItem("token");
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+      const res = await fetch(`${apiUrl}/workforce/export?locale=${locale}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(t.dashboard.exportErrorAlert);
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "workforce.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch { toast.error(t.dashboard.exportErrorAlert); }
+    finally { setExporting(false); }
+  };
+
+  const SortableHead = ({ sortKeyName, label, align = "left", className = "" }: { sortKeyName: SortKey; label: string; align?: "left" | "right" | "center"; className?: string }) => (
+    <TableHead
+      onClick={() => toggleSort(sortKeyName)}
+      className={`cursor-pointer select-none whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold hover:text-foreground transition-colors px-1.5 ${
+        sortKey === sortKeyName ? "text-foreground" : "text-muted-foreground/80"
+      } ${align === "right" ? "text-right" : align === "center" ? "text-center" : ""} ${className}`}>
+      <span className={`inline-flex items-center gap-0.5 ${align === "right" ? "flex-row-reverse" : ""}`}>
+        {label}
+        <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${sortKey === sortKeyName ? "opacity-100" : "opacity-0"} ${sortKey === sortKeyName && sortDir === "desc" ? "rotate-180" : ""}`} />
+      </span>
+    </TableHead>
+  );
+
   const headerActions = (
     <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+      <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+        <Download className="w-4 h-4 mr-1.5" />
+        {exporting ? t.common.exportingLabel : t.common.excelExport}
+      </Button>
       <Button onClick={openCreate} size="sm"
         className="bg-positive text-background hover:bg-positive/90 shadow-[0_0_16px_color-mix(in_oklch,oklch(var(--positive))_35%,transparent)]">
         <Plus className="w-4 h-4 mr-1.5" /> {t.workforce.add}
       </Button>
       <Button variant="ghost" size="sm" onClick={logout}><LogOut className="w-4 h-4 mr-1.5" /> {t.common.logout}</Button>
+      <LayoutToggleButton />
       <LanguageSwitcher />
       <ThemeToggle />
     </div>
@@ -195,6 +339,11 @@ export default function WorkforcePage() {
         </nav>
 
       <main className={layoutMode === "sidebar" ? "px-4 sm:px-6 py-6 sm:py-8" : "max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8"}>
+        {error && (
+          <div className="mb-4 flex items-center gap-3 bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-3 mb-6 max-w-md">
           <div className="glass-card px-4 py-3">
             <p className="relative text-xs text-muted-foreground mb-1">{t.workforce.statTotal}</p>
@@ -206,41 +355,118 @@ export default function WorkforcePage() {
           </div>
         </div>
 
+        {selected.size > 0 && (
+          <div className="mb-4 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-positive/60" />
+            <p className="text-xs font-medium text-positive">
+              {format(t.workforce.selectedCount, { count: String(selected.size) })}
+            </p>
+            <div className="ml-auto flex items-center gap-3">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button className="text-xs text-destructive hover:text-destructive/80">
+                    {t.workforce.bulkDeleteButton}
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{t.common.deleteConfirmTitle}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {format(t.workforce.bulkDeleteConfirmDesc, { count: String(selected.size) })}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleBulkDelete}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      {t.common.delete}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground">
+                {t.workforce.deselect}
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder={t.workforce.searchPlaceholder}
+              className="h-8 w-56 pl-8 pr-3 text-xs rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring" />
+          </div>
+          {(["active", "inactive"] as const).map(s => (
+            <button key={s} onClick={() => setStatusFilter(f => f === s ? "" : s)}
+              className={`h-8 px-3 text-xs rounded-lg border ${statusFilter === s
+                ? "bg-positive/15 text-positive border-positive/30"
+                : "bg-background text-muted-foreground border-border hover:bg-secondary/50"}`}>
+              {s === "active" ? t.workforce.filterActive : t.workforce.filterInactive}
+            </button>
+          ))}
+        </div>
+
         {loading ? (
           <div className="text-center py-20 text-muted-foreground text-sm">{t.common.loading}</div>
-        ) : items.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="text-center py-20 flex flex-col items-center gap-3">
             <p className="text-muted-foreground mb-1">{t.workforce.noRecords}</p>
             <Button onClick={openCreate} className="bg-positive text-background hover:bg-positive/90">{t.workforce.addFirstRecord}</Button>
           </div>
         ) : (
+          <>
           <div className="glass-card overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="border-border/50">
-                  <TableHead>{t.workforce.colName}</TableHead>
-                  <TableHead>{t.workforce.colPhone}</TableHead>
-                  <TableHead>{t.workforce.colSkills}</TableHead>
-                  <TableHead className="text-right">{t.workforce.colRate}</TableHead>
-                  <TableHead>{t.workforce.colStatus}</TableHead>
-                  <TableHead className="text-right">{t.workforce.colActions}</TableHead>
+                <TableRow className="border-border/50 bg-secondary/40 hover:bg-secondary/40">
+                  <TableHead className="w-8 px-1.5">
+                    <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 cursor-pointer accent-positive" />
+                  </TableHead>
+                  <SortableHead sortKeyName="index" label={t.workforce.colIndex} className="w-6" />
+                  <SortableHead sortKeyName="name" label={t.workforce.colName} />
+                  <SortableHead sortKeyName="phone" label={t.workforce.colPhone} />
+                  <SortableHead sortKeyName="skills" label={t.workforce.colSkills} />
+                  <SortableHead sortKeyName="rate" label={t.workforce.colRate} align="right" />
+                  <SortableHead sortKeyName="status" label={t.workforce.colStatus} />
+                  <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.workforce.colActions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((item: any) => (
+                {pagedFiltered.map((item, i) => {
+                  const idx = (page - 1) * PAGE_SIZE + i;
+                  return (
                   <TableRow key={item._id} className="border-border/50 hover:bg-secondary/30">
-                    <TableCell className="font-medium blur-number">{item.name}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{item.phone || "—"}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm max-w-xs truncate">{item.skills || "—"}</TableCell>
-                    <TableCell className="text-right stat-number">{fmt(item.rate)}</TableCell>
-                    <TableCell>
-                      <Badge className={item.status === "active"
-                        ? "bg-positive/15 text-positive hover:bg-positive/15"
-                        : "bg-muted text-muted-foreground hover:bg-muted"}>
-                        {statusLabel[item.status]}
-                      </Badge>
+                    <TableCell className="px-1.5">
+                      <input type="checkbox" checked={selected.has(item._id!)} onChange={() => toggleOne(item._id!)} className="w-4 h-4 cursor-pointer accent-positive" />
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="px-1.5 text-muted-foreground text-xs">{idx + 1}</TableCell>
+                    <TableCell className="px-1.5 font-medium blur-number">{item.name}</TableCell>
+                    <TableCell className="px-1.5 text-muted-foreground text-sm">{item.phone || "—"}</TableCell>
+                    <TableCell className="px-1.5 text-muted-foreground text-sm max-w-xs truncate">{item.skills || "—"}</TableCell>
+                    <TableCell className="px-1.5 text-right stat-number">{fmt(item.rate)}</TableCell>
+                    <TableCell className="px-1.5">
+                      <div className="relative inline-block">
+                        <button type="button"
+                          onClick={() => setOpenStatusId(openStatusId === item._id ? null : item._id!)}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusCls[item.status]}`}>
+                          {statusLabel[item.status]}
+                          <ChevronDown className="w-3 h-3 opacity-60" />
+                        </button>
+                        {openStatusId === item._id && (
+                          <div className="absolute top-full left-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-20 py-1 min-w-32">
+                            {(["active", "inactive"] as const).map(s => (
+                              <button key={s} type="button" onClick={() => handleInlineStatusChange(item, s)}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-secondary/50 text-left">
+                                <Badge className={statusCls[s]}>{statusLabel[s]}</Badge>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-1.5 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="icon" onClick={() => openEdit(item)}>
                           <Pencil className="w-4 h-4" />
@@ -268,10 +494,25 @@ export default function WorkforcePage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
+          {pageCount > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-4">
+              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>
+                {t.common.prevPage}
+              </Button>
+              <span className="text-xs text-muted-foreground stat-number">
+                {format(t.common.pageIndicator, { page: String(page), pageCount: String(pageCount) })}
+              </span>
+              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={page >= pageCount}>
+                {t.common.nextPage}
+              </Button>
+            </div>
+          )}
+          </>
         )}
       </main>
       </div>

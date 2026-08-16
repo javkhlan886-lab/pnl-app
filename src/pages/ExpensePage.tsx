@@ -7,6 +7,7 @@ import { logout } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocale, format } from "@/hooks/useLocale";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { LayoutToggleButton } from "@/components/LayoutToggleButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -21,9 +22,10 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, Receipt, BarChart2, Users, Box, ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake, Package } from "lucide-react";
+import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, ChevronDown, Receipt, BarChart2, Users, Box, ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake, Package } from "lucide-react";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { getRecent, addRecent } from "@/lib/recentValues";
+import { toast } from "@/lib/toast";
 import { setAiPageContext } from "@/lib/aiPageContext";
 import { useLayoutMode } from "@/lib/layoutMode";
 import { Sidebar } from "@/components/Sidebar";
@@ -42,6 +44,22 @@ const EMPTY = {
 
 const fmt = (n: number) => "₮" + Math.round(n).toLocaleString("mn-MN");
 
+const PAGE_SIZE = 20;
+
+type SortKey = "date" | "type" | "category" | "description" | "amount" | "status";
+
+// Баганын толгой дээр дарахад ижил утгатай мөрүүд зэрэгцэн эрэмбэлэгдэж харагдана.
+const sortValue = (e: any, key: SortKey): string | number => {
+  switch (key) {
+    case "date": return new Date(e.date).getTime();
+    case "type": return e.type;
+    case "category": return (e.category || "").toLowerCase();
+    case "description": return (e.description || "").toLowerCase();
+    case "amount": return e.amount;
+    case "status": return e.status;
+  }
+};
+
 export default function ExpensePage() {
   const navigate = useNavigate();
   const { company, isAdmin, user } = useAuth();
@@ -57,6 +75,7 @@ export default function ExpensePage() {
 
   const [expenses, setExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ ...EMPTY });
   const [editing, setEditing] = useState<string | null>(null);
@@ -67,6 +86,11 @@ export default function ExpensePage() {
   const [quantityInput, setQuantityInput] = useState<number>(1);
   const [amountDisplay, setAmountDisplay] = useState("");
   const [, startTransition] = useTransition();
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [openStatusId, setOpenStatusId] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [page, setPage] = useState(1);
 
   const NAV_ITEMS = [
     { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
@@ -83,8 +107,15 @@ export default function ExpensePage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    try { setExpenses(await getExpenses()); } finally { setLoading(false); }
-  }, []);
+    try {
+      setExpenses(await getExpenses());
+      setError(null);
+    } catch {
+      setError(t.expenses.loadError);
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -93,6 +124,47 @@ export default function ExpensePage() {
   const totalPending = filtered.filter(e => e.status === "pending").reduce((s, e) => s + e.amount, 0);
   const officeTotal = expenses.filter(e => e.type === "office" && e.status === "approved").reduce((s, e) => s + e.amount, 0);
   const otherTotal = expenses.filter(e => e.type === "other" && e.status === "approved").reduce((s, e) => s + e.amount, 0);
+
+  let sortedFiltered = filtered;
+  if (sortKey) {
+    const withIdx = filtered.map(e => ({ e, v: sortValue(e, sortKey) }));
+    withIdx.sort((a, b) => {
+      const cmp = typeof a.v === "string" && typeof b.v === "string"
+        ? a.v.localeCompare(b.v)
+        : (a.v as number) - (b.v as number);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    sortedFiltered = withIdx.map(x => x.e);
+  }
+
+  const pageCount = Math.max(1, Math.ceil(sortedFiltered.length / PAGE_SIZE));
+  const pagedFiltered = sortedFiltered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  useEffect(() => { setPage(1); }, [typeFilter, sortKey, sortDir]);
+  useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortKey(key); setSortDir("asc"); }
+  };
+
+  useEffect(() => { setSelected(new Set()); }, [typeFilter]);
+
+  const toggleOne = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const toggleAll = () => {
+    setSelected(prev =>
+      filtered.length > 0 && filtered.every(e => prev.has(e._id!)) ? new Set() : new Set(filtered.map(e => e._id!))
+    );
+  };
+  const allSelected = filtered.length > 0 && filtered.every(e => selected.has(e._id!));
+  const selectedExpenses = filtered.filter(e => selected.has(e._id!));
+  const selectedAmount = selectedExpenses.reduce((s, e) => s + e.amount, 0);
 
   useEffect(() => {
     const lines = [
@@ -126,6 +198,7 @@ export default function ExpensePage() {
     try {
       addCustomCategory(payload.type === "office" ? "expenses_office" : "expenses_other", payload.category);
       addRecent("expenses", "description", payload.description);
+      addRecent("expenses", "note", payload.note);
       setForm(payload);
       if (editing) {
         const updated = await updateExpense(editing, payload);
@@ -136,13 +209,35 @@ export default function ExpensePage() {
       }
       setOpen(false);
     } catch (err: any) {
-      alert(err.response?.data?.error || t.expenses.saveError);
+      toast.error(err.response?.data?.error || t.expenses.saveError);
     } finally { setSaving(false); }
   };
 
   const handleDelete = async (id: string) => {
     await deleteExpense(id);
     setExpenses(prev => prev.filter(e => e._id !== id));
+  };
+
+  // Хүснэгтэн дэх мөр бүрийн төлвийг цонх нээхгүйгээр шууд солих.
+  const handleInlineStatusChange = async (exp: any, next: string) => {
+    setOpenStatusId(null);
+    try {
+      const updated = await updateExpense(exp._id, { ...exp, status: next });
+      setExpenses(prev => prev.map(x => x._id === exp._id ? updated : x));
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || t.expenses.saveError);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = [...selected];
+    try {
+      await Promise.all(ids.map(id => deleteExpense(id)));
+      setExpenses(prev => prev.filter(e => !selected.has(e._id!)));
+      setSelected(new Set());
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || t.expenses.saveError);
+    }
   };
 
   const cats = mergeCategories(
@@ -168,9 +263,22 @@ export default function ExpensePage() {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-    } catch { alert(t.dashboard.exportErrorAlert); }
+    } catch { toast.error(t.dashboard.exportErrorAlert); }
     finally { setExporting(false); }
   };
+
+  const SortableHead = ({ sortKeyName, label, align = "left", className = "" }: { sortKeyName: SortKey; label: string; align?: "left" | "right" | "center"; className?: string }) => (
+    <TableHead
+      onClick={() => toggleSort(sortKeyName)}
+      className={`cursor-pointer select-none whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold hover:text-foreground transition-colors px-1.5 ${
+        sortKey === sortKeyName ? "text-foreground" : "text-muted-foreground/80"
+      } ${align === "right" ? "text-right" : align === "center" ? "text-center" : ""} ${className}`}>
+      <span className={`inline-flex items-center gap-0.5 ${align === "right" ? "flex-row-reverse" : ""}`}>
+        {label}
+        <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${sortKey === sortKeyName ? "opacity-100" : "opacity-0"} ${sortKey === sortKeyName && sortDir === "desc" ? "rotate-180" : ""}`} />
+      </span>
+    </TableHead>
+  );
 
   const headerActions = (
     <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -183,6 +291,7 @@ export default function ExpensePage() {
         <Plus className="w-4 h-4 mr-1.5" /> {t.expenses.addExpense}
       </Button>
       <Button variant="ghost" size="sm" onClick={logout}><LogOut className="w-4 h-4 mr-1.5" /> {t.common.logout}</Button>
+      <LayoutToggleButton />
       <LanguageSwitcher />
       <ThemeToggle />
     </div>
@@ -241,6 +350,11 @@ export default function ExpensePage() {
         </nav>
 
       <main className={layoutMode === "sidebar" ? "px-4 sm:px-6 py-6 sm:py-8" : "max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8"}>
+        {error && (
+          <div className="mb-4 flex items-center gap-3 bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <div className="glass-card glass-card-negative px-4 py-3">
             <p className="relative text-xs text-muted-foreground mb-1">{t.expenses.statApprovedTotal}</p>
@@ -279,6 +393,43 @@ export default function ExpensePage() {
           ))}
         </div>
 
+        {selected.size > 0 && (
+          <div className="mb-4 flex items-center gap-3 flex-wrap">
+            <span className="w-1.5 h-1.5 rounded-full bg-positive/60" />
+            <p className="text-xs font-medium text-positive">
+              {format(t.expenses.selectedCount, { count: String(selected.size) })}
+            </p>
+            <p className="text-xs text-muted-foreground stat-number">{fmt(selectedAmount)}</p>
+            <div className="ml-auto flex items-center gap-3">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button className="text-xs text-destructive hover:text-destructive/80">
+                    {t.expenses.bulkDeleteButton}
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{t.common.deleteConfirmTitle}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {format(t.expenses.bulkDeleteConfirmDesc, { count: String(selected.size) })}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleBulkDelete}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      {t.common.delete}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground">
+                {t.expenses.deselect}
+              </button>
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <div className="text-center py-20 text-muted-foreground text-sm">{t.common.loading}</div>
         ) : filtered.length === 0 ? (
@@ -293,37 +444,61 @@ export default function ExpensePage() {
             </div>
           </div>
         ) : (
+          <>
           <div className="glass-card overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="border-border/50">
-                  <TableHead>{t.expenses.colDate}</TableHead>
-                  <TableHead>{t.expenses.colType}</TableHead>
-                  <TableHead>{t.expenses.colCategory}</TableHead>
-                  <TableHead>{t.expenses.colDescription}</TableHead>
-                  <TableHead className="text-right">{t.expenses.colAmount}</TableHead>
-                  <TableHead>{t.expenses.colStatus}</TableHead>
-                  <TableHead className="text-right">{t.expenses.colActions}</TableHead>
+                <TableRow className="border-border/50 bg-secondary/40 hover:bg-secondary/40">
+                  <TableHead className="w-8 px-1.5">
+                    <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 cursor-pointer accent-positive" />
+                  </TableHead>
+                  <SortableHead sortKeyName="date" label={t.expenses.colDate} />
+                  <SortableHead sortKeyName="type" label={t.expenses.colType} />
+                  <SortableHead sortKeyName="category" label={t.expenses.colCategory} />
+                  <SortableHead sortKeyName="description" label={t.expenses.colDescription} />
+                  <SortableHead sortKeyName="amount" label={t.expenses.colAmount} align="right" />
+                  <SortableHead sortKeyName="status" label={t.expenses.colStatus} />
+                  <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.expenses.colActions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map(exp => (
+                {pagedFiltered.map(exp => (
                   <TableRow key={exp._id} className="border-border/50 hover:bg-secondary/30">
-                    <TableCell className="text-muted-foreground text-sm">{fmtDate(exp.date)}</TableCell>
-                    <TableCell>
+                    <TableCell className="px-1.5">
+                      <input type="checkbox" checked={selected.has(exp._id!)} onChange={() => toggleOne(exp._id!)} className="w-4 h-4 cursor-pointer accent-positive" />
+                    </TableCell>
+                    <TableCell className="px-1.5 text-muted-foreground text-sm">{fmtDate(exp.date)}</TableCell>
+                    <TableCell className="px-1.5">
                       <Badge className={exp.type === "office"
                         ? "bg-info/15 text-info hover:bg-info/15"
                         : "bg-[oklch(0.6_0.18_300)]/15 text-[oklch(0.6_0.18_300)] hover:bg-[oklch(0.6_0.18_300)]/15"}>
                         {exp.type === "office" ? t.expenses.typeOffice : t.expenses.typeOther}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{exp.category}</TableCell>
-                    <TableCell className="font-medium">{exp.description}</TableCell>
-                    <TableCell className="text-right font-medium text-negative stat-number">{fmt(exp.amount)}</TableCell>
-                    <TableCell>
-                      <Badge className={statusMap[exp.status].cls}>{statusMap[exp.status].label}</Badge>
+                    <TableCell className="px-1.5 text-muted-foreground text-sm">{exp.category}</TableCell>
+                    <TableCell className="px-1.5 font-medium">{exp.description}</TableCell>
+                    <TableCell className="px-1.5 text-right font-medium text-negative stat-number">{fmt(exp.amount)}</TableCell>
+                    <TableCell className="px-1.5">
+                      <div className="relative inline-block">
+                        <button type="button"
+                          onClick={() => setOpenStatusId(openStatusId === exp._id ? null : exp._id!)}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusMap[exp.status].cls}`}>
+                          {statusMap[exp.status].label}
+                          <ChevronDown className="w-3 h-3 opacity-60" />
+                        </button>
+                        {openStatusId === exp._id && (
+                          <div className="absolute top-full left-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-20 py-1 min-w-32">
+                            {(["pending", "approved", "rejected"] as const).map(s => (
+                              <button key={s} type="button" onClick={() => handleInlineStatusChange(exp, s)}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-secondary/50 text-left">
+                                <Badge className={statusMap[s].cls}>{statusMap[s].label}</Badge>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="px-1.5 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="icon" onClick={() => openEdit(exp)}>
                           <Pencil className="w-4 h-4" />
@@ -355,6 +530,20 @@ export default function ExpensePage() {
               </TableBody>
             </Table>
           </div>
+          {pageCount > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-4">
+              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>
+                {t.common.prevPage}
+              </Button>
+              <span className="text-xs text-muted-foreground stat-number">
+                {format(t.common.pageIndicator, { page: String(page), pageCount: String(pageCount) })}
+              </span>
+              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={page >= pageCount}>
+                {t.common.nextPage}
+              </Button>
+            </div>
+          )}
+          </>
         )}
       </main>
       </div>
@@ -450,6 +639,13 @@ export default function ExpensePage() {
                   <option value="approved">{t.expenses.statusApproved}</option>
                   <option value="rejected">{t.expenses.statusRejected}</option>
                 </select>
+              </div>
+              <div className="sm:col-span-2 flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted-foreground">{t.expenses.note}</label>
+                <Combobox
+                  value={form.note}
+                  onChange={(v) => setForm(f => ({ ...f, note: v }))}
+                  options={getRecent("expenses", "note")} />
               </div>
             </div>
           </div>

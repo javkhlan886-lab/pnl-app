@@ -14,6 +14,8 @@ import { Plus, Trash2, Save, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { useLocale, format } from "@/hooks/useLocale";
 import type { Dictionary } from "@/lib/i18n/dictionary-type";
 import { getRecent, addRecent } from "@/lib/recentValues";
+import { toast } from "@/lib/toast";
+import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { Combobox } from "@/components/ui/combobox";
 
 // Хүснэгтийн нягт мөрөнд багтаах — Combobox-ийн үндсэн хүрээ/дэвсгэрийг
@@ -195,8 +197,26 @@ interface Props {
 export default function PNLForm({ initial, id }: Props) {
   const navigate = useNavigate();
   const { t } = useLocale();
-  const [data, setData] = useState<PNLRecord>(
-    initial || {
+
+  // "Гэрээний ангилал" урьд нь hardcoded 5 кодтой Select байсан (construction,
+  // consulting, ...) — бусад бүх ангилалтай талбар шиг чөлөөт текст болгож,
+  // Combobox+custom category руу шилжүүлэв. Хуучин бичлэгүүдийн хадгалагдсан
+  // кодыг эндээс орчуулгатай нь орлуулж (нэг удаагийн шилжилт), цаашид шинэ
+  // бичлэгүүд чөлөөт текст хадгална.
+  const LEGACY_CONTRACT_CATEGORY_LABELS: Record<string, string> = {
+    construction: t.pnlForm.categoryConstruction,
+    consulting: t.pnlForm.categoryConsulting,
+    supply: t.pnlForm.categorySupply,
+    transport: t.pnlForm.categoryTransport,
+    other: t.pnlForm.categoryOther,
+  };
+  const DEFAULT_CONTRACT_CATEGORIES = [
+    t.pnlForm.categoryConstruction, t.pnlForm.categoryConsulting,
+    t.pnlForm.categorySupply, t.pnlForm.categoryTransport, t.pnlForm.categoryOther,
+  ];
+
+  const [data, setData] = useState<PNLRecord>(() => {
+    const base = initial || {
       company: "",
       period: "",
       currency: "₮",
@@ -207,8 +227,10 @@ export default function PNLForm({ initial, id }: Props) {
       contractStatus: "active",
       status: "active",
       date: new Date().toISOString().split("T")[0],
-    }
-  );
+    };
+    const legacyLabel = LEGACY_CONTRACT_CATEGORY_LABELS[base.contractCategory || ""];
+    return legacyLabel ? { ...base, contractCategory: legacyLabel } : base;
+  });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [rateSaved, setRateSaved] = useState(false);
@@ -286,6 +308,7 @@ export default function PNLForm({ initial, id }: Props) {
 
     addRecent("pnl", "company", payload.company);
     addRecent("pnl", "contractNumber", payload.contractNumber || "");
+    if (payload.contractCategory) addCustomCategory("pnl_contract", payload.contractCategory);
     payload.incomeRows.forEach((row) => {
       addRecent("pnl_income", "name", row.name);
       addRecent("pnl_income", "note", row.note);
@@ -311,7 +334,7 @@ export default function PNLForm({ initial, id }: Props) {
         navigate("/dashboard", { replace: true });
       }
     } catch (err: any) {
-      alert(err.response?.data?.error || t.pnlForm.saveError);
+      toast.error(err.response?.data?.error || t.pnlForm.saveError);
       setSaving(false);
     }
   };
@@ -360,16 +383,12 @@ export default function PNLForm({ initial, id }: Props) {
               </div>
               <div className="space-y-1.5">
                 <Label>{t.pnlForm.contractCategory}</Label>
-                <Select value={data.contractCategory || ""} onValueChange={(v) => setData({ ...data, contractCategory: v })}>
-                  <SelectTrigger><SelectValue placeholder={t.pnlForm.selectPlaceholder} /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="construction">{t.pnlForm.categoryConstruction}</SelectItem>
-                    <SelectItem value="consulting">{t.pnlForm.categoryConsulting}</SelectItem>
-                    <SelectItem value="supply">{t.pnlForm.categorySupply}</SelectItem>
-                    <SelectItem value="transport">{t.pnlForm.categoryTransport}</SelectItem>
-                    <SelectItem value="other">{t.pnlForm.categoryOther}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  value={data.contractCategory || ""}
+                  onChange={(v) => setData({ ...data, contractCategory: v })}
+                  options={mergeCategories(DEFAULT_CONTRACT_CATEGORIES, "pnl_contract")}
+                  placeholder={t.pnlForm.selectPlaceholder}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>{t.pnlForm.status}</Label>

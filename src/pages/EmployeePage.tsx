@@ -7,6 +7,7 @@ import { logout } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocale, format } from "@/hooks/useLocale";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { LayoutToggleButton } from "@/components/LayoutToggleButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -21,9 +22,13 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { LogOut, TableIcon, Plus, Pencil, Trash2, Users, ChevronLeft, BarChart2, Box, Receipt, ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake, Package } from "lucide-react";
+import {
+  LogOut, TableIcon, Plus, Pencil, Trash2, Users, ChevronLeft, ChevronDown, BarChart2, Box, Receipt,
+  ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake, Package, Search,
+} from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import { getRecent, addRecent } from "@/lib/recentValues";
+import { toast } from "@/lib/toast";
 import { setAiPageContext } from "@/lib/aiPageContext";
 import { useLayoutMode } from "@/lib/layoutMode";
 import { Sidebar } from "@/components/Sidebar";
@@ -52,6 +57,24 @@ function fmtInput(v: number) {
   return v === 0 ? "" : v.toLocaleString("mn-MN");
 }
 
+const PAGE_SIZE = 20;
+
+type SortKey = "name" | "position" | "type" | "baseSalary" | "nd" | "ndsht" | "totalCost" | "status";
+
+// Баганын толгой дээр дарахад ижил утгатай мөрүүд зэрэгцэн эрэмбэлэгдэж харагдана.
+const sortValue = (e: Employee, key: SortKey): string | number => {
+  switch (key) {
+    case "name": return (e.name || "").toLowerCase();
+    case "position": return (e.position || "").toLowerCase();
+    case "type": return e.type;
+    case "baseSalary": return e.baseSalary;
+    case "nd": return e.baseSalary * e.ndRate / 100;
+    case "ndsht": return e.baseSalary * e.ndshtRate / 100;
+    case "totalCost": return e.baseSalary + e.baseSalary * e.ndRate / 100 + e.baseSalary * e.ndshtRate / 100;
+    case "status": return e.status;
+  }
+};
+
 export default function EmployeePage() {
   const navigate = useNavigate();
   const { company, isAdmin, user } = useAuth();
@@ -79,19 +102,79 @@ export default function EmployeePage() {
   ];
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Employee>(EMPTY);
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [salaryDisplay, setSalaryDisplay] = useState("");
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<"" | "engineer" | "staff">("");
+  const [statusFilter, setStatusFilter] = useState<"" | "active" | "leave" | "inactive">("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [openStatusId, setOpenStatusId] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [page, setPage] = useState(1);
 
   const load = useCallback(async () => {
     setLoading(true);
-    try { setEmployees(await getEmployees()); } finally { setLoading(false); }
-  }, []);
+    setError(null);
+    try { setEmployees(await getEmployees()); }
+    catch { setError(t.employees.loadError); }
+    finally { setLoading(false); }
+  }, [t]);
 
   useEffect(() => { load(); }, [load]);
+
+  const filtered = employees.filter(e => {
+    if (typeFilter && e.type !== typeFilter) return false;
+    if (statusFilter && e.status !== statusFilter) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      if (!e.name.toLowerCase().includes(q) && !(e.position || "").toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  let sortedFiltered = filtered;
+  if (sortKey) {
+    const withIdx = filtered.map(e => ({ e, v: sortValue(e, sortKey) }));
+    withIdx.sort((a, b) => {
+      const cmp = typeof a.v === "string" && typeof b.v === "string"
+        ? a.v.localeCompare(b.v)
+        : (a.v as number) - (b.v as number);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    sortedFiltered = withIdx.map(x => x.e);
+  }
+
+  const pageCount = Math.max(1, Math.ceil(sortedFiltered.length / PAGE_SIZE));
+  const pagedFiltered = sortedFiltered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  useEffect(() => { setPage(1); }, [typeFilter, statusFilter, search, sortKey, sortDir]);
+  useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
+  useEffect(() => { setSelected(new Set()); }, [typeFilter, statusFilter, search]);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortKey(key); setSortDir("asc"); }
+  };
+
+  const toggleOne = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const toggleAll = () => {
+    setSelected(prev =>
+      filtered.length > 0 && filtered.every(e => prev.has(e._id!)) ? new Set() : new Set(filtered.map(e => e._id!))
+    );
+  };
+  const allSelected = filtered.length > 0 && filtered.every(e => selected.has(e._id!));
 
   const totalSalary = employees.filter(e => e.status === "active")
     .reduce((s, e) => s + e.baseSalary, 0);
@@ -138,13 +221,35 @@ export default function EmployeePage() {
       }
       setOpen(false);
     } catch (err: any) {
-      alert(err.response?.data?.error || t.employees.saveError);
+      toast.error(err.response?.data?.error || t.employees.saveError);
     } finally { setSaving(false); }
   };
 
   const handleDelete = async (id: string) => {
     await deleteEmployee(id);
     setEmployees(prev => prev.filter(e => e._id !== id));
+  };
+
+  // Хүснэгтэн дэх мөр бүрийн төлвийг цонх нээхгүйгээр шууд солих.
+  const handleInlineStatusChange = async (emp: Employee, next: Employee["status"]) => {
+    setOpenStatusId(null);
+    try {
+      const updated = await updateEmployee(emp._id!, { ...emp, status: next });
+      setEmployees(prev => prev.map(x => x._id === emp._id ? updated : x));
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || t.employees.saveError);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = [...selected];
+    try {
+      await Promise.all(ids.map(id => deleteEmployee(id)));
+      setEmployees(prev => prev.filter(e => !selected.has(e._id!)));
+      setSelected(new Set());
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || t.employees.saveError);
+    }
   };
 
   const nd = form.baseSalary * form.ndRate / 100;
@@ -169,9 +274,22 @@ export default function EmployeePage() {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-    } catch { alert(t.dashboard.exportErrorAlert); }
+    } catch { toast.error(t.dashboard.exportErrorAlert); }
     finally { setExporting(false); }
   };
+
+  const SortableHead = ({ sortKeyName, label, align = "left", className = "" }: { sortKeyName: SortKey; label: string; align?: "left" | "right" | "center"; className?: string }) => (
+    <TableHead
+      onClick={() => toggleSort(sortKeyName)}
+      className={`cursor-pointer select-none whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold hover:text-foreground transition-colors px-1.5 ${
+        sortKey === sortKeyName ? "text-foreground" : "text-muted-foreground/80"
+      } ${align === "right" ? "text-right" : align === "center" ? "text-center" : ""} ${className}`}>
+      <span className={`inline-flex items-center gap-0.5 ${align === "right" ? "flex-row-reverse" : ""}`}>
+        {label}
+        <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${sortKey === sortKeyName ? "opacity-100" : "opacity-0"} ${sortKey === sortKeyName && sortDir === "desc" ? "rotate-180" : ""}`} />
+      </span>
+    </TableHead>
+  );
 
   const headerActions = (
     <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -186,6 +304,7 @@ export default function EmployeePage() {
       <Button variant="ghost" size="sm" onClick={logout}>
         <LogOut className="w-4 h-4 mr-1.5" /> {t.common.logout}
       </Button>
+      <LayoutToggleButton />
       <LanguageSwitcher />
       <ThemeToggle />
     </div>
@@ -267,9 +386,78 @@ export default function EmployeePage() {
           </div>
         </div>
 
+        {error && (
+          <div className="mb-4 flex items-center gap-3 bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
+        {selected.size > 0 && (
+          <div className="flex items-center gap-1.5 mb-3">
+            <span className="w-1.5 h-1.5 rounded-full bg-positive/60" />
+            <p className="text-xs font-medium text-positive">
+              {format(t.employees.selectedCount, { count: String(selected.size) })}
+            </p>
+            <div className="ml-auto flex items-center gap-3">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button className="text-xs text-destructive hover:text-destructive/80">
+                    {t.employees.bulkDeleteButton}
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{t.common.deleteConfirmTitle}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {format(t.employees.bulkDeleteConfirmDesc, { count: String(selected.size) })}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleBulkDelete}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      {t.common.delete}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground">
+                {t.employees.deselect}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Search + type/status filter */}
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder={t.employees.searchPlaceholder}
+              className="h-8 w-56 pl-8 pr-3 text-xs rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring" />
+          </div>
+          {(["engineer", "staff"] as const).map(ty => (
+            <button key={ty} onClick={() => setTypeFilter(f => f === ty ? "" : ty)}
+              className={`h-8 px-3 text-xs rounded-lg border ${typeFilter === ty
+                ? "bg-positive/15 text-positive border-positive/30"
+                : "bg-background text-muted-foreground border-border hover:bg-secondary/50"}`}>
+              {ty === "engineer" ? t.employees.typeEngineer : t.employees.typeStaff}
+            </button>
+          ))}
+          <span className="w-px h-5 bg-border" />
+          {(["active", "leave", "inactive"] as const).map(s => (
+            <button key={s} onClick={() => setStatusFilter(f => f === s ? "" : s)}
+              className={`h-8 px-3 text-xs rounded-lg border ${statusFilter === s
+                ? "bg-positive/15 text-positive border-positive/30"
+                : "bg-background text-muted-foreground border-border hover:bg-secondary/50"}`}>
+              {statusLabel[s].label}
+            </button>
+          ))}
+        </div>
+
         {loading ? (
           <div className="text-center py-20 text-muted-foreground text-sm">{t.common.loading}</div>
-        ) : employees.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="text-center py-20 flex flex-col items-center gap-3">
             <p className="text-muted-foreground mb-1">{t.employees.noEmployees}</p>
             <Button onClick={openCreate} className="bg-positive text-background hover:bg-positive/90">
@@ -277,29 +465,36 @@ export default function EmployeePage() {
             </Button>
           </div>
         ) : (
+          <>
           <div className="glass-card overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="border-border/50">
-                  <TableHead>{t.employees.colName}</TableHead>
-                  <TableHead>{t.employees.colPosition}</TableHead>
-                  <TableHead>{t.employees.colType}</TableHead>
-                  <TableHead className="text-right">{t.employees.colBaseSalary}</TableHead>
-                  <TableHead className="text-right">{t.employees.colNd}</TableHead>
-                  <TableHead className="text-right">{t.employees.colNdsht}</TableHead>
-                  <TableHead className="text-right">{t.employees.colTotalCost}</TableHead>
-                  <TableHead>{t.employees.colStatus}</TableHead>
-                  <TableHead className="text-right">{t.employees.colActions}</TableHead>
+                <TableRow className="border-border/50 bg-secondary/40 hover:bg-secondary/40">
+                  <TableHead className="w-8 px-1.5">
+                    <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 cursor-pointer accent-positive" />
+                  </TableHead>
+                  <SortableHead sortKeyName="name" label={t.employees.colName} />
+                  <SortableHead sortKeyName="position" label={t.employees.colPosition} />
+                  <SortableHead sortKeyName="type" label={t.employees.colType} />
+                  <SortableHead sortKeyName="baseSalary" label={t.employees.colBaseSalary} align="right" />
+                  <SortableHead sortKeyName="nd" label={t.employees.colNd} align="right" />
+                  <SortableHead sortKeyName="ndsht" label={t.employees.colNdsht} align="right" />
+                  <SortableHead sortKeyName="totalCost" label={t.employees.colTotalCost} align="right" />
+                  <SortableHead sortKeyName="status" label={t.employees.colStatus} />
+                  <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.employees.colActions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {employees.map(emp => {
+                {pagedFiltered.map(emp => {
                   const nd = emp.baseSalary * emp.ndRate / 100;
                   const ndsht = emp.baseSalary * emp.ndshtRate / 100;
                   const total = emp.baseSalary + nd + ndsht;
                   const st = statusLabel[emp.status];
                   return (
                     <TableRow key={emp._id} className="border-border/50 hover:bg-secondary/30">
+                      <TableCell className="px-1.5">
+                        <input type="checkbox" checked={selected.has(emp._id!)} onChange={() => toggleOne(emp._id!)} className="w-4 h-4 cursor-pointer accent-positive" />
+                      </TableCell>
                       <TableCell className="font-medium blur-number">{emp.name}</TableCell>
                       <TableCell className="text-muted-foreground">{emp.position || "—"}</TableCell>
                       <TableCell>
@@ -314,7 +509,24 @@ export default function EmployeePage() {
                       <TableCell className="text-right text-negative stat-number">{fmt(ndsht)}</TableCell>
                       <TableCell className="text-right font-medium text-negative stat-number">{fmt(total)}</TableCell>
                       <TableCell>
-                        <Badge className={st.cls}>{st.label}</Badge>
+                        <div className="relative inline-block">
+                          <button type="button"
+                            onClick={() => setOpenStatusId(openStatusId === emp._id ? null : emp._id!)}
+                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${st.cls}`}>
+                            {st.label}
+                            <ChevronDown className="w-3 h-3 opacity-60" />
+                          </button>
+                          {openStatusId === emp._id && (
+                            <div className="absolute top-full left-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-20 py-1 min-w-32">
+                              {(["active", "leave", "inactive"] as const).map(s => (
+                                <button key={s} type="button" onClick={() => handleInlineStatusChange(emp, s)}
+                                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-secondary/50 text-left">
+                                  <Badge className={statusLabel[s].cls}>{statusLabel[s].label}</Badge>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
@@ -352,6 +564,20 @@ export default function EmployeePage() {
               </TableBody>
             </Table>
           </div>
+          {pageCount > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-4">
+              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>
+                {t.common.prevPage}
+              </Button>
+              <span className="text-xs text-muted-foreground stat-number">
+                {format(t.common.pageIndicator, { page: String(page), pageCount: String(pageCount) })}
+              </span>
+              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={page >= pageCount}>
+                {t.common.nextPage}
+              </Button>
+            </div>
+          )}
+          </>
         )}
       </main>
       </div>
