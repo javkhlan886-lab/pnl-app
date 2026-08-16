@@ -20,6 +20,7 @@ export const en: Dictionary = {
     newReport: "New report",
     logout: "Log out",
     logoutConfirm: "Are you sure you want to log out?",
+    backToPortal: "Back to portal",
     loading: "Loading...",
     cancel: "Cancel",
     delete: "Delete",

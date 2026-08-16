@@ -2,11 +2,12 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { getPartners, createPartner, updatePartner, deletePartner } from "@/lib/partner";
-import { logout } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocale, format } from "@/hooks/useLocale";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { LayoutToggleButton } from "@/components/LayoutToggleButton";
+import { LogoutButton } from "@/components/LogoutButton";
+import { BackToPortalLink } from "@/components/BackToPortalLink";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -28,7 +29,7 @@ import { toast } from "@/lib/toast";
 import { setAiPageContext } from "@/lib/aiPageContext";
 import { useLayoutMode } from "@/lib/layoutMode";
 import { Sidebar } from "@/components/Sidebar";
-import { LogOut, Plus, Pencil, Trash2, ChevronLeft, ChevronDown, BarChart2, Users, Box, Receipt, ArrowLeftRight, TableIcon, ShieldCheck, HardHat, Handshake, Package, Search, Download } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronDown, BarChart2, Users, Box, Receipt, ArrowLeftRight, TableIcon, ShieldCheck, HardHat, Handshake, Package, Search, Download } from "lucide-react";
 
 interface PartnerRecord {
   _id?: string;
@@ -278,7 +279,8 @@ export default function PartnerPage() {
         className="bg-positive text-background hover:bg-positive/90 shadow-[0_0_16px_color-mix(in_oklch,oklch(var(--positive))_35%,transparent)]">
         <Plus className="w-4 h-4 mr-1.5" /> {t.partners.add}
       </Button>
-      <Button variant="ghost" size="sm" onClick={logout}><LogOut className="w-4 h-4 mr-1.5" /> {t.common.logout}</Button>
+      <BackToPortalLink />
+      <LogoutButton />
       <LayoutToggleButton />
       <LanguageSwitcher />
       <ThemeToggle />

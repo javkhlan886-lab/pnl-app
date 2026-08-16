@@ -21,6 +21,7 @@ export const mn = {
     newReport: "Шинэ тайлан",
     logout: "Гарах",
     logoutConfirm: "Та системээс гарахдаа итгэлтэй байна уу?",
+    backToPortal: "Порталруу буцах",
     loading: "Уншиж байна...",
     cancel: "Цуцлах",
     delete: "Устгах",

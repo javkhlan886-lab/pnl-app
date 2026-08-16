@@ -3,11 +3,12 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { getReceivables, createReceivable, updateReceivable, deleteReceivable } from "@/lib/receivable";
 import { fmtDate, toDateInputValue } from "@/lib/utils";
-import { logout } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocale, format } from "@/hooks/useLocale";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { LayoutToggleButton } from "@/components/LayoutToggleButton";
+import { LogoutButton } from "@/components/LogoutButton";
+import { BackToPortalLink } from "@/components/BackToPortalLink";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -22,7 +23,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { LogOut, TableIcon, Plus, Pencil, Trash2, ChevronLeft, ArrowLeftRight, BarChart2, Users, Box, Receipt, Download, ShieldCheck, HardHat, Handshake, Package, Search, ChevronDown } from "lucide-react";
+import { TableIcon, Plus, Pencil, Trash2, ChevronLeft, ArrowLeftRight, BarChart2, Users, Box, Receipt, Download, ShieldCheck, HardHat, Handshake, Package, Search, ChevronDown } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import { getRecent, addRecent } from "@/lib/recentValues";
 import { toast } from "@/lib/toast";
@@ -326,7 +327,8 @@ export default function ReceivablePage() {
         className="bg-positive text-background hover:bg-positive/90 shadow-[0_0_16px_color-mix(in_oklch,oklch(var(--positive))_35%,transparent)]">
         <Plus className="w-4 h-4 mr-1.5" /> {t.receivables.add}
       </Button>
-      <Button variant="ghost" size="sm" onClick={logout}><LogOut className="w-4 h-4 mr-1.5" /> {t.common.logout}</Button>
+      <BackToPortalLink />
+      <LogoutButton />
       <LayoutToggleButton />
       <LanguageSwitcher />
       <ThemeToggle />

@@ -1,12 +1,6 @@
 import api from "./axios";
 import { AuthResponse, User } from "@/types";
-import { getCurrentDictionary } from "@/hooks/useLocale";
-
-// Hardcoded, not read from VITE_SAAS_FRONT_URL: that env var has repeatedly
-// drifted out of sync on Vercel (still pointing at the retired
-// saas-front-livid.vercel.app), silently breaking this redirect. This is the
-// one stable production domain.
-const SAAS_FRONT_URL = "https://product.gurvandelger.com";
+import { SAAS_FRONT_URL } from "@/lib/constants";
 
 // Kept as a fallback for direct access — normal entry is via loginWithToken
 // (handed off from Saas Front, which owns signup/company management now).
@@ -22,8 +16,9 @@ export const loginWithToken = (token: string) => {
   localStorage.setItem("token", token);
 };
 
+// Баталгаажуулах харилцах цонх дуудагч талд (LogoutButton) байрлана —
+// энэ функц зөвхөн бодит гарах үйлдлийг гүйцэтгэнэ.
 export const logout = () => {
-  if (!window.confirm(getCurrentDictionary().common.logoutConfirm)) return;
   localStorage.removeItem("token");
   // Dynamic import ашиглах нь circular import-ээс сэргийлнэ (useAuth -> auth -> useAuth)
   import("@/hooks/useAuth").then(({ clearAuthCache }) => clearAuthCache());

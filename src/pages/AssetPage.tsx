@@ -5,10 +5,11 @@ import { getAssets, createAsset, updateAsset, disposeAsset } from "@/lib/asset";
 import { getEmployees } from "@/lib/employee";
 import { toDateInputValue } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
-import { logout } from "@/lib/auth";
 import { useLocale, format } from "@/hooks/useLocale";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { LayoutToggleButton } from "@/components/LayoutToggleButton";
+import { LogoutButton } from "@/components/LogoutButton";
+import { BackToPortalLink } from "@/components/BackToPortalLink";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -23,7 +24,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { LogOut, TableIcon, Plus, Pencil, Archive, ChevronLeft, ChevronDown, Box, BarChart2, Users, Receipt, ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake, Package, Search } from "lucide-react";
+import { TableIcon, Plus, Pencil, Archive, ChevronLeft, ChevronDown, Box, BarChart2, Users, Receipt, ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake, Package, Search } from "lucide-react";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { getRecent, addRecent } from "@/lib/recentValues";
 import { toast } from "@/lib/toast";
@@ -318,7 +319,8 @@ export default function AssetPage() {
         className="bg-positive text-background hover:bg-positive/90 shadow-[0_0_16px_color-mix(in_oklch,oklch(var(--positive))_35%,transparent)]">
         <Plus className="w-4 h-4 mr-1.5" /> {t.assets.addAsset}
       </Button>
-      <Button variant="ghost" size="sm" onClick={logout}><LogOut className="w-4 h-4 mr-1.5" /> {t.common.logout}</Button>
+      <BackToPortalLink />
+      <LogoutButton />
       <LayoutToggleButton />
       <LanguageSwitcher />
       <ThemeToggle />

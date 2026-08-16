@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { useAuth } from "@/hooks/useAuth";
 import { getCompanyUsers, changePnlLevel } from "@/lib/admin";
-import { logout } from "@/lib/auth";
 import { useLocale, format } from "@/hooks/useLocale";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { LayoutToggleButton } from "@/components/LayoutToggleButton";
@@ -17,11 +16,13 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  LogOut, ChevronLeft, ShieldCheck, BarChart2, Users, Box, Receipt,
+  ChevronLeft, ShieldCheck, BarChart2, Users, Box, Receipt,
   ArrowLeftRight, TableIcon, HardHat, Handshake, Package, Search,
 } from "lucide-react";
 import { useLayoutMode } from "@/lib/layoutMode";
 import { Sidebar } from "@/components/Sidebar";
+import { LogoutButton } from "@/components/LogoutButton";
+import { BackToPortalLink } from "@/components/BackToPortalLink";
 
 export default function AdminUsersPage() {
   const navigate = useNavigate();
@@ -103,9 +104,8 @@ export default function AdminUsersPage() {
 
   const headerActions = (
     <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-      <Button variant="ghost" size="sm" onClick={logout}>
-        <LogOut className="w-4 h-4 mr-1.5" /> {t.common.logout}
-      </Button>
+      <BackToPortalLink />
+      <LogoutButton />
       <LayoutToggleButton />
       <LanguageSwitcher />
       <ThemeToggle />

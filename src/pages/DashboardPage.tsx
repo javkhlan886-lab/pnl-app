@@ -3,7 +3,6 @@ import { CompanyLogo } from "@/components/CompanyLogo";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getPNLList, deletePNL, updatePNL } from "@/lib/pnl";
 import { getTransactions } from "@/lib/transaction";
-import { logout } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { PNLRecord } from "@/types";
 import { fmt, fmtDate } from "@/lib/utils";
@@ -13,6 +12,8 @@ import { toast } from "@/lib/toast";
 import { getHiddenFields, saveHiddenFields, getCollapsedSections, saveCollapsedSections } from "@/lib/dashboardHidden";
 import { useLayoutMode } from "@/lib/layoutMode";
 import { LayoutToggleButton } from "@/components/LayoutToggleButton";
+import { LogoutButton } from "@/components/LogoutButton";
+import { BackToPortalLink } from "@/components/BackToPortalLink";
 import { Sidebar } from "@/components/Sidebar";
 import { IncomeTrendChart } from "@/components/IncomeTrendChart";
 import api from "@/lib/axios";
@@ -29,7 +30,7 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { PlusCircle, LogOut, Pencil, Trash2, Download, TrendingUp, TrendingDown, BarChart2, CheckCircle, Users, Box, Receipt, ArrowLeftRight, TableIcon, ChevronDown, ShieldCheck, HardHat, Handshake, Eye, EyeOff, Package, Search } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Download, TrendingUp, TrendingDown, BarChart2, CheckCircle, Users, Box, Receipt, ArrowLeftRight, TableIcon, ChevronDown, ShieldCheck, HardHat, Handshake, Eye, EyeOff, Package, Search } from "lucide-react";
 
 // ── Оруулсан хэрэглэгчийг харуулах туслах функцууд ──────────────────────────
 // owner талбарыг backend зөвхөн Level 1, 2 (admin, manager)-д илгээдэг.
@@ -486,10 +487,8 @@ export default function DashboardPage() {
         <PlusCircle className="w-4 h-4 mr-1.5" />
         {t.common.newReport}
       </Button>
-      <Button variant="ghost" size="sm" onClick={logout}>
-        <LogOut className="w-4 h-4 mr-1.5" />
-        {t.common.logout}
-      </Button>
+      <BackToPortalLink />
+      <LogoutButton />
       <LanguageSwitcher />
       <ThemeToggle />
     </div>

@@ -20,6 +20,7 @@ export const ko: Dictionary = {
     newReport: "새 보고서",
     logout: "로그아웃",
     logoutConfirm: "정말 로그아웃하시겠습니까?",
+    backToPortal: "포털로 돌아가기",
     loading: "불러오는 중...",
     cancel: "취소",
     delete: "삭제",

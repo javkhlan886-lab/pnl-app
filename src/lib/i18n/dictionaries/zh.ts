@@ -20,6 +20,7 @@ export const zh: Dictionary = {
     newReport: "新建报表",
     logout: "退出登录",
     logoutConfirm: "确定要退出系统吗？",
+    backToPortal: "返回门户",
     loading: "加载中...",
     cancel: "取消",
     delete: "删除",
