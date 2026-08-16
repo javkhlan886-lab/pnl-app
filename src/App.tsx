@@ -15,6 +15,7 @@ import WorkforcePage from "@/pages/WorkforcePage";
 import PartnerPage from "@/pages/PartnerPage";
 import ProductPage from "@/pages/ProductPage";
 import ChatSection from "@/components/ai/Chatsection";
+import { Toaster } from "@/components/Toaster";
 
 // AI ассистентийг route wrapper-т нэг удаа рендерлэснээр нэвтэрсэн бүх
 // хуудсанд гарна (login хуудсанд гарахгүй). Хуудас бүрт нэмэх шаардлагагүй.
@@ -31,6 +32,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <Toaster />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/sso" element={<SsoLanding />} />

@@ -1,10 +1,22 @@
-// Dashboard-ийн статистик талбар бүрийг тус тусад нь нуух/харуулах сонголт —
-// browser-т хадгалагдаж, дараагийн удаа нэвтрэхэд хэвээр үлдэнэ.
-const KEY = "pnl_dashboard_hidden_fields";
+// Хуудасны статистик талбар бүрийг тус тусад нь нуух/харуулах сонголт —
+// browser-т хадгалагдаж, дараагийн удаа нэвтрэхэд хэвээр үлдэнэ. Анх зөвхөн
+// Dashboard дээр байсан тул "dashboard" page-ийн key нь хуучин утгатайгаа
+// яг адилхан үлдсэн (одоо байгаа хэрэглэгчдийн хадгалсан төлөв алдагдахгүй) —
+// бусад хуудсууд page нэрээ дамжуулж өөрийн тусдаа key-гээр хадгална.
+const KEY_PREFIX = "pnl_dashboard_hidden_fields";
+const SECTIONS_KEY_PREFIX = "pnl_dashboard_collapsed_sections";
 
-export function getHiddenFields(): Set<string> {
+function hiddenKey(page: string): string {
+  return page === "dashboard" ? KEY_PREFIX : `${KEY_PREFIX}_${page}`;
+}
+
+function sectionsKey(page: string): string {
+  return page === "dashboard" ? SECTIONS_KEY_PREFIX : `${SECTIONS_KEY_PREFIX}_${page}`;
+}
+
+export function getHiddenFields(page: string = "dashboard"): Set<string> {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(hiddenKey(page));
     if (!raw) return new Set();
     const parsed = JSON.parse(raw);
     return new Set(Array.isArray(parsed) ? parsed.filter((v) => typeof v === "string") : []);
@@ -13,20 +25,18 @@ export function getHiddenFields(): Set<string> {
   }
 }
 
-export function saveHiddenFields(ids: Set<string>): void {
+export function saveHiddenFields(ids: Set<string>, page: string = "dashboard"): void {
   try {
-    localStorage.setItem(KEY, JSON.stringify([...ids]));
+    localStorage.setItem(hiddenKey(page), JSON.stringify([...ids]));
   } catch {
     // localStorage unavailable — чимээгүй алгасна.
   }
 }
 
 // Бүхэл бүлэг (Ерөнхий үзүүлэлт, Зардлын задаргаа г.м) хураангуйлагдсан эсэх.
-const SECTIONS_KEY = "pnl_dashboard_collapsed_sections";
-
-export function getCollapsedSections(): Set<string> {
+export function getCollapsedSections(page: string = "dashboard"): Set<string> {
   try {
-    const raw = localStorage.getItem(SECTIONS_KEY);
+    const raw = localStorage.getItem(sectionsKey(page));
     if (!raw) return new Set();
     const parsed = JSON.parse(raw);
     return new Set(Array.isArray(parsed) ? parsed.filter((v) => typeof v === "string") : []);
@@ -35,9 +45,9 @@ export function getCollapsedSections(): Set<string> {
   }
 }
 
-export function saveCollapsedSections(ids: Set<string>): void {
+export function saveCollapsedSections(ids: Set<string>, page: string = "dashboard"): void {
   try {
-    localStorage.setItem(SECTIONS_KEY, JSON.stringify([...ids]));
+    localStorage.setItem(sectionsKey(page), JSON.stringify([...ids]));
   } catch {
     // localStorage unavailable — чимээгүй алгасна.
   }
