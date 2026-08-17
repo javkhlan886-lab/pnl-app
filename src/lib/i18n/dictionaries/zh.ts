@@ -399,6 +399,7 @@ export const zh: Dictionary = {
     firstNamePlaceholder: "五",
     registerNumber: "登记号",
     registerNumberPlaceholder: "UB12345678",
+    durationEnabled: "设置工作期限",
     startDate: "入职日期",
     endDate: "离职日期",
     partner: "合作机构",

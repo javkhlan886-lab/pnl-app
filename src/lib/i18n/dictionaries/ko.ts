@@ -400,6 +400,7 @@ export const ko: Dictionary = {
     firstNamePlaceholder: "에르덴",
     registerNumber: "등록번호",
     registerNumberPlaceholder: "UB12345678",
+    durationEnabled: "근무 기간 설정",
     startDate: "입사일",
     endDate: "퇴사일",
     partner: "협력업체",

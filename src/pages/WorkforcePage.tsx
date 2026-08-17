@@ -114,6 +114,7 @@ export default function WorkforcePage() {
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [rateDisplay, setRateDisplay] = useState("");
+  const [durationEnabled, setDurationEnabled] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"" | "active" | "inactive">("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -199,7 +200,7 @@ export default function WorkforcePage() {
   const allSelected = filtered.length > 0 && filtered.every(i => selected.has(i._id!));
 
   const openCreate = () => {
-    setForm(EMPTY); setEditing(null); setRateDisplay(""); setOpen(true);
+    setForm(EMPTY); setEditing(null); setRateDisplay(""); setDurationEnabled(false); setOpen(true);
   };
   const openEdit = (item: any) => {
     setForm({
@@ -210,6 +211,7 @@ export default function WorkforcePage() {
     });
     setEditing(item._id);
     setRateDisplay(item.rate ? Number(item.rate).toLocaleString("mn-MN") : "");
+    setDurationEnabled(!!(item.startDate || item.endDate));
     setOpen(true);
   };
 
@@ -224,7 +226,12 @@ export default function WorkforcePage() {
       addRecent("workforce", "phone", form.phone);
       addRecent("workforce", "email", form.email);
       addRecent("workforce", "note", form.note);
-      const payload = { ...form, partnerId: form.partnerId || null };
+      const payload = {
+        ...form,
+        partnerId: form.partnerId || null,
+        startDate: durationEnabled ? form.startDate : "",
+        endDate: durationEnabled ? form.endDate : "",
+      };
       if (editing) {
         const updated = await updateWorkforce(editing, payload);
         setItems(prev => prev.map(i => i._id === editing ? updated : i));
@@ -567,15 +574,29 @@ export default function WorkforcePage() {
               <Label className="text-xs">{t.workforce.registerNumber}</Label>
               <Input value={form.registerNumber} onChange={e => setForm(f => ({ ...f, registerNumber: e.target.value }))} placeholder={t.workforce.registerNumberPlaceholder} className="h-9 text-sm" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs">{t.workforce.startDate}</Label>
-                <Input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} className="h-9 text-sm" />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs">{t.workforce.endDate}</Label>
-                <Input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} className="h-9 text-sm" />
-              </div>
+            <div className="flex flex-col gap-2">
+              <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground cursor-pointer select-none">
+                <input type="checkbox" className="w-4 h-4 cursor-pointer accent-positive"
+                  checked={durationEnabled}
+                  onChange={e => {
+                    const checked = e.target.checked;
+                    setDurationEnabled(checked);
+                    if (!checked) setForm(f => ({ ...f, startDate: "", endDate: "" }));
+                  }} />
+                {t.workforce.durationEnabled}
+              </label>
+              {durationEnabled && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <Label className="text-xs">{t.workforce.startDate}</Label>
+                    <Input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} className="h-9 text-sm" />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label className="text-xs">{t.workforce.endDate}</Label>
+                    <Input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} className="h-9 text-sm" />
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">{t.workforce.partner}</Label>

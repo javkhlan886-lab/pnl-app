@@ -401,6 +401,7 @@ export const mn = {
     firstNamePlaceholder: "Эрдэнэ",
     registerNumber: "Регистрийн дугаар",
     registerNumberPlaceholder: "УБ12345678",
+    durationEnabled: "Ажиллах хугацаа тохируулах",
     startDate: "Ажилд орсон огноо",
     endDate: "Ажлаас гарсан огноо",
     partner: "Түнш байгууллага",

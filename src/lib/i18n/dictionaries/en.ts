@@ -400,6 +400,7 @@ export const en: Dictionary = {
     firstNamePlaceholder: "Erdene",
     registerNumber: "Register number",
     registerNumberPlaceholder: "UB12345678",
+    durationEnabled: "Set work duration",
     startDate: "Start date",
     endDate: "End date",
     partner: "Partner organization",
