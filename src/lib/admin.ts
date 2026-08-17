@@ -14,3 +14,15 @@ export const changePnlLevel = (userId: string, level: 1 | 2 | 3 | 4, viewableUse
   api
     .patch<{ user: User }>(`/users/${userId}/pnl-level`, { level, viewableUserIds })
     .then((r) => r.data.user);
+
+// Keep in sync with PNL_MENU_KEYS in Saas Back's src/modules/users/users.schemas.ts.
+export const PNL_MENU_KEYS = [
+  "transactions", "products", "workforce", "assets",
+  "expenses", "receivables", "partners", "employees",
+] as const;
+export type PnlMenuKey = (typeof PNL_MENU_KEYS)[number];
+
+export const changeAdminCollabMenus = (userId: string, menus: string[]) =>
+  api
+    .patch<{ user: User }>(`/users/${userId}/pnl-admin-collab-menus`, { menus })
+    .then((r) => r.data.user);

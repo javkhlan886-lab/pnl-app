@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { useAuth } from "@/hooks/useAuth";
-import { getCompanyUsers, changePnlLevel } from "@/lib/admin";
+import { getCompanyUsers, changePnlLevel, changeAdminCollabMenus, PNL_MENU_KEYS, type PnlMenuKey } from "@/lib/admin";
 import { useLocale, format } from "@/hooks/useLocale";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { LayoutToggleButton } from "@/components/LayoutToggleButton";
@@ -36,6 +36,8 @@ export default function AdminUsersPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [assignFor, setAssignFor] = useState<User | null>(null);
   const [assignPicked, setAssignPicked] = useState<Set<string>>(new Set());
+  const [collabFor, setCollabFor] = useState<User | null>(null);
+  const [collabPicked, setCollabPicked] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
 
   const LEVEL_LABEL: Record<1 | 2 | 3 | 4, string> = {
@@ -43,6 +45,17 @@ export default function AdminUsersPage() {
     2: t.admin.level2,
     3: t.admin.level3,
     4: t.admin.level4,
+  };
+
+  const MENU_LABEL: Record<PnlMenuKey, string> = {
+    transactions: t.common.navTransactions,
+    products: t.common.navProducts,
+    workforce: t.common.navWorkforce,
+    assets: t.common.navAssets,
+    expenses: t.common.navExpenses,
+    receivables: t.common.navReceivables,
+    partners: t.common.navPartners,
+    employees: t.common.navEmployees,
   };
 
   const NAV_ITEMS = [
@@ -91,6 +104,26 @@ export default function AdminUsersPage() {
     if (!assignFor) return;
     applyLevel(assignFor, 3, Array.from(assignPicked));
     setAssignFor(null);
+  }
+
+  function openCollabDialog(target: User) {
+    setCollabPicked(new Set(target.pnlAdminCollabMenus ?? []));
+    setCollabFor(target);
+  }
+
+  async function confirmCollabMenus() {
+    if (!collabFor) return;
+    const target = collabFor;
+    setSavingId(target.id);
+    setCollabFor(null);
+    try {
+      const updated = await changeAdminCollabMenus(target.id, Array.from(collabPicked));
+      setUsers((prev) => prev?.map((u) => (u.id === updated.id ? updated : u)) ?? prev);
+    } catch {
+      setError(t.admin.saveError);
+    } finally {
+      setSavingId(null);
+    }
   }
 
   const otherUsers = (target: User) =>
@@ -193,6 +226,7 @@ export default function AdminUsersPage() {
                   <TableHead>{t.admin.colRole}</TableHead>
                   <TableHead>{t.admin.colLevel}</TableHead>
                   <TableHead>{t.admin.colViewable}</TableHead>
+                  <TableHead>{t.admin.colCollabMenus}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -233,12 +267,24 @@ export default function AdminUsersPage() {
                               : t.admin.viewableNone
                             : "—"}
                         </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={savingId === u.id}
+                            onClick={() => openCollabDialog(u)}
+                          >
+                            {u.pnlAdminCollabMenus?.length
+                              ? format(t.admin.collabMenusCount, { count: String(u.pnlAdminCollabMenus.length) })
+                              : t.admin.collabMenusButton}
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     );
                   })}
                 {filteredUsers.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
                       {t.admin.noUsers}
                     </TableCell>
                   </TableRow>
@@ -291,6 +337,42 @@ export default function AdminUsersPage() {
               {t.common.cancel}
             </Button>
             <Button onClick={confirmAssign}>{t.common.save}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!collabFor} onOpenChange={(open) => !open && setCollabFor(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t.admin.collabDialogTitle}</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground -mt-2">
+            {format(t.admin.collabDialogDesc, { name: collabFor?.name || collabFor?.email || "" })}
+          </p>
+          <div className="max-h-64 overflow-y-auto space-y-1.5 border rounded-md p-3">
+            {PNL_MENU_KEYS.map((menu) => (
+              <label key={menu} className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={collabPicked.has(menu)}
+                  onChange={(e) => {
+                    setCollabPicked((prev) => {
+                      const next = new Set(prev);
+                      if (e.target.checked) next.add(menu);
+                      else next.delete(menu);
+                      return next;
+                    });
+                  }}
+                />
+                {MENU_LABEL[menu]}
+              </label>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCollabFor(null)}>
+              {t.common.cancel}
+            </Button>
+            <Button onClick={confirmCollabMenus}>{t.common.save}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

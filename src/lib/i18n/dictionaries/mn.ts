@@ -639,6 +639,12 @@ export const mn = {
     assignDialogTitle: "Харах эрхтэй хэрэглэгчид",
     assignDialogDesc: "{name} нь өөрийн датагаас гадна доор сонгосон хэрэглэгчдийн PnL датаг харах болно.",
     noOtherUsers: "Сонгох боломжтой өөр хэрэглэгч алга.",
+    colCollabMenus: "Хамтран ажиллах цэс",
+    collabMenusButton: "Тохируулах",
+    collabMenusCount: "{count} цэс",
+    collabMenusNone: "Сонгоогүй",
+    collabDialogTitle: "Админтай хамтран ажиллах цэс",
+    collabDialogDesc: "{name} нь сонгосон цэс(үүд) дээр өөрийн датагаас гадна компанийн админы оруулсан датаг харж, засварлах боломжтой болно.",
   },
   chat: {
     fabLabel: "Таны туслах байна",

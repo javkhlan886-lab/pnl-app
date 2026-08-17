@@ -638,6 +638,12 @@ export const en: Dictionary = {
     assignDialogTitle: "Users they can view",
     assignDialogDesc: "{name} will see their own data plus the PnL data of the users selected below.",
     noOtherUsers: "No other users to select.",
+    colCollabMenus: "Collaboration menus",
+    collabMenusButton: "Configure",
+    collabMenusCount: "{count} menus",
+    collabMenusNone: "None selected",
+    collabDialogTitle: "Menus to collaborate with admin on",
+    collabDialogDesc: "On the selected menu(s), {name} will be able to see and edit the company admin's own data, in addition to their own.",
   },
   chat: {
     fabLabel: "Your assistant is here",

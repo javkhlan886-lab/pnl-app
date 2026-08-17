@@ -81,6 +81,10 @@ export interface User {
   // 4=own data only (default). See Saas Back's src/lib/scope.ts.
   pnlLevel?: number;
   pnlViewableUserIds?: string[];
+  // Menus this company_user may additionally view+modify the company
+  // admin(s)' own rows on, independent of pnlLevel. See Saas Back's
+  // src/lib/scope.ts (PnlMenu).
+  pnlAdminCollabMenus?: string[];
   createdAt?: string;
 }
 

@@ -638,6 +638,12 @@ export const ko: Dictionary = {
     assignDialogTitle: "열람 가능한 사용자",
     assignDialogDesc: "{name} 님은 본인 데이터 외에 아래에서 선택한 사용자의 PnL 데이터를 볼 수 있습니다.",
     noOtherUsers: "선택 가능한 다른 사용자가 없습니다.",
+    colCollabMenus: "협업 메뉴",
+    collabMenusButton: "설정",
+    collabMenusCount: "{count}개 메뉴",
+    collabMenusNone: "선택 안 함",
+    collabDialogTitle: "관리자와 협업할 메뉴",
+    collabDialogDesc: "선택한 메뉴에서 {name} 님은 본인 데이터 외에 회사 관리자가 입력한 데이터도 보고 수정할 수 있습니다.",
   },
   chat: {
     fabLabel: "당신의 도우미가 있습니다",

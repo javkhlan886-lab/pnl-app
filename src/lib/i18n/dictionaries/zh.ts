@@ -637,6 +637,12 @@ export const zh: Dictionary = {
     assignDialogTitle: "可查看的用户",
     assignDialogDesc: "{name} 除自己的数据外，还可查看下方所选用户的 PnL 数据。",
     noOtherUsers: "没有其他可选用户。",
+    colCollabMenus: "协作菜单",
+    collabMenusButton: "设置",
+    collabMenusCount: "{count} 个菜单",
+    collabMenusNone: "未选择",
+    collabDialogTitle: "与管理员协作的菜单",
+    collabDialogDesc: "在所选菜单中，{name} 除自己的数据外，还可以查看并编辑公司管理员本人录入的数据。",
   },
   chat: {
     fabLabel: "智能助手",
