@@ -5,7 +5,9 @@ import { SAAS_FRONT_URL } from "@/lib/constants";
 // pnl-backend. Point VITE_API_URL at the Saas Back deployment.
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:4000",
-  headers: { "Content-Type": "application/json" },
+  // Lets Saas Back scope newly-created rows to this specific service —
+  // see src/lib/scope.ts's serviceFilter() on the backend.
+  headers: { "Content-Type": "application/json", "X-Service-Key": "pnl-app" },
 });
 
 api.interceptors.request.use((config) => {
