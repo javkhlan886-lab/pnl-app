@@ -314,12 +314,15 @@ export default function ProductPage() {
     setOpen(true);
   };
 
-  // Үлдэгдэл 0 болмогц статус автоматаар "Дуусан" болно — гараар "Дуусан"
-  // сонгоход үлдэгдэлтэй байвал handleStatusChange үүнийг хориглоно.
+  // Үлдэгдэл 0 болмогц статус автоматаар "Дуусан" болно, эргээд нөхөн
+  // дүүргэгдэхэд "Идэвхтэй" рүү автоматаар буцна (сервертэй ижил дүрэм,
+  // server-side мөн адил хэрэгжсэн deriveProductStatus() дотор). Гараар
+  // "Дуусан" сонгоход үлдэгдэлтэй байвал handleStatusChange үүнийг хориглоно.
   useEffect(() => {
     const remaining = form.quantity - form.issuedQty;
-    if (remaining <= 0 && form.status !== "inactive") {
-      setForm(f => ({ ...f, status: "inactive" }));
+    const next = remaining <= 0 ? "inactive" : (form.status === "inactive" ? "active" : form.status);
+    if (next !== form.status) {
+      setForm(f => ({ ...f, status: next }));
     }
   }, [form.quantity, form.issuedQty]);
 
