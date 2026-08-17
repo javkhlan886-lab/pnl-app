@@ -49,6 +49,8 @@ export interface Transaction {
   note?: string | null;
   importedFrom?: string | null;
   createdAt?: string;
+  productId?: string | null;
+  quantity?: number | null;
 }
 
 export interface ContractSummary {
