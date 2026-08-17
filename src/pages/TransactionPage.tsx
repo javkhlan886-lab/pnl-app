@@ -12,6 +12,7 @@ import {
   exportTransactions, deleteTransaction, createTransaction, updateTransaction,
 } from "@/lib/transaction";
 import { getPNLList } from "@/lib/pnl";
+import { getProducts, type Product } from "@/lib/product";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { getRecent, addRecent } from "@/lib/recentValues";
 import { toast } from "@/lib/toast";
@@ -34,6 +35,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Combobox } from "@/components/ui/combobox";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
   ChevronLeft, BarChart2, TableIcon, Upload, Download, Search,
   FileText, TrendingUp, TrendingDown, X, Trash2, Plus, Users, Box, Receipt,
@@ -51,6 +53,18 @@ const formatAmount = (raw: string): string => {
 const parseAmount = (formatted: string): number =>
   parseFloat(formatted.replace(/[^0-9]/g, "")) || 0;
 
+// Duplicated from ProductPage.tsx — keep in sync. Accounts for an active
+// discount window when computing the product's current selling price.
+const sellingPrice = (p: Product): number => {
+  const pct = p.discountPercent || 0;
+  if (pct <= 0) return p.price;
+  if (p.status === "inactive") return p.price * (1 - pct / 100);
+  const now = Date.now();
+  if (p.discountStartDate && new Date(p.discountStartDate).getTime() > now) return p.price;
+  if (p.discountEndDate && new Date(p.discountEndDate).getTime() < now) return p.price;
+  return p.price * (1 - pct / 100);
+};
+
 // Чөлөөт текст утга — backend-д хадгалагддаг тул хэлээр орчуулахгүй.
 const CATEGORIES_INC = ["Борлуулалт", "Зээл буцаалт", "Хүүгийн орлого", "Бусад орлого"];
 const CATEGORIES_EXP = ["Цалин", "НД / Татвар", "Түрээс", "Тээвэр", "Материал", "Татвар", "Зээл", "Эмчилгээ", "Офис", "Бусад"];
@@ -65,6 +79,8 @@ interface NewTx {
   category: string;
   contractNumber: string;
   note: string;
+  productId: string;
+  quantity: string;
 }
 
 const EMPTY_TX: NewTx = {
@@ -75,6 +91,8 @@ const EMPTY_TX: NewTx = {
   category: "Борлуулалт",
   contractNumber: "",
   note: "",
+  productId: "",
+  quantity: "",
 };
 
 export default function TransactionPage() {
@@ -130,6 +148,12 @@ export default function TransactionPage() {
       setPnlContracts(options);
     }).catch(() => setPnlContracts([]));
   }, []);
+
+  const [products, setProducts] = useState<Product[]>([]);
+  useEffect(() => {
+    getProducts().then(setProducts).catch(() => setProducts([]));
+  }, []);
+  const selectedProduct = products.find(p => p._id === newTx.productId) ?? null;
 
   const NAV_ITEMS = [
     { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
@@ -293,8 +317,13 @@ export default function TransactionPage() {
     if (!newTx.description.trim()) { setSaveError(t.transactions.descRequired); return; }
     const amount = parseAmount(newTx.amount);
     if (!amount || amount <= 0) { setSaveError(t.transactions.amountRequired); return; }
+    if (newTx.type === "income" && newTx.productId && !(Number(newTx.quantity) > 0)) {
+      setSaveError(t.transactions.quantityRequired);
+      return;
+    }
     setSaving(true);
     try {
+      const linkProduct = newTx.type === "income" && !!newTx.productId;
       const payload = {
         date: newTx.date,
         description: newTx.description.trim(),
@@ -305,6 +334,8 @@ export default function TransactionPage() {
         note: newTx.note.trim(),
         currency: "₮",
         status: "approved",
+        productId: linkProduct ? newTx.productId : null,
+        quantity: linkProduct ? Number(newTx.quantity) : null,
       };
       addCustomCategory(newTx.type === "income" ? "transactions_income" : "transactions_expense", newTx.category);
       addRecent("transactions", "description", payload.description);
@@ -343,6 +374,8 @@ export default function TransactionPage() {
       category: tx.category,
       contractNumber: tx.contractNumber ?? "",
       note: tx.note ?? "",
+      productId: tx.productId ?? "",
+      quantity: tx.quantity != null ? String(tx.quantity) : "",
     });
     setSaveError("");
     setShowModal(true);
@@ -472,6 +505,8 @@ export default function TransactionPage() {
                       ...prev,
                       type: txType,
                       category: txType === "income" ? CATEGORIES_INC[0] : CATEGORIES_EXP[0],
+                      productId: txType === "income" ? prev.productId : "",
+                      quantity: txType === "income" ? prev.quantity : "",
                     }));
                   }}
                     className={`flex-1 py-2.5 rounded-xl text-sm font-medium border-2 transition-colors ${
@@ -487,6 +522,64 @@ export default function TransactionPage() {
                   </button>
                 ))}
               </div>
+
+              {newTx.type === "income" && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-2 space-y-1.5">
+                    <Label className="text-xs">{t.transactions.productLabel}</Label>
+                    <SearchableSelect
+                      value={newTx.productId}
+                      onChange={(id) => {
+                        const product = products.find(p => p._id === id) ?? null;
+                        setNewTx(p => ({
+                          ...p,
+                          productId: id,
+                          amount: product && p.quantity
+                            ? formatAmount(String(sellingPrice(product) * Number(p.quantity)))
+                            : p.amount,
+                        }));
+                      }}
+                      options={products.map(p => ({
+                        id: p._id,
+                        label: `${p.name} (${p.remainingQty}${p.unit ? " " + p.unit : ""})`,
+                      }))}
+                      placeholder={t.transactions.productPlaceholder}
+                    />
+                    {selectedProduct && (
+                      <p className="text-xs text-muted-foreground">
+                        {format(t.transactions.remainingStockLine, {
+                          count: String(selectedProduct.remainingQty),
+                          unit: selectedProduct.unit ? ` ${selectedProduct.unit}` : "",
+                        })}
+                        {" · "}₮{sellingPrice(selectedProduct).toLocaleString("mn-MN")}
+                      </p>
+                    )}
+                  </div>
+                  {newTx.productId && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">{t.transactions.quantityLabel}</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={newTx.quantity}
+                        onChange={e => {
+                          const quantity = e.target.value;
+                          setNewTx(p => ({
+                            ...p,
+                            quantity,
+                            amount: selectedProduct && quantity
+                              ? formatAmount(String(sellingPrice(selectedProduct) * Number(quantity)))
+                              : p.amount,
+                          }));
+                        }}
+                        placeholder="0"
+                        className="h-9 text-sm text-right"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
