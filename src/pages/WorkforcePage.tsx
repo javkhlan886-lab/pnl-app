@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { getWorkforce, createWorkforce, updateWorkforce, deleteWorkforce } from "@/lib/workforce";
+import { getPartners } from "@/lib/partner";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocale, format } from "@/hooks/useLocale";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -25,8 +26,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Combobox } from "@/components/ui/combobox";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { getRecent, addRecent } from "@/lib/recentValues";
 import { toast } from "@/lib/toast";
+import { toDateInputValue } from "@/lib/utils";
 import { setAiPageContext } from "@/lib/aiPageContext";
 import { useLayoutMode } from "@/lib/layoutMode";
 import { Sidebar } from "@/components/Sidebar";
@@ -34,7 +37,9 @@ import { Plus, Pencil, Trash2, ChevronLeft, ChevronDown, BarChart2, Users, Box, 
 
 interface WorkforceRecord {
   _id?: string;
-  name: string;
+  lastName: string;
+  firstName: string;
+  registerNumber: string;
   address: string;
   phone: string;
   email: string;
@@ -42,23 +47,29 @@ interface WorkforceRecord {
   rate: number;
   status: "active" | "inactive";
   note: string;
+  startDate: string;
+  endDate: string;
+  partnerId: string;
 }
 
 const EMPTY: WorkforceRecord = {
-  name: "", address: "", phone: "", email: "", skills: "", rate: 0, status: "active", note: "",
+  lastName: "", firstName: "", registerNumber: "", address: "", phone: "", email: "", skills: "",
+  rate: 0, status: "active", note: "", startDate: "", endDate: "", partnerId: "",
 };
+
+const fullName = (item: WorkforceRecord) => [item.lastName, item.firstName].filter(Boolean).join(" ");
 
 const fmt = (n: number) => "₮" + Math.round(n).toLocaleString("mn-MN");
 
 const PAGE_SIZE = 20;
 
-type SortKey = "index" | "name" | "phone" | "skills" | "rate" | "status";
+type SortKey = "index" | "fullName" | "phone" | "skills" | "rate" | "status";
 
 // Баганын толгой дээр дарахад ижил утгатай мөрүүд зэрэгцэн эрэмбэлэгдэж харагдана.
 const sortValue = (item: WorkforceRecord, idx: number, key: SortKey): string | number => {
   switch (key) {
     case "index": return idx;
-    case "name": return (item.name || "").toLowerCase();
+    case "fullName": return fullName(item).toLowerCase();
     case "phone": return (item.phone || "").toLowerCase();
     case "skills": return (item.skills || "").toLowerCase();
     case "rate": return item.rate;
@@ -122,6 +133,9 @@ export default function WorkforcePage() {
 
   useEffect(() => { load(); }, [load]);
 
+  const [partners, setPartners] = useState<{ _id: string; name: string }[]>([]);
+  useEffect(() => { getPartners().then(setPartners).catch(() => setPartners([])); }, []);
+
   const activeCount = items.filter(i => i.status === "active").length;
 
   useEffect(() => {
@@ -136,7 +150,12 @@ export default function WorkforcePage() {
     if (statusFilter && i.status !== statusFilter) return false;
     if (search.trim()) {
       const q = search.trim().toLowerCase();
-      if (!i.name.toLowerCase().includes(q) && !(i.phone || "").toLowerCase().includes(q) && !(i.skills || "").toLowerCase().includes(q)) return false;
+      if (
+        !fullName(i).toLowerCase().includes(q)
+        && !(i.phone || "").toLowerCase().includes(q)
+        && !(i.skills || "").toLowerCase().includes(q)
+        && !(i.registerNumber || "").toLowerCase().includes(q)
+      ) return false;
     }
     return true;
   });
@@ -183,26 +202,34 @@ export default function WorkforcePage() {
     setForm(EMPTY); setEditing(null); setRateDisplay(""); setOpen(true);
   };
   const openEdit = (item: any) => {
-    setForm(item); setEditing(item._id);
+    setForm({
+      ...item,
+      startDate: toDateInputValue(item.startDate),
+      endDate: toDateInputValue(item.endDate),
+      partnerId: item.partnerId ?? "",
+    });
+    setEditing(item._id);
     setRateDisplay(item.rate ? Number(item.rate).toLocaleString("mn-MN") : "");
     setOpen(true);
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) return;
+    if (!form.lastName.trim() || !form.firstName.trim()) return;
     setSaving(true);
     try {
-      addRecent("workforce", "name", form.name);
+      addRecent("workforce", "lastName", form.lastName);
+      addRecent("workforce", "firstName", form.firstName);
       addRecent("workforce", "skills", form.skills);
       addRecent("workforce", "address", form.address);
       addRecent("workforce", "phone", form.phone);
       addRecent("workforce", "email", form.email);
       addRecent("workforce", "note", form.note);
+      const payload = { ...form, partnerId: form.partnerId || null };
       if (editing) {
-        const updated = await updateWorkforce(editing, form);
+        const updated = await updateWorkforce(editing, payload);
         setItems(prev => prev.map(i => i._id === editing ? updated : i));
       } else {
-        const created = await createWorkforce(form);
+        const created = await createWorkforce(payload);
         setItems(prev => [created, ...prev]);
       }
       setOpen(false);
@@ -427,7 +454,7 @@ export default function WorkforcePage() {
                     <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 cursor-pointer accent-positive" />
                   </TableHead>
                   <SortableHead sortKeyName="index" label={t.workforce.colIndex} className="w-6" />
-                  <SortableHead sortKeyName="name" label={t.workforce.colName} />
+                  <SortableHead sortKeyName="fullName" label={t.workforce.colName} />
                   <SortableHead sortKeyName="phone" label={t.workforce.colPhone} />
                   <SortableHead sortKeyName="skills" label={t.workforce.colSkills} />
                   <SortableHead sortKeyName="rate" label={t.workforce.colRate} align="right" />
@@ -444,7 +471,7 @@ export default function WorkforcePage() {
                       <input type="checkbox" checked={selected.has(item._id!)} onChange={() => toggleOne(item._id!)} className="w-4 h-4 cursor-pointer accent-positive" />
                     </TableCell>
                     <TableCell className="px-1.5 text-muted-foreground text-xs">{idx + 1}</TableCell>
-                    <TableCell className="px-1.5 font-medium blur-number">{item.name}</TableCell>
+                    <TableCell className="px-1.5 font-medium blur-number">{fullName(item)}</TableCell>
                     <TableCell className="px-1.5 text-muted-foreground text-sm">{item.phone || "—"}</TableCell>
                     <TableCell className="px-1.5 text-muted-foreground text-sm max-w-xs truncate">{item.skills || "—"}</TableCell>
                     <TableCell className="px-1.5 text-right stat-number">{fmt(item.rate)}</TableCell>
@@ -526,9 +553,38 @@ export default function WorkforcePage() {
             <DialogTitle>{editing ? t.workforce.editTitle : t.workforce.newTitle}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-3 py-2 max-h-[60vh] overflow-y-auto pr-1">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs">{t.workforce.lastName}</Label>
+                <Combobox value={form.lastName} onChange={v => setForm(f => ({ ...f, lastName: v }))} options={getRecent("workforce", "lastName")} placeholder={t.workforce.lastNamePlaceholder} className="h-9 text-sm" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs">{t.workforce.firstName}</Label>
+                <Combobox value={form.firstName} onChange={v => setForm(f => ({ ...f, firstName: v }))} options={getRecent("workforce", "firstName")} placeholder={t.workforce.firstNamePlaceholder} className="h-9 text-sm" />
+              </div>
+            </div>
             <div className="flex flex-col gap-1.5">
-              <Label className="text-xs">{t.workforce.name}</Label>
-              <Combobox value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} options={getRecent("workforce", "name")} placeholder={t.workforce.namePlaceholder} className="h-9 text-sm" />
+              <Label className="text-xs">{t.workforce.registerNumber}</Label>
+              <Input value={form.registerNumber} onChange={e => setForm(f => ({ ...f, registerNumber: e.target.value }))} placeholder={t.workforce.registerNumberPlaceholder} className="h-9 text-sm" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs">{t.workforce.startDate}</Label>
+                <Input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} className="h-9 text-sm" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs">{t.workforce.endDate}</Label>
+                <Input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} className="h-9 text-sm" />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs">{t.workforce.partner}</Label>
+              <SearchableSelect
+                value={form.partnerId}
+                onChange={v => setForm(f => ({ ...f, partnerId: v }))}
+                options={[{ id: "", label: t.workforce.partnerNone }, ...partners.map(p => ({ id: p._id, label: p.name }))]}
+                placeholder={t.workforce.partnerNone}
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">{t.workforce.address}</Label>
@@ -580,7 +636,7 @@ export default function WorkforcePage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>{t.common.cancel}</Button>
-            <Button onClick={handleSave} disabled={saving || !form.name.trim()}
+            <Button onClick={handleSave} disabled={saving || !form.lastName.trim() || !form.firstName.trim()}
               className="bg-positive text-background hover:bg-positive/90">
               {saving ? t.common.saving : editing ? t.common.save : t.common.add}
             </Button>
