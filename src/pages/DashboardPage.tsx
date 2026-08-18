@@ -29,6 +29,9 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { getExpenses } from "@/lib/expense";
+import { getEmployees } from "@/lib/employee";
 import { PlusCircle, Pencil, Trash2, Download, TrendingUp, TrendingDown, BarChart2, Users, Box, Receipt, ArrowLeftRight, TableIcon, ChevronDown, ShieldCheck, HardHat, Handshake, EyeOff, Package, Search } from "lucide-react";
 
 // ── Оруулсан хэрэглэгчийг харуулах туслах функцууд ──────────────────────────
@@ -96,7 +99,9 @@ export default function DashboardPage() {
   const [page, setPage] = useState(1);
   const [hiddenFields, setHiddenFields] = useState<Set<string>>(() => getHiddenFields());
   const [period, setPeriod] = useState<"" | "7d" | "1m" | "3m">("");
-  const [expandedCard, setExpandedCard] = useState<"income" | "opex" | null>(null);
+  const [breakdownOpen, setBreakdownOpen] = useState<"income" | "opex" | null>(null);
+  const [expenses, setExpenses] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
 
   const toggleFieldHidden = (id: string) => {
     setHiddenFields(prev => {
@@ -294,6 +299,12 @@ export default function DashboardPage() {
       .then(setRecords)
       .catch(() => setError(t.dashboard.loadError))
       .finally(() => setLoading(false));
+    // Зөвхөн "Үйл ажиллагааны зардал" картын задаргаа (Зардал + Ажилчдын
+    // цалин) мөр мөрөөр нь харуулахад хэрэгтэй — алдаа гарвал зөвхөн тэр
+    // модал хоосон харагдана, самбарын үндсэн дүн (backend-ийн /summary)
+    // үүнээс хамаардаггүй тул чимээгүй орхино.
+    getExpenses({ status: "approved" }).then(setExpenses).catch(() => {});
+    getEmployees().then(setEmployees).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -397,11 +408,57 @@ export default function DashboardPage() {
       ? active.filter((r) => r.date && new Date(r.date) >= periodSince)
       : active;
     return inPeriod
-      .map((r) => ({ id: r._id, name: r.company || "—", amount: totalIncome(r) }))
+      .map((r) => ({
+        id: r._id, date: r.date, name: r.company || "—",
+        contractNumber: r.contractNumber || "—", amount: totalIncome(r),
+      }))
       .filter((x) => x.amount !== 0)
-      .sort((a, b) => b.amount - a.amount);
+      .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [records, period]);
+
+  // "Үйл ажиллагааны зардал" картын мөр мөрөөр задаргаа — backend-ийн
+  // /summary-тэй яг ижил тодорхойлолт ашиглана: Зардал = office+other
+  // төрлийн Expense; Ажилчдын цалин = идэвхтэй ажилтан бүрийн
+  // baseSalary+НД+НДШТ, сонгосон хугацаагаар (сарын харьцаагаар) хувь
+  // тэнцүүлсэн — server талын proration-той адилхан.
+  const opexBreakdown = useMemo(() => {
+    const expenseRows = expenses
+      .filter((e) => (e.type === "office" || e.type === "other") && (!periodSince || (e.date && new Date(e.date) >= periodSince)))
+      .map((e) => ({
+        id: e._id, date: e.date, label: e.description || e.category || t.dashboard.breakdownGeneralExpense,
+        kind: "expense" as const, amount: Number(e.amount),
+      }));
+
+    const salaryProration = periodSince ? PERIOD_DAYS[period] / AVG_DAYS_PER_MONTH : 1;
+    const salaryRows = employees
+      .filter((e) => e.status === "active")
+      .map((e) => {
+        const nd = Math.round((Number(e.baseSalary) * Number(e.ndRate)) / 100);
+        const ndsht = Math.round((Number(e.baseSalary) * Number(e.ndshtRate)) / 100);
+        return {
+          id: e._id, date: null as string | null,
+          label: [e.name, e.position].filter(Boolean).join(" — ") || t.dashboard.breakdownSalaryExpense,
+          kind: "salary" as const,
+          amount: Math.round((Number(e.baseSalary) + nd + ndsht) * salaryProration),
+        };
+      });
+
+    return [...expenseRows, ...salaryRows]
+      .filter((x) => x.amount !== 0)
+      .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expenses, employees, period]);
+
+  const periodRangeLabel = useMemo(() => {
+    if (!period) return t.dashboard.dateRangeAllTime;
+    const label = period === "7d" ? t.dashboard.period7d : period === "1m" ? t.dashboard.period1m : t.dashboard.period3m;
+    const end = new Date();
+    const start = new Date(Date.now() - PERIOD_DAYS[period] * 86400000);
+    const fmtDay = (d: Date) => d.toISOString().slice(0, 10);
+    return `${label} (${fmtDay(start)} — ${fmtDay(end)})`;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period]);
 
   // Сарын орлогын хандлага — идэвхтэй тайлангуудыг огноогоор нь сараар
   // бүлэглэж, сүүлийн 6 сарыг он-цагийн дарааллаар харуулна.
@@ -626,7 +683,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
               {!hiddenFields.has("income") && (
                 <div className="glass-card glass-card-positive px-3.5 py-3 cursor-pointer"
-                  onClick={() => setExpandedCard((c) => (c === "income" ? null : "income"))}>
+                  onClick={() => setBreakdownOpen("income")}>
                   <HideFieldBtn id="income" />
                   <div className="relative flex items-center justify-between mb-1.5">
                     <p className="text-xs text-muted-foreground truncate">{t.dashboard.statIncome}</p>
@@ -637,25 +694,13 @@ export default function DashboardPage() {
                     <p className="text-[11px] text-muted-foreground">
                       {format(t.dashboard.statIncomeCount, { count: String(displaySummary.pnlCount) })}
                     </p>
-                    <ChevronDown className={`w-3 h-3 text-muted-foreground transition-transform ${expandedCard === "income" ? "rotate-180" : ""}`} />
+                    <ChevronDown className="w-3 h-3 text-muted-foreground -rotate-90" />
                   </div>
-                  {expandedCard === "income" && (
-                    <div className="relative mt-2.5 pt-2.5 border-t border-border/40 space-y-1" onClick={(e) => e.stopPropagation()}>
-                      {incomeBreakdown.length === 0 ? (
-                        <p className="text-[11px] text-muted-foreground">{t.dashboard.breakdownEmpty}</p>
-                      ) : incomeBreakdown.map((row) => (
-                        <div key={row.id} className="flex items-center justify-between gap-2 text-[11px]">
-                          <span className="text-muted-foreground truncate">{row.name}</span>
-                          <span className="font-medium shrink-0">{fmt(row.amount, "₮")}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               )}
               {!hiddenFields.has("opex") && (
                 <div className="glass-card glass-card-negative px-3.5 py-3 cursor-pointer"
-                  onClick={() => setExpandedCard((c) => (c === "opex" ? null : "opex"))}>
+                  onClick={() => setBreakdownOpen("opex")}>
                   <HideFieldBtn id="opex" />
                   <div className="relative flex items-center justify-between mb-1.5">
                     <p className="text-xs text-muted-foreground truncate">{t.dashboard.statOpEx}</p>
@@ -664,26 +709,8 @@ export default function DashboardPage() {
                   <p className="relative stat-number text-lg font-bold leading-tight">{fmt(displaySummary.totalOperatingExpense, "₮")}</p>
                   <div className="relative flex items-center justify-between mt-0.5">
                     <p className="text-[11px] text-muted-foreground">{t.dashboard.statOpExSub}</p>
-                    <ChevronDown className={`w-3 h-3 text-muted-foreground transition-transform ${expandedCard === "opex" ? "rotate-180" : ""}`} />
+                    <ChevronDown className="w-3 h-3 text-muted-foreground -rotate-90" />
                   </div>
-                  {expandedCard === "opex" && (
-                    <div className="relative mt-2.5 pt-2.5 border-t border-border/40 space-y-1" onClick={(e) => e.stopPropagation()}>
-                      {summary ? (
-                        <>
-                          <div className="flex items-center justify-between gap-2 text-[11px]">
-                            <span className="text-muted-foreground">{t.dashboard.breakdownGeneralExpense}</span>
-                            <span className="font-medium">{fmt(summary.officeExpense + summary.otherExpense, "₮")}</span>
-                          </div>
-                          <div className="flex items-center justify-between gap-2 text-[11px]">
-                            <span className="text-muted-foreground">{t.dashboard.breakdownSalaryExpense}</span>
-                            <span className="font-medium">{fmt(summary.salaryExpense, "₮")}</span>
-                          </div>
-                        </>
-                      ) : (
-                        <p className="text-[11px] text-muted-foreground">{t.dashboard.breakdownEmpty}</p>
-                      )}
-                    </div>
-                  )}
                 </div>
               )}
               {!hiddenFields.has("operatingProfit") && (
@@ -1008,6 +1035,88 @@ export default function DashboardPage() {
       </main>
       </div>
     </div>
+
+      <Dialog open={breakdownOpen === "income"} onOpenChange={(o) => setBreakdownOpen(o ? "income" : null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader className="flex-row items-center gap-3 space-y-0">
+            <span className="icon-badge-positive w-9 h-9 shrink-0"><BarChart2 className="w-4 h-4" /></span>
+            <div>
+              <DialogTitle>{t.dashboard.incomeBreakdownTitle}</DialogTitle>
+              <DialogDescription>{t.dashboard.statIncome} · {periodRangeLabel}</DialogDescription>
+            </div>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto -mx-6 px-6">
+            {incomeBreakdown.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">{t.dashboard.breakdownEmpty}</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>№</TableHead>
+                    <TableHead>{t.dashboard.colDate}</TableHead>
+                    <TableHead>{t.dashboard.colOrgName}</TableHead>
+                    <TableHead>{t.dashboard.colContractNumber}</TableHead>
+                    <TableHead className="text-right">{t.dashboard.filteredIncome}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {incomeBreakdown.map((row, i) => (
+                    <TableRow key={row.id}>
+                      <TableCell className="text-muted-foreground">{i + 1}</TableCell>
+                      <TableCell className="text-muted-foreground">{fmtDate(row.date)}</TableCell>
+                      <TableCell className="font-medium">{row.name}</TableCell>
+                      <TableCell className="text-muted-foreground">{row.contractNumber}</TableCell>
+                      <TableCell className="text-right text-positive font-medium stat-number">{fmt(row.amount, "₮")}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={breakdownOpen === "opex"} onOpenChange={(o) => setBreakdownOpen(o ? "opex" : null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader className="flex-row items-center gap-3 space-y-0">
+            <span className="icon-badge-negative w-9 h-9 shrink-0"><TrendingDown className="w-4 h-4" /></span>
+            <div>
+              <DialogTitle>{t.dashboard.opexBreakdownTitle}</DialogTitle>
+              <DialogDescription>{t.dashboard.statOpExSub} · {periodRangeLabel}</DialogDescription>
+            </div>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto -mx-6 px-6">
+            {opexBreakdown.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">{t.dashboard.breakdownEmpty}</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>№</TableHead>
+                    <TableHead>{t.dashboard.colDate}</TableHead>
+                    <TableHead>{t.dashboard.colDescription}</TableHead>
+                    <TableHead>{t.dashboard.colType}</TableHead>
+                    <TableHead className="text-right">{t.dashboard.colAmount}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {opexBreakdown.map((row, i) => (
+                    <TableRow key={row.id}>
+                      <TableCell className="text-muted-foreground">{i + 1}</TableCell>
+                      <TableCell className="text-muted-foreground">{row.date ? fmtDate(row.date) : "—"}</TableCell>
+                      <TableCell className="font-medium">{row.label}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {row.kind === "salary" ? t.dashboard.typeSalaryShort : t.dashboard.breakdownGeneralExpense}
+                      </TableCell>
+                      <TableCell className="text-right text-negative font-medium stat-number">{fmt(row.amount, "₮")}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
