@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getPNLList, deletePNL, updatePNL } from "@/lib/pnl";
-import { getTransactions } from "@/lib/transaction";
 import { useAuth } from "@/hooks/useAuth";
 import { PNLRecord } from "@/types";
 import { fmt, fmtDate } from "@/lib/utils";
@@ -30,7 +29,7 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { PlusCircle, Pencil, Trash2, Download, TrendingUp, TrendingDown, BarChart2, CheckCircle, Users, Box, Receipt, ArrowLeftRight, TableIcon, ChevronDown, ShieldCheck, HardHat, Handshake, Eye, EyeOff, Package, Search } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Download, TrendingUp, TrendingDown, BarChart2, Users, Box, Receipt, ArrowLeftRight, TableIcon, ChevronDown, ShieldCheck, HardHat, Handshake, EyeOff, Package, Search } from "lucide-react";
 
 // ── Оруулсан хэрэглэгчийг харуулах туслах функцууд ──────────────────────────
 // owner талбарыг backend зөвхөн Level 1, 2 (admin, manager)-д илгээдэг.
@@ -95,8 +94,6 @@ export default function DashboardPage() {
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [page, setPage] = useState(1);
-  const [txSummary, setTxSummary] = useState<{ totalIncome: number; totalExpense: number } | null>(null);
-  const [txBlurred, setTxBlurred] = useState(false);
   const [hiddenFields, setHiddenFields] = useState<Set<string>>(() => getHiddenFields());
 
   const toggleFieldHidden = (id: string) => {
@@ -287,10 +284,6 @@ export default function DashboardPage() {
         setSummary(null);
         setSummaryError(t.dashboard.summaryError);
       });
-
-    getTransactions({ limit: 1 })
-      .then((r) => setTxSummary({ totalIncome: r.summary.totalIncome, totalExpense: r.summary.totalExpense }))
-      .catch(() => setTxSummary(null));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -592,7 +585,7 @@ export default function DashboardPage() {
               <SectionHideBtn id="main" />
             </div>
             {!collapsedSections.has("main") && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
               {!hiddenFields.has("income") && (
                 <div className="glass-card glass-card-positive px-3.5 py-3">
                   <HideFieldBtn id="income" />
@@ -617,28 +610,17 @@ export default function DashboardPage() {
                   <p className="relative text-[11px] text-muted-foreground mt-0.5">{t.dashboard.statOpExSub}</p>
                 </div>
               )}
-              {!hiddenFields.has("netProfit") && (
-                <div className={`glass-card ${displaySummary.netProfit >= 0 ? "glass-card-positive" : "glass-card-negative"} px-3.5 py-3`}>
-                  <HideFieldBtn id="netProfit" />
+              {!hiddenFields.has("operatingProfit") && (
+                <div className={`glass-card ${displaySummary.pnlIncome - displaySummary.totalOperatingExpense >= 0 ? "glass-card-positive" : "glass-card-negative"} px-3.5 py-3`}>
+                  <HideFieldBtn id="operatingProfit" />
                   <div className="relative flex items-center justify-between mb-1.5">
-                    <p className="text-xs text-muted-foreground truncate">{t.dashboard.statNetProfit}</p>
-                    <span className={`${displaySummary.netProfit >= 0 ? "icon-badge-positive" : "icon-badge-negative"} w-7 h-7 shrink-0`}><TrendingUp className="w-3.5 h-3.5" /></span>
+                    <p className="text-xs text-muted-foreground truncate">{t.dashboard.statOperatingProfit}</p>
+                    <span className={`${displaySummary.pnlIncome - displaySummary.totalOperatingExpense >= 0 ? "icon-badge-positive" : "icon-badge-negative"} w-7 h-7 shrink-0`}><TrendingUp className="w-3.5 h-3.5" /></span>
                   </div>
-                  <p className="relative stat-number text-lg font-bold leading-tight blur-number">{fmt(displaySummary.netProfit, "₮")}</p>
+                  <p className="relative stat-number text-lg font-bold leading-tight blur-number">{fmt(displaySummary.pnlIncome - displaySummary.totalOperatingExpense, "₮")}</p>
                   <p className="relative text-[11px] text-muted-foreground mt-0.5">
-                    {format(t.dashboard.statMargin, { margin: String(displaySummary.margin) })}
+                    {format(t.dashboard.statMargin, { margin: String(displaySummary.pnlIncome > 0 ? Math.round(((displaySummary.pnlIncome - displaySummary.totalOperatingExpense) / displaySummary.pnlIncome) * 100) : 0) })}
                   </p>
-                </div>
-              )}
-              {displaySummary.netPosition != null && !hiddenFields.has("netPosition") && (
-                <div className={`glass-card ${displaySummary.netPosition >= 0 ? "glass-card-positive" : "glass-card-negative"} px-3.5 py-3`}>
-                  <HideFieldBtn id="netPosition" />
-                  <div className="relative flex items-center justify-between mb-1.5">
-                    <p className="text-xs text-muted-foreground truncate">{t.dashboard.statNetPosition}</p>
-                    <span className={`${displaySummary.netPosition >= 0 ? "icon-badge-positive" : "icon-badge-negative"} w-7 h-7 shrink-0`}><CheckCircle className="w-3.5 h-3.5" /></span>
-                  </div>
-                  <p className="relative stat-number text-lg font-bold leading-tight">{fmt(displaySummary.netPosition, "₮")}</p>
-                  <p className="relative text-[11px] text-muted-foreground mt-0.5">{t.dashboard.statNetPositionSub}</p>
                 </div>
               )}
             </div>
@@ -648,210 +630,6 @@ export default function DashboardPage() {
               <div className="glass-card px-4 py-4 mb-5">
                 <p className="text-xs font-medium text-muted-foreground mb-3">{t.dashboard.incomeTrendTitle}</p>
                 <IncomeTrendChart data={incomeTrend} formatValue={(n) => fmt(n, "₮")} />
-              </div>
-            )}
-
-            {summary && (
-              <>
-                <div className="flex items-center gap-1.5 mb-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-negative/60" />
-                  <p className="text-xs font-medium text-muted-foreground">{t.dashboard.breakdownSectionTitle}</p>
-                  <SectionHideBtn id="breakdown" />
-                </div>
-                {!collapsedSections.has("breakdown") && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-                  {!hiddenFields.has("projectExpense") && (
-                    <div className="glass-card glass-card-negative px-3.5 py-3">
-                      <HideFieldBtn id="projectExpense" />
-                      <div className="relative flex items-center justify-between mb-1.5">
-                        <p className="text-xs text-muted-foreground truncate">{t.dashboard.statProjectExpense}</p>
-                        <span className="icon-badge-negative w-7 h-7 shrink-0"><TrendingDown className="w-3.5 h-3.5" /></span>
-                      </div>
-                      <p className="relative stat-number text-lg font-bold leading-tight">{fmt(summary.pnlExpense, "₮")}</p>
-                      <p className="relative text-[11px] text-muted-foreground mt-0.5">{t.dashboard.statProjectExpenseSub}</p>
-                    </div>
-                  )}
-                  {!hiddenFields.has("salary") && (
-                    <div className="glass-card glass-card-negative px-3.5 py-3">
-                      <HideFieldBtn id="salary" />
-                      <div className="relative flex items-center justify-between mb-1.5">
-                        <p className="text-xs text-muted-foreground truncate">{t.dashboard.statSalary}</p>
-                        <span className="icon-badge-negative w-7 h-7 shrink-0"><Users className="w-3.5 h-3.5" /></span>
-                      </div>
-                      <p className="relative stat-number text-lg font-bold leading-tight">{fmt(summary.salaryExpense, "₮")}</p>
-                      <p className="relative text-[11px] text-muted-foreground mt-0.5">
-                        {format(t.dashboard.statSalarySub, { count: String(summary.employeeCount) })}
-                      </p>
-                    </div>
-                  )}
-                  {!hiddenFields.has("office") && (
-                    <div className="glass-card glass-card-negative px-3.5 py-3">
-                      <HideFieldBtn id="office" />
-                      <div className="relative flex items-center justify-between mb-1.5">
-                        <p className="text-xs text-muted-foreground truncate">{t.dashboard.statOffice}</p>
-                        <span className="icon-badge-negative w-7 h-7 shrink-0"><Receipt className="w-3.5 h-3.5" /></span>
-                      </div>
-                      <p className="relative stat-number text-lg font-bold leading-tight">{fmt(summary.officeExpense, "₮")}</p>
-                      <p className="relative text-[11px] text-muted-foreground mt-0.5">{t.dashboard.approvedLabel}</p>
-                    </div>
-                  )}
-                  {!hiddenFields.has("other") && (
-                    <div className="glass-card glass-card-negative px-3.5 py-3">
-                      <HideFieldBtn id="other" />
-                      <div className="relative flex items-center justify-between mb-1.5">
-                        <p className="text-xs text-muted-foreground truncate">{t.dashboard.statOther}</p>
-                        <span className="icon-badge-negative w-7 h-7 shrink-0"><Box className="w-3.5 h-3.5" /></span>
-                      </div>
-                      <p className="relative stat-number text-lg font-bold leading-tight">{fmt(summary.otherExpense, "₮")}</p>
-                      <p className="relative text-[11px] text-muted-foreground mt-0.5">{t.dashboard.approvedLabel}</p>
-                    </div>
-                  )}
-                </div>
-                )}
-              </>
-            )}
-
-            {displaySummary.completedCount > 0 && (
-              <>
-                <div className="flex items-center gap-1.5 mb-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-positive/60" />
-                  <p className="text-xs font-medium text-muted-foreground">{t.dashboard.completedSectionTitle}</p>
-                  <SectionHideBtn id="completed" />
-                </div>
-                {!collapsedSections.has("completed") && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
-                  {!hiddenFields.has("completedIncome") && (
-                    <div className="glass-card glass-card-positive px-3.5 py-3">
-                      <HideFieldBtn id="completedIncome" />
-                      <div className="relative flex items-center justify-between mb-1.5">
-                        <p className="text-xs text-muted-foreground truncate">{t.dashboard.statCompletedIncome}</p>
-                        <span className="icon-badge-positive w-7 h-7 shrink-0"><CheckCircle className="w-3.5 h-3.5" /></span>
-                      </div>
-                      <p className="relative stat-number text-lg font-bold leading-tight">{fmt(displaySummary.completedIncome, "₮")}</p>
-                      <p className="relative text-[11px] text-muted-foreground mt-0.5">
-                        {format(t.dashboard.statCompletedSub, { count: String(displaySummary.completedCount) })}
-                      </p>
-                    </div>
-                  )}
-                  {!hiddenFields.has("completedExpense") && (
-                    <div className="glass-card glass-card-negative px-3.5 py-3">
-                      <HideFieldBtn id="completedExpense" />
-                      <div className="relative flex items-center justify-between mb-1.5">
-                        <p className="text-xs text-muted-foreground truncate">{t.dashboard.statCompletedExpense}</p>
-                        <span className="icon-badge-negative w-7 h-7 shrink-0"><TrendingDown className="w-3.5 h-3.5" /></span>
-                      </div>
-                      <p className="relative stat-number text-lg font-bold leading-tight">{fmt(displaySummary.completedExpense, "₮")}</p>
-                    </div>
-                  )}
-                  {!hiddenFields.has("completedProfit") && (
-                    <div className={`glass-card ${displaySummary.completedProfit >= 0 ? "glass-card-positive" : "glass-card-negative"} px-3.5 py-3`}>
-                      <HideFieldBtn id="completedProfit" />
-                      <div className="relative flex items-center justify-between mb-1.5">
-                        <p className="text-xs text-muted-foreground truncate">{t.dashboard.statCompletedProfit}</p>
-                        <span className={`${displaySummary.completedProfit >= 0 ? "icon-badge-positive" : "icon-badge-negative"} w-7 h-7 shrink-0`}><TrendingUp className="w-3.5 h-3.5" /></span>
-                      </div>
-                      <p className="relative stat-number text-lg font-bold leading-tight">{fmt(displaySummary.completedProfit, "₮")}</p>
-                    </div>
-                  )}
-                </div>
-                )}
-              </>
-            )}
-
-            {displaySummary.pendingCount > 0 && (
-              <>
-                <div className="flex items-center gap-1.5 mb-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400/70" />
-                  <p className="text-xs font-medium text-muted-foreground">{t.dashboard.pendingSectionTitle}</p>
-                  <SectionHideBtn id="pending" />
-                </div>
-                {!collapsedSections.has("pending") && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
-                  {!hiddenFields.has("pendingIncome") && (
-                    <div className="glass-card px-3.5 py-3">
-                      <HideFieldBtn id="pendingIncome" />
-                      <div className="relative flex items-center justify-between mb-1.5">
-                        <p className="text-xs text-muted-foreground truncate">{t.dashboard.statPendingIncome}</p>
-                        <span className="w-7 h-7 shrink-0 rounded-full flex items-center justify-center bg-amber-400/15 text-amber-400"><CheckCircle className="w-3.5 h-3.5" /></span>
-                      </div>
-                      <p className="relative stat-number text-lg font-bold leading-tight">{fmt(displaySummary.pendingIncome, "₮")}</p>
-                      <p className="relative text-[11px] text-muted-foreground mt-0.5">
-                        {format(t.dashboard.statPendingSub, { count: String(displaySummary.pendingCount) })}
-                      </p>
-                    </div>
-                  )}
-                  {!hiddenFields.has("pendingExpense") && (
-                    <div className="glass-card px-3.5 py-3">
-                      <HideFieldBtn id="pendingExpense" />
-                      <div className="relative flex items-center justify-between mb-1.5">
-                        <p className="text-xs text-muted-foreground truncate">{t.dashboard.statPendingExpense}</p>
-                        <span className="w-7 h-7 shrink-0 rounded-full flex items-center justify-center bg-amber-400/15 text-amber-400"><TrendingDown className="w-3.5 h-3.5" /></span>
-                      </div>
-                      <p className="relative stat-number text-lg font-bold leading-tight">{fmt(displaySummary.pendingExpense, "₮")}</p>
-                    </div>
-                  )}
-                  {!hiddenFields.has("pendingProfit") && (
-                    <div className="glass-card px-3.5 py-3">
-                      <HideFieldBtn id="pendingProfit" />
-                      <div className="relative flex items-center justify-between mb-1.5">
-                        <p className="text-xs text-muted-foreground truncate">{t.dashboard.statPendingProfit}</p>
-                        <span className="w-7 h-7 shrink-0 rounded-full flex items-center justify-center bg-amber-400/15 text-amber-400"><TrendingUp className="w-3.5 h-3.5" /></span>
-                      </div>
-                      <p className="relative stat-number text-lg font-bold leading-tight">{fmt(displaySummary.pendingProfit, "₮")}</p>
-                    </div>
-                  )}
-                </div>
-                )}
-              </>
-            )}
-
-            {txSummary && (
-              <div className="mb-5">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-info/60" />
-                  <p className="text-xs font-medium text-muted-foreground">{t.transactions.pageTitle}</p>
-                  <button
-                    onClick={() => setTxBlurred(v => !v)}
-                    title={txBlurred ? t.dashboard.unblurSection : t.dashboard.blurSection}
-                    className="text-muted-foreground hover:text-foreground">
-                    {txBlurred ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
-                  <SectionHideBtn id="tx" />
-                </div>
-                {!collapsedSections.has("tx") && (
-                <div className={`grid grid-cols-1 sm:grid-cols-3 gap-3 ${txBlurred ? "section-blurred" : ""}`}>
-                {!hiddenFields.has("txIncome") && (
-                  <div className="glass-card glass-card-positive px-3.5 py-3">
-                    <HideFieldBtn id="txIncome" />
-                    <div className="relative flex items-center justify-between mb-1.5">
-                      <p className="text-xs text-muted-foreground truncate">{t.transactions.statIncome}</p>
-                      <span className="icon-badge-positive w-7 h-7 shrink-0"><TrendingUp className="w-3.5 h-3.5" /></span>
-                    </div>
-                    <p className="relative stat-number text-lg font-bold leading-tight">{fmt(txSummary.totalIncome, "₮")}</p>
-                  </div>
-                )}
-                {!hiddenFields.has("txExpense") && (
-                  <div className="glass-card glass-card-negative px-3.5 py-3">
-                    <HideFieldBtn id="txExpense" />
-                    <div className="relative flex items-center justify-between mb-1.5">
-                      <p className="text-xs text-muted-foreground truncate">{t.transactions.statExpense}</p>
-                      <span className="icon-badge-negative w-7 h-7 shrink-0"><TrendingDown className="w-3.5 h-3.5" /></span>
-                    </div>
-                    <p className="relative stat-number text-lg font-bold leading-tight">{fmt(txSummary.totalExpense, "₮")}</p>
-                  </div>
-                )}
-                {!hiddenFields.has("txNet") && (
-                  <div className={`glass-card ${txSummary.totalIncome - txSummary.totalExpense >= 0 ? "glass-card-positive" : "glass-card-negative"} px-3.5 py-3`}>
-                    <HideFieldBtn id="txNet" />
-                    <div className="relative flex items-center justify-between mb-1.5">
-                      <p className="text-xs text-muted-foreground truncate">{t.transactions.statNet}</p>
-                      <span className={`${txSummary.totalIncome - txSummary.totalExpense >= 0 ? "icon-badge-positive" : "icon-badge-negative"} w-7 h-7 shrink-0`}><CheckCircle className="w-3.5 h-3.5" /></span>
-                    </div>
-                    <p className="relative stat-number text-lg font-bold leading-tight">{fmt(txSummary.totalIncome - txSummary.totalExpense, "₮")}</p>
-                  </div>
-                )}
-                </div>
-                )}
               </div>
             )}
           </>
