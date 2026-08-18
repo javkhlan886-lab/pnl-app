@@ -95,6 +95,8 @@ export default function DashboardPage() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [page, setPage] = useState(1);
   const [hiddenFields, setHiddenFields] = useState<Set<string>>(() => getHiddenFields());
+  const [period, setPeriod] = useState<"" | "7d" | "1m" | "3m">("");
+  const [expandedCard, setExpandedCard] = useState<"income" | "opex" | null>(null);
 
   const toggleFieldHidden = (id: string) => {
     setHiddenFields(prev => {
@@ -275,7 +277,7 @@ export default function DashboardPage() {
   // серверээс дахин татаж шинэчилнэ (эс тэгвэл гар refresh хийх хүртэл
   // хуучин дүн харагдсаар байдаг байсан).
   const loadSummary = useCallback(() => {
-    api.get("/summary")
+    api.get("/summary", { params: period ? { period } : {} })
       .then((r) => {
         setSummary(r.data);
         setSummaryError(null);
@@ -285,17 +287,19 @@ export default function DashboardPage() {
         setSummaryError(t.dashboard.summaryError);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [period]);
 
   useEffect(() => {
     getPNLList()
       .then(setRecords)
       .catch(() => setError(t.dashboard.loadError))
       .finally(() => setLoading(false));
-
-    loadSummary();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    loadSummary();
+  }, [loadSummary]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -379,6 +383,25 @@ export default function DashboardPage() {
   }, [records]);
 
   const displaySummary = summary || computedSummary;
+
+  // Backend-ийн /summary-д ашигладагтай ижил дундаж хоног/сар — сонгосон
+  // үеийн эхлэх огноог тооцож, "Нийт орлого" картын задаргаанд орох идэвхтэй
+  // тайлангуудыг мөн ижил цонхоор шүүхэд ашиглана.
+  const AVG_DAYS_PER_MONTH = 30.4368;
+  const PERIOD_DAYS: Record<string, number> = { "7d": 7, "1m": AVG_DAYS_PER_MONTH, "3m": AVG_DAYS_PER_MONTH * 3 };
+  const periodSince = period ? new Date(Date.now() - PERIOD_DAYS[period] * 86400000) : null;
+
+  const incomeBreakdown = useMemo(() => {
+    const active = records.filter((r) => (r.status || "active") === "active");
+    const inPeriod = periodSince
+      ? active.filter((r) => r.date && new Date(r.date) >= periodSince)
+      : active;
+    return inPeriod
+      .map((r) => ({ id: r._id, name: r.company || "—", amount: totalIncome(r) }))
+      .filter((x) => x.amount !== 0)
+      .sort((a, b) => b.amount - a.amount);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [records, period]);
 
   // Сарын орлогын хандлага — идэвхтэй тайлангуудыг огноогоор нь сараар
   // бүлэглэж, сүүлийн 6 сарыг он-цагийн дарааллаар харуулна.
@@ -579,35 +602,88 @@ export default function DashboardPage() {
               </div>
             )}
 
-            <div className="flex items-center gap-1.5 mb-2">
+            <div className="flex items-center gap-1.5 mb-2 flex-wrap">
               <span className="w-1.5 h-1.5 rounded-full bg-positive/60" />
               <p className="text-xs font-medium text-muted-foreground">{t.dashboard.mainSectionTitle}</p>
               <SectionHideBtn id="main" />
+              <div className="flex items-center gap-1 ml-auto">
+                {([
+                  ["", t.dashboard.dateRangeAllTime],
+                  ["7d", t.dashboard.period7d],
+                  ["1m", t.dashboard.period1m],
+                  ["3m", t.dashboard.period3m],
+                ] as const).map(([value, label]) => (
+                  <button key={value} onClick={() => setPeriod(value)}
+                    className={`h-6 px-2.5 text-[11px] rounded-full border transition-colors ${period === value
+                      ? "bg-positive/15 text-positive border-positive/30"
+                      : "bg-card/40 text-muted-foreground border-border/50 hover:bg-secondary/50"}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
             {!collapsedSections.has("main") && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
               {!hiddenFields.has("income") && (
-                <div className="glass-card glass-card-positive px-3.5 py-3">
+                <div className="glass-card glass-card-positive px-3.5 py-3 cursor-pointer"
+                  onClick={() => setExpandedCard((c) => (c === "income" ? null : "income"))}>
                   <HideFieldBtn id="income" />
                   <div className="relative flex items-center justify-between mb-1.5">
                     <p className="text-xs text-muted-foreground truncate">{t.dashboard.statIncome}</p>
                     <span className="icon-badge-positive w-7 h-7 shrink-0"><BarChart2 className="w-3.5 h-3.5" /></span>
                   </div>
                   <p className="relative stat-number text-lg font-bold leading-tight">{fmt(displaySummary.pnlIncome, "₮")}</p>
-                  <p className="relative text-[11px] text-muted-foreground mt-0.5">
-                    {format(t.dashboard.statIncomeCount, { count: String(displaySummary.pnlCount) })}
-                  </p>
+                  <div className="relative flex items-center justify-between mt-0.5">
+                    <p className="text-[11px] text-muted-foreground">
+                      {format(t.dashboard.statIncomeCount, { count: String(displaySummary.pnlCount) })}
+                    </p>
+                    <ChevronDown className={`w-3 h-3 text-muted-foreground transition-transform ${expandedCard === "income" ? "rotate-180" : ""}`} />
+                  </div>
+                  {expandedCard === "income" && (
+                    <div className="relative mt-2.5 pt-2.5 border-t border-border/40 space-y-1" onClick={(e) => e.stopPropagation()}>
+                      {incomeBreakdown.length === 0 ? (
+                        <p className="text-[11px] text-muted-foreground">{t.dashboard.breakdownEmpty}</p>
+                      ) : incomeBreakdown.map((row) => (
+                        <div key={row.id} className="flex items-center justify-between gap-2 text-[11px]">
+                          <span className="text-muted-foreground truncate">{row.name}</span>
+                          <span className="font-medium shrink-0">{fmt(row.amount, "₮")}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
               {!hiddenFields.has("opex") && (
-                <div className="glass-card glass-card-negative px-3.5 py-3">
+                <div className="glass-card glass-card-negative px-3.5 py-3 cursor-pointer"
+                  onClick={() => setExpandedCard((c) => (c === "opex" ? null : "opex"))}>
                   <HideFieldBtn id="opex" />
                   <div className="relative flex items-center justify-between mb-1.5">
                     <p className="text-xs text-muted-foreground truncate">{t.dashboard.statOpEx}</p>
                     <span className="icon-badge-negative w-7 h-7 shrink-0"><TrendingDown className="w-3.5 h-3.5" /></span>
                   </div>
                   <p className="relative stat-number text-lg font-bold leading-tight">{fmt(displaySummary.totalOperatingExpense, "₮")}</p>
-                  <p className="relative text-[11px] text-muted-foreground mt-0.5">{t.dashboard.statOpExSub}</p>
+                  <div className="relative flex items-center justify-between mt-0.5">
+                    <p className="text-[11px] text-muted-foreground">{t.dashboard.statOpExSub}</p>
+                    <ChevronDown className={`w-3 h-3 text-muted-foreground transition-transform ${expandedCard === "opex" ? "rotate-180" : ""}`} />
+                  </div>
+                  {expandedCard === "opex" && (
+                    <div className="relative mt-2.5 pt-2.5 border-t border-border/40 space-y-1" onClick={(e) => e.stopPropagation()}>
+                      {summary ? (
+                        <>
+                          <div className="flex items-center justify-between gap-2 text-[11px]">
+                            <span className="text-muted-foreground">{t.dashboard.breakdownGeneralExpense}</span>
+                            <span className="font-medium">{fmt(summary.officeExpense + summary.otherExpense, "₮")}</span>
+                          </div>
+                          <div className="flex items-center justify-between gap-2 text-[11px]">
+                            <span className="text-muted-foreground">{t.dashboard.breakdownSalaryExpense}</span>
+                            <span className="font-medium">{fmt(summary.salaryExpense, "₮")}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground">{t.dashboard.breakdownEmpty}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
               {!hiddenFields.has("operatingProfit") && (
