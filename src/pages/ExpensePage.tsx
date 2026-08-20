@@ -37,11 +37,12 @@ import { Combobox } from "@/components/ui/combobox";
 
 // Чөлөөт текст утга — backend-д хадгалагддаг тул хэлээр орчуулахгүй.
 const OFFICE_CATS = ["Оффис", "Тоног төхөөрөмж", "Цахилгаан, интернет", "Тээвэр, шатахуун", "Татвар, хураамж", "Бусад"];
-const OTHER_CATS = ["Маркетинг", "Аялал, томилолт", "Сургалт", "Хуулийн зардал", "Эрүүл мэндийн зардал", "Бусад"];
+const OTHER_CATS = ["Аялал, томилолт", "Сургалт", "Хуулийн зардал", "Эрүүл мэндийн зардал", "Бусад"];
 const PRODUCT_COST_CATS = ["Бараа материал", "Түүхий эд", "Бэлэн бүтээгдэхүүн", "Бусад"];
+const MARKETING_CATS = ["Сошиал медиа", "Google Ads", "Пост, баннер", "Хямдрал урамшуулал", "Бусад"];
 
 const EMPTY = {
-  type: "office" as "office" | "other" | "productCost",
+  type: "office" as "office" | "other" | "productCost" | "marketing",
   category: "Оффис", description: "",
   unitPrice: 0, quantity: 1, amount: 0, date: new Date().toISOString().split("T")[0],
   status: "pending" as "approved" | "pending" | "rejected", note: "",
@@ -86,7 +87,7 @@ export default function ExpensePage() {
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [typeFilter, setTypeFilter] = useState<"" | "office" | "other" | "productCost">("");
+  const [typeFilter, setTypeFilter] = useState<"" | "office" | "other" | "productCost" | "marketing">("");
   const [unitPriceDisplay, setUnitPriceDisplay] = useState("");
   const [quantityInput, setQuantityInput] = useState<number>(1);
   const [amountDisplay, setAmountDisplay] = useState("");
@@ -232,10 +233,7 @@ export default function ExpensePage() {
     if (!payload.description.trim() || payload.amount === 0) return;
     setSaving(true);
     try {
-      addCustomCategory(
-        payload.type === "office" ? "expenses_office" : payload.type === "other" ? "expenses_other" : "expenses_product_cost",
-        payload.category
-      );
+      addCustomCategory(catsForType(payload.type)[1], payload.category);
       addRecent("expenses", "description", payload.description);
       addRecent("expenses", "note", payload.note);
       setForm(payload);
@@ -279,10 +277,14 @@ export default function ExpensePage() {
     }
   };
 
-  const cats = mergeCategories(
-    form.type === "office" ? OFFICE_CATS : form.type === "other" ? OTHER_CATS : PRODUCT_COST_CATS,
-    form.type === "office" ? "expenses_office" : form.type === "other" ? "expenses_other" : "expenses_product_cost"
-  );
+  const catsForType = (type: string): [string[], string] => {
+    if (type === "office") return [OFFICE_CATS, "expenses_office"];
+    if (type === "other") return [OTHER_CATS, "expenses_other"];
+    if (type === "productCost") return [PRODUCT_COST_CATS, "expenses_product_cost"];
+    return [MARKETING_CATS, "expenses_marketing"];
+  };
+  const [defaultCats, defaultCatsKey] = catsForType(form.type);
+  const cats = mergeCategories(defaultCats, defaultCatsKey);
 
   const handleExport = async () => {
     setExporting(true);
@@ -423,12 +425,16 @@ export default function ExpensePage() {
         </div>
 
         <div className="flex items-center gap-2 mb-4 flex-wrap">
-          {(["", "office", "other", "productCost"] as const).map(f => (
+          {(["", "office", "other", "productCost", "marketing"] as const).map(f => (
             <button key={f} onClick={() => startTransition(() => setTypeFilter(f))}
               className={`h-8 px-3 text-xs rounded-lg border ${typeFilter === f
                 ? "bg-positive/15 text-positive border-positive/30"
                 : "bg-background text-muted-foreground border-border hover:bg-secondary/50"}`}>
-              {f === "" ? t.common.all : f === "office" ? t.expenses.typeOffice : f === "other" ? t.expenses.typeOther : t.expenses.typeProductCost}
+              {f === "" ? t.common.all
+                : f === "office" ? t.expenses.typeOffice
+                : f === "other" ? t.expenses.typeOther
+                : f === "productCost" ? t.expenses.typeProductCost
+                : t.expenses.typeMarketing}
             </button>
           ))}
         </div>
@@ -513,8 +519,13 @@ export default function ExpensePage() {
                         ? "bg-info/15 text-info hover:bg-info/15"
                         : exp.type === "other"
                         ? "bg-[oklch(0.6_0.18_300)]/15 text-[oklch(0.6_0.18_300)] hover:bg-[oklch(0.6_0.18_300)]/15"
-                        : "bg-amber-400/15 text-amber-300 hover:bg-amber-400/15"}>
-                        {exp.type === "office" ? t.expenses.typeOffice : exp.type === "other" ? t.expenses.typeOther : t.expenses.typeProductCost}
+                        : exp.type === "productCost"
+                        ? "bg-amber-400/15 text-amber-300 hover:bg-amber-400/15"
+                        : "bg-pink-400/15 text-pink-300 hover:bg-pink-400/15"}>
+                        {exp.type === "office" ? t.expenses.typeOffice
+                          : exp.type === "other" ? t.expenses.typeOther
+                          : exp.type === "productCost" ? t.expenses.typeProductCost
+                          : t.expenses.typeMarketing}
                       </Badge>
                     </TableCell>
                     <TableCell className="px-1.5 text-muted-foreground text-sm">{exp.category}</TableCell>
@@ -604,11 +615,12 @@ export default function ExpensePage() {
                   value={form.type}
                   onChange={e => setForm(f => ({
                     ...f, type: e.target.value as any,
-                    category: e.target.value === "office" ? OFFICE_CATS[0] : e.target.value === "other" ? OTHER_CATS[0] : PRODUCT_COST_CATS[0],
+                    category: catsForType(e.target.value)[0][0],
                   }))}>
                   <option value="office">{t.expenses.typeOffice}</option>
                   <option value="other">{t.expenses.typeOther}</option>
                   <option value="productCost">{t.expenses.typeProductCost}</option>
+                  <option value="marketing">{t.expenses.typeMarketing}</option>
                 </select>
               </div>
               <div className="flex flex-col gap-1.5">
@@ -627,7 +639,7 @@ export default function ExpensePage() {
                   options={getRecent("expenses", "description")}
                   placeholder={t.expenses.descriptionPlaceholder} />
               </div>
-              {form.type === "other" && form.category === "Маркетинг" && (
+              {form.type === "marketing" && (
                 <div className="sm:col-span-2 flex flex-col gap-3 bg-secondary/30 rounded-lg p-3">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-medium text-muted-foreground">{t.expenses.marketingLinkLabel}</label>
@@ -710,7 +722,7 @@ export default function ExpensePage() {
                   )}
                 </div>
               )}
-              {!(form.type === "other" && form.category === "Маркетинг" && marketingMode === "percent") && (
+              {!(form.type === "marketing" && marketingMode === "percent") && (
                 <>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-medium text-muted-foreground">{t.expenses.unitPrice}</label>

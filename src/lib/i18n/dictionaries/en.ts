@@ -276,6 +276,7 @@ export const en: Dictionary = {
     typeOffice: "Fixed expenses",
     typeOther: "Variable expenses",
     typeProductCost: "Product cost",
+    typeMarketing: "Marketing expense",
     noExpenses: "No expenses yet",
     addFirstExpense: "Add an expense",
     colDate: "Date",

@@ -275,6 +275,7 @@ export const zh: Dictionary = {
     typeOffice: "固定费用",
     typeOther: "可变费用",
     typeProductCost: "产品成本",
+    typeMarketing: "营销费用",
     noExpenses: "尚未添加费用",
     addFirstExpense: "添加第一笔费用",
     colDate: "日期",

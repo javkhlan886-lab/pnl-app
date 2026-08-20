@@ -277,6 +277,7 @@ export const mn = {
     typeOffice: "Тогтмол зардал",
     typeOther: "Хувьсах зардал",
     typeProductCost: "Бүтээгдэхүүний өртөг",
+    typeMarketing: "Маркетинг зардал",
     noExpenses: "Зардал бүртгэгдээгүй байна",
     addFirstExpense: "Шинэ зардал нэмэх",
     colDate: "Огноо",

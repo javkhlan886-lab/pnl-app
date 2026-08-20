@@ -276,6 +276,7 @@ export const ko: Dictionary = {
     typeOffice: "고정 비용",
     typeOther: "변동 비용",
     typeProductCost: "제품 원가",
+    typeMarketing: "마케팅 비용",
     noExpenses: "등록된 지출이 없습니다",
     addFirstExpense: "새 지출 추가",
     colDate: "날짜",
