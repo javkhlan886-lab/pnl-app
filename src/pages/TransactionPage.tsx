@@ -522,8 +522,8 @@ export default function TransactionPage() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowModal(false)} />
-          <div className="relative bg-card rounded-2xl shadow-xl border border-border/50 w-full max-w-lg mx-4 overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border/50">
+          <div className="relative bg-card rounded-2xl shadow-xl border border-border/50 w-full max-w-lg mx-4 max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 shrink-0">
               <h2 className="text-base font-semibold flex items-center gap-2">
                 {editingTxId
                   ? <><Pencil className="w-5 h-5 text-info" /> {t.transactions.editTxTitle}</>
@@ -534,7 +534,7 @@ export default function TransactionPage() {
               </button>
             </div>
 
-            <div className="px-6 py-5 space-y-4">
+            <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1 min-h-0">
               <div className="flex gap-2">
                 {(["income", "expense"] as const).map(txType => (
                   <button key={txType} onClick={() => {
@@ -757,7 +757,7 @@ export default function TransactionPage() {
               )}
             </div>
 
-            <div className="flex gap-2 px-6 py-4 border-t border-border/50 bg-secondary/30">
+            <div className="flex gap-2 px-6 py-4 border-t border-border/50 bg-secondary/30 shrink-0">
               <Button variant="outline" className="flex-1" onClick={() => setShowModal(false)}>
                 {t.common.cancel}
               </Button>
