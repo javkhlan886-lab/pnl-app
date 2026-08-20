@@ -357,6 +357,12 @@ export default function DashboardPage() {
   // ам.доллар г.м. дүн төгрөгийн дүн рүү тоо утгаараа алдаатай нэмэгддэг.
   const totalIncome = (r: PNLRecord) =>
     r.incomeRows.reduce((s, x) => s + toMnt(Number(x.amount), r.currency, r.exchangeRate), 0);
+  // "Нийт орлого" картын өөрийнх нь дүнтэй (backend-ийн /summary, зөвхөн
+  // Гүйлгээний дэвтэрт баталгаажсан мөрүүд) яг тохирохын тулд зөвхөн
+  // received=true мөрүүдийг нэгтгэнэ — доорх тайлангийн хүснэгтэд ашигладаг
+  // totalIncome-ээс ЗОРИУДАА тусад нь: тэр хэсгийг хэвээр нь үлдээнэ.
+  const receivedIncomeOf = (r: PNLRecord) =>
+    r.incomeRows.filter((x) => x.received).reduce((s, x) => s + toMnt(Number(x.amount), r.currency, r.exchangeRate), 0);
   const totalExpenseOf = (r: PNLRecord) =>
     r.expenseRows.reduce((s, x) => s + toMnt(Number(x.amount), r.currency, r.exchangeRate), 0);
   const netProfit = (r: PNLRecord) => totalIncome(r) - totalExpenseOf(r);
@@ -410,7 +416,7 @@ export default function DashboardPage() {
     return inPeriod
       .map((r) => ({
         id: r._id, date: r.date, name: r.company || "—",
-        contractNumber: r.contractNumber || "—", amount: totalIncome(r),
+        contractNumber: r.contractNumber || "—", amount: receivedIncomeOf(r),
       }))
       .filter((x) => x.amount !== 0)
       .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
