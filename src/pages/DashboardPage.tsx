@@ -1037,7 +1037,7 @@ export default function DashboardPage() {
     </div>
 
       <Dialog open={breakdownOpen === "income"} onOpenChange={(o) => setBreakdownOpen(o ? "income" : null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-4xl">
           <DialogHeader className="flex-row items-center gap-3 space-y-0">
             <span className="icon-badge-positive w-9 h-9 shrink-0"><BarChart2 className="w-4 h-4" /></span>
             <div>
@@ -1055,7 +1055,7 @@ export default function DashboardPage() {
                     <TableHead>№</TableHead>
                     <TableHead>{t.dashboard.colDate}</TableHead>
                     <TableHead>{t.dashboard.colOrgName}</TableHead>
-                    <TableHead>{t.dashboard.colContractNumber}</TableHead>
+                    <TableHead className="max-w-[180px]">{t.dashboard.colContractNumber}</TableHead>
                     <TableHead className="text-right">{t.dashboard.filteredIncome}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -1065,7 +1065,7 @@ export default function DashboardPage() {
                       <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                       <TableCell className="text-muted-foreground">{fmtDate(row.date)}</TableCell>
                       <TableCell className="font-medium">{row.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{row.contractNumber}</TableCell>
+                      <TableCell className="text-muted-foreground max-w-[180px] break-all">{row.contractNumber}</TableCell>
                       <TableCell className="text-right text-positive font-medium stat-number">{fmt(row.amount, "₮")}</TableCell>
                     </TableRow>
                   ))}
@@ -1077,7 +1077,7 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={breakdownOpen === "opex"} onOpenChange={(o) => setBreakdownOpen(o ? "opex" : null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-4xl">
           <DialogHeader className="flex-row items-center gap-3 space-y-0">
             <span className="icon-badge-negative w-9 h-9 shrink-0"><TrendingDown className="w-4 h-4" /></span>
             <div>
@@ -1094,7 +1094,7 @@ export default function DashboardPage() {
                   <TableRow>
                     <TableHead>№</TableHead>
                     <TableHead>{t.dashboard.colDate}</TableHead>
-                    <TableHead>{t.dashboard.colDescription}</TableHead>
+                    <TableHead className="max-w-[220px]">{t.dashboard.colDescription}</TableHead>
                     <TableHead>{t.dashboard.colType}</TableHead>
                     <TableHead className="text-right">{t.dashboard.colAmount}</TableHead>
                   </TableRow>
@@ -1104,7 +1104,7 @@ export default function DashboardPage() {
                     <TableRow key={row.id}>
                       <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                       <TableCell className="text-muted-foreground">{row.date ? fmtDate(row.date) : "—"}</TableCell>
-                      <TableCell className="font-medium">{row.label}</TableCell>
+                      <TableCell className="font-medium max-w-[220px] break-words">{row.label}</TableCell>
                       <TableCell className="text-muted-foreground">
                         {row.kind === "salary" ? t.dashboard.typeSalaryShort : t.dashboard.breakdownGeneralExpense}
                       </TableCell>
