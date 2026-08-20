@@ -8,12 +8,13 @@ interface ComboboxProps {
   placeholder?: string;
   className?: string;
   id?: string;
+  disabled?: boolean;
 }
 
 // Native <input list> + <datalist> дээр сонголтууд focus/click хийхэд шууд
 // гардаггүй (браузер бүрт зан төлөв өөр, ихэвчлэн эхлээд бичих ёстой) —
 // үүнийг сонгоход шууд бүх сонголт гарч ирдэг жинхэнэ dropdown-оор сольсон.
-export function Combobox({ value, onChange, options, placeholder, className, id }: ComboboxProps) {
+export function Combobox({ value, onChange, options, placeholder, className, id, disabled }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const wrapRef = React.useRef<HTMLDivElement>(null);
 
@@ -39,14 +40,15 @@ export function Combobox({ value, onChange, options, placeholder, className, id 
         value={value}
         placeholder={placeholder}
         autoComplete="off"
-        onFocus={() => setOpen(true)}
+        disabled={disabled}
+        onFocus={() => !disabled && setOpen(true)}
         onChange={(e) => { onChange(e.target.value); setOpen(true); }}
         className={cn(
-          "h-9 w-full px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring",
+          "h-9 w-full px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-70 disabled:cursor-not-allowed",
           className
         )}
       />
-      {open && filtered.length > 0 && (
+      {!disabled && open && filtered.length > 0 && (
         <div className="absolute z-30 mt-1 w-full max-h-48 overflow-y-auto rounded-lg border border-border bg-popover shadow-lg py-1">
           {filtered.map((opt) => (
             <button

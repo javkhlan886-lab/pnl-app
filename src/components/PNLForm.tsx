@@ -42,7 +42,7 @@ const formatWithCommas = (num: number): string => {
   return num.toLocaleString("mn-MN");
 };
 
-const AmountInput = ({ value, onChange }: { value: number; onChange: (v: number) => void }) => {
+const AmountInput = ({ value, onChange, disabled }: { value: number; onChange: (v: number) => void; disabled?: boolean }) => {
   const [display, setDisplay] = useState(value === 0 ? "" : formatWithCommas(value));
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -83,6 +83,7 @@ const AmountInput = ({ value, onChange }: { value: number; onChange: (v: number)
       inputMode="numeric"
       value={display}
       placeholder="0"
+      disabled={disabled}
       onChange={handleChange}
       onFocus={handleFocus}
       style={{
@@ -94,6 +95,8 @@ const AmountInput = ({ value, onChange }: { value: number; onChange: (v: number)
         fontSize: "13px",
         fontWeight: 500,
         color: "inherit",
+        cursor: disabled ? "not-allowed" : "text",
+        opacity: disabled ? 0.7 : 1,
       }}
     />
   );
@@ -131,8 +134,10 @@ const RowSection = ({ type, label, rows, currency, total, onUpdate, onAdd, onDel
         <div className="col-span-2 text-right">{format(t.pnlForm.colTotal, { currency })}</div>
         <div className="col-span-1"></div>
       </div>
-      {rows.map((r, i) => (
-        <div key={i} className="grid grid-cols-12 gap-0 px-3 py-1.5 border-b last:border-0 hover:bg-muted/20 items-center">
+      {rows.map((r, i) => {
+        const locked = Boolean(r.received);
+        return (
+        <div key={i} className={`grid grid-cols-12 gap-0 px-3 py-1.5 border-b last:border-0 hover:bg-muted/20 items-center ${locked ? "bg-positive/[0.04]" : ""}`}>
           <div className="col-span-3 pr-2 flex items-center gap-1.5">
             <Combobox
               value={r.name}
@@ -140,10 +145,15 @@ const RowSection = ({ type, label, rows, currency, total, onUpdate, onAdd, onDel
               options={getRecent(type === "incomeRows" ? "pnl_income" : "pnl_expense", "name")}
               placeholder={t.pnlForm.namePlaceholder}
               className={rowComboboxClassName}
+              disabled={locked}
             />
-            {type === "incomeRows" && r.received && (
-              <span title={t.pnlForm.incomeRowReceivedTitle} className="shrink-0 text-positive">
-                <CheckCircle2 className="w-4 h-4" />
+            {locked && (
+              <span
+                title={type === "incomeRows" ? t.pnlForm.incomeRowReceivedTitle : t.pnlForm.expenseRowReceivedTitle}
+                className="shrink-0 inline-flex items-center gap-1 text-[11px] font-medium text-positive bg-positive/10 border border-positive/30 rounded-full px-2 py-0.5"
+              >
+                <CheckCircle2 className="w-3 h-3" />
+                {t.pnlForm.rowLockedBadge}
               </span>
             )}
           </div>
@@ -154,6 +164,7 @@ const RowSection = ({ type, label, rows, currency, total, onUpdate, onAdd, onDel
               options={getRecent(type === "incomeRows" ? "pnl_income" : "pnl_expense", "note")}
               placeholder={t.pnlForm.notePlaceholder}
               className={rowComboboxClassName}
+              disabled={locked}
             />
           </div>
           <div className="col-span-1 flex justify-center">
@@ -161,27 +172,36 @@ const RowSection = ({ type, label, rows, currency, total, onUpdate, onAdd, onDel
               type="checkbox"
               checked={Boolean(r.hasVat)}
               onChange={(e) => onUpdate(i, "hasVat", e.target.checked)}
-              className="w-4 h-4 cursor-pointer accent-positive"
+              className="w-4 h-4 cursor-pointer accent-positive disabled:cursor-not-allowed disabled:opacity-70"
               title={t.pnlForm.vatCheckboxTitle}
+              disabled={locked}
             />
           </div>
           <div className="col-span-2">
-            <AmountInput value={Number(r.unitPrice || 0)} onChange={(v) => onUpdate(i, "unitPrice", v)} />
+            <AmountInput value={Number(r.unitPrice || 0)} onChange={(v) => onUpdate(i, "unitPrice", v)} disabled={locked} />
           </div>
           <div className="col-span-1">
             <input type="number" min={1} value={r.quantity || 1} onChange={(e) => onUpdate(i, "quantity", Math.max(1, Number(e.target.value) || 1))}
-              style={{ width: "100%", background: "transparent", border: "none", outline: "none", fontSize: "13px", textAlign: "right" }} />
+              disabled={locked}
+              style={{ width: "100%", background: "transparent", border: "none", outline: "none", fontSize: "13px", textAlign: "right", cursor: locked ? "not-allowed" : "text", opacity: locked ? 0.7 : 1 }} />
           </div>
           <div className="col-span-2">
-            <AmountInput value={Number(r.amount || 0)} onChange={(v) => onUpdate(i, "amount", v)} />
+            <AmountInput value={Number(r.amount || 0)} onChange={(v) => onUpdate(i, "amount", v)} disabled={locked} />
           </div>
           <div className="col-span-1 flex justify-end">
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => onDelete(i)}>
+            <Button
+              variant="ghost" size="icon"
+              className="h-7 w-7 text-muted-foreground hover:text-destructive disabled:opacity-40 disabled:hover:text-muted-foreground disabled:cursor-not-allowed"
+              onClick={() => onDelete(i)}
+              disabled={locked}
+              title={locked ? t.pnlForm.rowLockedDeleteTitle : undefined}
+            >
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
           </div>
         </div>
-      ))}
+        );
+      })}
       <div className="grid grid-cols-12 gap-0 px-3 py-2 bg-muted/40 text-sm font-medium">
         <div className="col-span-8 text-muted-foreground">{format(t.pnlForm.totalOf, { label: label.toLowerCase() })}</div>
         <div className={`col-span-3 text-right ${type === "incomeRows" ? "text-green-600" : "text-red-500"}`}>
