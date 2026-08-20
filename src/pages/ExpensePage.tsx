@@ -35,9 +35,10 @@ import { Combobox } from "@/components/ui/combobox";
 // Чөлөөт текст утга — backend-д хадгалагддаг тул хэлээр орчуулахгүй.
 const OFFICE_CATS = ["Оффис", "Тоног төхөөрөмж", "Цахилгаан, интернет", "Тээвэр, шатахуун", "Татвар, хураамж", "Бусад"];
 const OTHER_CATS = ["Маркетинг", "Аялал, томилолт", "Сургалт", "Хуулийн зардал", "Эрүүл мэндийн зардал", "Бусад"];
+const PRODUCT_COST_CATS = ["Бараа материал", "Түүхий эд", "Бэлэн бүтээгдэхүүн", "Бусад"];
 
 const EMPTY = {
-  type: "office" as "office" | "other",
+  type: "office" as "office" | "other" | "productCost",
   category: "Оффис", description: "",
   unitPrice: 0, quantity: 1, amount: 0, date: new Date().toISOString().split("T")[0],
   status: "pending" as "approved" | "pending" | "rejected", note: "",
@@ -82,7 +83,7 @@ export default function ExpensePage() {
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [typeFilter, setTypeFilter] = useState<"" | "office" | "other">("");
+  const [typeFilter, setTypeFilter] = useState<"" | "office" | "other" | "productCost">("");
   const [unitPriceDisplay, setUnitPriceDisplay] = useState("");
   const [quantityInput, setQuantityInput] = useState<number>(1);
   const [amountDisplay, setAmountDisplay] = useState("");
@@ -197,7 +198,10 @@ export default function ExpensePage() {
     if (!payload.description.trim() || payload.amount === 0) return;
     setSaving(true);
     try {
-      addCustomCategory(payload.type === "office" ? "expenses_office" : "expenses_other", payload.category);
+      addCustomCategory(
+        payload.type === "office" ? "expenses_office" : payload.type === "other" ? "expenses_other" : "expenses_product_cost",
+        payload.category
+      );
       addRecent("expenses", "description", payload.description);
       addRecent("expenses", "note", payload.note);
       setForm(payload);
@@ -242,8 +246,8 @@ export default function ExpensePage() {
   };
 
   const cats = mergeCategories(
-    form.type === "office" ? OFFICE_CATS : OTHER_CATS,
-    form.type === "office" ? "expenses_office" : "expenses_other"
+    form.type === "office" ? OFFICE_CATS : form.type === "other" ? OTHER_CATS : PRODUCT_COST_CATS,
+    form.type === "office" ? "expenses_office" : form.type === "other" ? "expenses_other" : "expenses_product_cost"
   );
 
   const handleExport = async () => {
@@ -385,12 +389,12 @@ export default function ExpensePage() {
         </div>
 
         <div className="flex items-center gap-2 mb-4 flex-wrap">
-          {(["", "office", "other"] as const).map(f => (
+          {(["", "office", "other", "productCost"] as const).map(f => (
             <button key={f} onClick={() => startTransition(() => setTypeFilter(f))}
               className={`h-8 px-3 text-xs rounded-lg border ${typeFilter === f
                 ? "bg-positive/15 text-positive border-positive/30"
                 : "bg-background text-muted-foreground border-border hover:bg-secondary/50"}`}>
-              {f === "" ? t.common.all : f === "office" ? t.expenses.typeOffice : t.expenses.typeOther}
+              {f === "" ? t.common.all : f === "office" ? t.expenses.typeOffice : f === "other" ? t.expenses.typeOther : t.expenses.typeProductCost}
             </button>
           ))}
         </div>
@@ -473,8 +477,10 @@ export default function ExpensePage() {
                     <TableCell className="px-1.5">
                       <Badge className={exp.type === "office"
                         ? "bg-info/15 text-info hover:bg-info/15"
-                        : "bg-[oklch(0.6_0.18_300)]/15 text-[oklch(0.6_0.18_300)] hover:bg-[oklch(0.6_0.18_300)]/15"}>
-                        {exp.type === "office" ? t.expenses.typeOffice : t.expenses.typeOther}
+                        : exp.type === "other"
+                        ? "bg-[oklch(0.6_0.18_300)]/15 text-[oklch(0.6_0.18_300)] hover:bg-[oklch(0.6_0.18_300)]/15"
+                        : "bg-amber-400/15 text-amber-300 hover:bg-amber-400/15"}>
+                        {exp.type === "office" ? t.expenses.typeOffice : exp.type === "other" ? t.expenses.typeOther : t.expenses.typeProductCost}
                       </Badge>
                     </TableCell>
                     <TableCell className="px-1.5 text-muted-foreground text-sm">{exp.category}</TableCell>
@@ -562,9 +568,13 @@ export default function ExpensePage() {
                 <label className="text-xs font-medium text-muted-foreground">{t.expenses.type}</label>
                 <select className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none"
                   value={form.type}
-                  onChange={e => setForm(f => ({ ...f, type: e.target.value as any, category: e.target.value === "office" ? OFFICE_CATS[0] : OTHER_CATS[0] }))}>
+                  onChange={e => setForm(f => ({
+                    ...f, type: e.target.value as any,
+                    category: e.target.value === "office" ? OFFICE_CATS[0] : e.target.value === "other" ? OTHER_CATS[0] : PRODUCT_COST_CATS[0],
+                  }))}>
                   <option value="office">{t.expenses.typeOffice}</option>
                   <option value="other">{t.expenses.typeOther}</option>
+                  <option value="productCost">{t.expenses.typeProductCost}</option>
                 </select>
               </div>
               <div className="flex flex-col gap-1.5">
