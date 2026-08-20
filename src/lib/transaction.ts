@@ -10,6 +10,7 @@ export interface TransactionListResponse {
 
 export const getTransactions = (params?: {
   type?: string;
+  expenseType?: string;
   contractNumber?: string;
   dateFrom?: string;
   dateTo?: string;

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { getEmployees, createEmployee, updateEmployee, deleteEmployee } from "@/lib/employee";
+import { getTransactions } from "@/lib/transaction";
 import { toDateInputValue } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocale, format } from "@/hooks/useLocale";
@@ -118,6 +119,7 @@ export default function EmployeePage() {
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [page, setPage] = useState(1);
+  const [paidThisMonth, setPaidThisMonth] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -128,6 +130,18 @@ export default function EmployeePage() {
   }, [t]);
 
   useEffect(() => { load(); }, [load]);
+
+  // "Ажилчдын цалин" төрлөөр Гүйлгээний дэвтэрт бүртгэсэн зарлагыг энэ сарын
+  // хүрээнд нэгтгэнэ — Зардал/Dashboard руу синк хийгддэггүй тул (давхар
+  // тооцохоос сэргийлж) энд тусад нь татна.
+  useEffect(() => {
+    const now = new Date();
+    const dateFrom = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+    const dateTo = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+    getTransactions({ type: "expense", expenseType: "salary", dateFrom, dateTo, limit: 1 })
+      .then(r => setPaidThisMonth(r.summary.totalExpense))
+      .catch(() => setPaidThisMonth(null));
+  }, []);
 
   const filtered = employees.filter(e => {
     if (typeFilter && e.type !== typeFilter) return false;
@@ -361,7 +375,7 @@ export default function EmployeePage() {
         </nav>
 
       <main className={layoutMode === "sidebar" ? "px-4 sm:px-6 py-6 sm:py-8" : "max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8"}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           <div className="glass-card glass-card-positive px-5 py-4">
             <p className="relative text-sm text-muted-foreground mb-1">{t.employees.statTotalEmployees}</p>
             <p className="relative stat-number text-2xl font-bold">{employees.length}</p>
@@ -383,6 +397,11 @@ export default function EmployeePage() {
             <p className="relative text-sm text-muted-foreground mb-1">{t.employees.statTotalCost}</p>
             <p className="relative stat-number text-2xl font-bold">{fmt(totalCost)}</p>
             <p className="relative text-xs text-muted-foreground mt-1">{t.employees.salaryPlusNd}</p>
+          </div>
+          <div className="glass-card px-5 py-4">
+            <p className="relative text-sm text-muted-foreground mb-1">{t.employees.statPaidThisMonth}</p>
+            <p className="relative stat-number text-2xl font-bold">{paidThisMonth != null ? fmt(paidThisMonth) : "—"}</p>
+            <p className="relative text-xs text-muted-foreground mt-1">{t.employees.paidThisMonthSub}</p>
           </div>
         </div>
 

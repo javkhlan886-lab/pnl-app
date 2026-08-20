@@ -104,7 +104,7 @@ const EMPTY_TX: NewTx = {
 // Зардал хуудасны 4 төрөлтэй яг ижил — сонговол Гүйлгээний дэвтрийн
 // зарлага Зардал menu рүү автоматаар синк хийгдэнэ (Saas Back-ийн
 // syncLinkedExpense, EXPENSE_TYPE_DEFAULT_CATEGORY-той тааруулсан).
-const EXPENSE_TYPES = ["office", "other", "productCost", "marketing"] as const;
+const EXPENSE_TYPES = ["office", "other", "productCost", "marketing", "salary"] as const;
 
 export default function TransactionPage() {
   const navigate = useNavigate();
@@ -782,12 +782,15 @@ export default function TransactionPage() {
                             {value === "office" ? t.expenses.typeOffice
                               : value === "other" ? t.expenses.typeOther
                               : value === "productCost" ? t.expenses.typeProductCost
-                              : t.expenses.typeMarketing}
+                              : value === "marketing" ? t.expenses.typeMarketing
+                              : t.transactions.expenseTypeSalary}
                           </button>
                         ))}
                       </div>
                       {newTx.expenseType && (
-                        <p className="text-xs text-muted-foreground">{t.transactions.expenseTypeSyncNote}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {newTx.expenseType === "salary" ? t.transactions.expenseTypeSyncNoteSalary : t.transactions.expenseTypeSyncNote}
+                        </p>
                       )}
                     </div>
                   )}
