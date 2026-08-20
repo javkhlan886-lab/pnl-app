@@ -41,7 +41,7 @@ const CATEGORIES = ["Бараа", "Материал", "Бэлэн бүтээгд
 
 const EMPTY = {
   name: "", category: "", description: "", unit: "",
-  quantity: 0, price: 0, discountPercent: 0, discountStartDate: "", discountEndDate: "",
+  quantity: 0, price: 0, cost: 0, discountPercent: 0, discountStartDate: "", discountEndDate: "",
   issuedQty: 0, note: "", currency: "₮", status: "active",
 };
 
@@ -68,7 +68,7 @@ const sellingPrice = (p: any) => {
 const discountedValue = (list: any[]) => list.reduce((s, p) => s + sellingPrice(p) * p.quantity, 0);
 
 type SortKey =
-  | "index" | "name" | "category" | "unit" | "quantity" | "price"
+  | "index" | "name" | "category" | "unit" | "quantity" | "price" | "cost"
   | "sellingPrice" | "issuedQty" | "revenue" | "remainingQty" | "status";
 
 // Баганын толгой дээр дарахад ижил утгатай мөрүүд зэрэгцэн эрэмбэлэгдэж
@@ -82,6 +82,7 @@ const sortValue = (p: any, idx: number, key: SortKey): string | number => {
     case "unit": return (p.unit || "").toLowerCase();
     case "quantity": return p.quantity;
     case "price": return p.price;
+    case "cost": return p.cost;
     case "sellingPrice": return sellingPrice(p);
     case "issuedQty": return p.issuedQty;
     case "revenue": return p.issuedQty * sellingPrice(p);
@@ -119,6 +120,7 @@ export default function ProductPage() {
   const [search, setSearch] = useState("");
   const [quantityDisplay, setQuantityDisplay] = useState("");
   const [priceDisplay, setPriceDisplay] = useState("");
+  const [costDisplay, setCostDisplay] = useState("");
   const [issuedDisplay, setIssuedDisplay] = useState("");
   const [discountEnabled, setDiscountEnabled] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -298,7 +300,7 @@ export default function ProductPage() {
 
   const openCreate = () => {
     setForm({ ...EMPTY }); setEditing(null);
-    setQuantityDisplay(""); setPriceDisplay(""); setIssuedDisplay(""); setDiscountEnabled(false); setOpen(true);
+    setQuantityDisplay(""); setPriceDisplay(""); setCostDisplay(""); setIssuedDisplay(""); setDiscountEnabled(false); setOpen(true);
   };
   const openEdit = (p: any) => {
     setForm({
@@ -309,6 +311,7 @@ export default function ProductPage() {
     setEditing(p._id);
     setQuantityDisplay(p.quantity ? Number(p.quantity).toLocaleString("mn-MN") : "");
     setPriceDisplay(p.price ? Number(p.price).toLocaleString("mn-MN") : "");
+    setCostDisplay(p.cost ? Number(p.cost).toLocaleString("mn-MN") : "");
     setIssuedDisplay(p.issuedQty ? Number(p.issuedQty).toLocaleString("mn-MN") : "");
     setDiscountEnabled(!!p.discountPercent && p.discountPercent > 0);
     setOpen(true);
@@ -798,6 +801,7 @@ export default function ProductPage() {
                   <SortableHead sortKeyName="unit" label={t.products.colUnit} />
                   <SortableHead sortKeyName="quantity" label={t.products.colQuantity} align="right" />
                   <SortableHead sortKeyName="price" label={t.products.colPrice} align="center" />
+                  <SortableHead sortKeyName="cost" label={t.products.colCost} align="center" />
                   <SortableHead sortKeyName="sellingPrice" label={t.products.colSellingPrice} align="right" />
                   <SortableHead sortKeyName="issuedQty" label={t.products.colIssuedQty} align="right" />
                   <SortableHead sortKeyName="revenue" label={t.products.colRevenue} align="right" />
@@ -823,6 +827,7 @@ export default function ProductPage() {
                     <TableCell className="px-1.5 text-muted-foreground text-sm">{p.unit || "—"}</TableCell>
                     <TableCell className="px-1.5 text-right stat-number">{Number(p.quantity).toLocaleString("mn-MN")}</TableCell>
                     <TableCell className="px-1.5 text-center stat-number">{fmt(p.price)}</TableCell>
+                    <TableCell className="px-1.5 text-center text-muted-foreground stat-number">{fmt(p.cost)}</TableCell>
                     <TableCell className="px-1.5 text-right stat-number">
                       <div className="flex items-center justify-end gap-1.5">
                         {p.discountPercent > 0 && sellingPrice(p) < p.price && (
@@ -967,6 +972,17 @@ export default function ProductPage() {
                     const num = Number(raw) || 0;
                     setPriceDisplay(num === 0 ? "" : num.toLocaleString("mn-MN"));
                     setForm(f => ({ ...f, price: num }));
+                  }} placeholder="0" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted-foreground">{t.products.cost}</label>
+                <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
+                  inputMode="numeric" value={costDisplay}
+                  onChange={e => {
+                    const raw = e.target.value.replace(/[^0-9]/g, "");
+                    const num = Number(raw) || 0;
+                    setCostDisplay(num === 0 ? "" : num.toLocaleString("mn-MN"));
+                    setForm(f => ({ ...f, cost: num }));
                   }} placeholder="0" />
               </div>
               <div className="sm:col-span-2 flex flex-col gap-2">

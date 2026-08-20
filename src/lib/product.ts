@@ -9,6 +9,7 @@ export interface Product {
   unit?: string | null;
   quantity: number;
   price: number;
+  cost: number;
   discountPercent: number;
   discountStartDate?: string | null;
   discountEndDate?: string | null;
