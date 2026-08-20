@@ -52,7 +52,7 @@ export const exportTransactions = async (params?: {
   const query = new URLSearchParams(clean).toString();
   const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
   const res = await fetch(`${baseUrl}/transactions/export?${query}`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, "X-Service-Key": "pnl-app" },
   });
   if (!res.ok) throw new Error("Export алдаа");
   const blob = await res.blob();

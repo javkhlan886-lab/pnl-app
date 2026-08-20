@@ -463,7 +463,7 @@ export default function ProductPage() {
       const token = localStorage.getItem("token");
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
       const res = await fetch(`${apiUrl}/products/export?locale=${locale}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, "X-Service-Key": "pnl-app" },
       });
       if (!res.ok) throw new Error(t.products.exportError);
       const blob = await res.blob();
