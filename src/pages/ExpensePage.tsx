@@ -43,7 +43,7 @@ const MARKETING_CATS = ["Сошиал медиа", "Google Ads", "Пост, ба
 
 const EMPTY = {
   type: "office" as "office" | "other" | "productCost" | "marketing",
-  category: "Оффис", description: "",
+  category: "", description: "",
   unitPrice: 0, quantity: 1, amount: 0, date: new Date().toISOString().split("T")[0],
   status: "pending" as "approved" | "pending" | "rejected", note: "",
 };
@@ -52,7 +52,7 @@ const fmt = (n: number) => "₮" + Math.round(n).toLocaleString("mn-MN");
 
 const PAGE_SIZE = 20;
 
-type SortKey = "date" | "type" | "category" | "description" | "amount" | "status";
+type SortKey = "date" | "type" | "category" | "description" | "unitPrice" | "quantity" | "amount" | "status";
 
 // Баганын толгой дээр дарахад ижил утгатай мөрүүд зэрэгцэн эрэмбэлэгдэж харагдана.
 const sortValue = (e: any, key: SortKey): string | number => {
@@ -61,6 +61,8 @@ const sortValue = (e: any, key: SortKey): string | number => {
     case "type": return e.type;
     case "category": return (e.category || "").toLowerCase();
     case "description": return (e.description || "").toLowerCase();
+    case "unitPrice": return e.unitPrice;
+    case "quantity": return e.quantity;
     case "amount": return e.amount;
     case "status": return e.status;
   }
@@ -104,8 +106,10 @@ export default function ExpensePage() {
   const [products, setProducts] = useState<any[]>([]);
   const [partners, setPartners] = useState<any[]>([]);
   const [pnlRecords, setPnlRecords] = useState<any[]>([]);
-  const [marketingLinkType, setMarketingLinkType] = useState<"" | "product" | "partner" | "pnl">("");
-  const [marketingLinkName, setMarketingLinkName] = useState("");
+  const [marketingLink1Type, setMarketingLink1Type] = useState<"" | "product" | "partner" | "pnl">("");
+  const [marketingLink1Name, setMarketingLink1Name] = useState("");
+  const [marketingLink2Type, setMarketingLink2Type] = useState<"" | "product" | "partner" | "pnl">("");
+  const [marketingLink2Name, setMarketingLink2Name] = useState("");
   const [marketingMode, setMarketingMode] = useState<"amount" | "percent">("amount");
   const [marketingBase, setMarketingBase] = useState(0);
   const [marketingBaseDisplay, setMarketingBaseDisplay] = useState("");
@@ -202,7 +206,9 @@ export default function ExpensePage() {
   }, [typeFilter, filtered.length, expenses.length, totalApproved, totalPending, officeTotal, otherTotal, t]);
 
   const resetMarketingFields = () => {
-    setMarketingLinkType(""); setMarketingLinkName(""); setMarketingMode("amount");
+    setMarketingLink1Type(""); setMarketingLink1Name("");
+    setMarketingLink2Type(""); setMarketingLink2Name("");
+    setMarketingMode("amount");
     setMarketingBase(0); setMarketingBaseDisplay(""); setMarketingPercent(0);
   };
 
@@ -218,10 +224,10 @@ export default function ExpensePage() {
     resetMarketingFields(); setOpen(true);
   };
 
-  const marketingLinkOptions = (): string[] => {
-    if (marketingLinkType === "product") return products.map(p => p.name).filter(Boolean);
-    if (marketingLinkType === "partner") return partners.map(p => p.name).filter(Boolean);
-    if (marketingLinkType === "pnl") return pnlRecords.map(r => r.company || r.contractNumber).filter(Boolean);
+  const marketingLinkOptions = (linkType: "" | "product" | "partner" | "pnl"): string[] => {
+    if (linkType === "product") return products.map(p => p.name).filter(Boolean);
+    if (linkType === "partner") return partners.map(p => p.name).filter(Boolean);
+    if (linkType === "pnl") return pnlRecords.map(r => r.company || r.contractNumber).filter(Boolean);
     return [];
   };
 
@@ -502,7 +508,9 @@ export default function ExpensePage() {
                   <SortableHead sortKeyName="type" label={t.expenses.colType} />
                   <SortableHead sortKeyName="category" label={t.expenses.colCategory} />
                   <SortableHead sortKeyName="description" label={t.expenses.colDescription} />
-                  <SortableHead sortKeyName="amount" label={t.expenses.colAmount} align="right" />
+                  <SortableHead sortKeyName="unitPrice" label={t.expenses.colUnitCost} align="right" />
+                  <SortableHead sortKeyName="quantity" label={t.expenses.colSoldQty} align="right" />
+                  <SortableHead sortKeyName="amount" label={t.expenses.colTotalCost} align="right" />
                   <SortableHead sortKeyName="status" label={t.expenses.colStatus} />
                   <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.expenses.colActions}</TableHead>
                 </TableRow>
@@ -530,6 +538,8 @@ export default function ExpensePage() {
                     </TableCell>
                     <TableCell className="px-1.5 text-muted-foreground text-sm">{exp.category}</TableCell>
                     <TableCell className="px-1.5 font-medium">{exp.description}</TableCell>
+                    <TableCell className="px-1.5 text-right text-muted-foreground stat-number">{fmt(exp.unitPrice)}</TableCell>
+                    <TableCell className="px-1.5 text-right text-muted-foreground stat-number">{Number(exp.quantity).toLocaleString("mn-MN")}</TableCell>
                     <TableCell className="px-1.5 text-right font-medium text-negative stat-number">{fmt(exp.amount)}</TableCell>
                     <TableCell className="px-1.5">
                       <div className="relative inline-block">
@@ -613,10 +623,7 @@ export default function ExpensePage() {
                 <label className="text-xs font-medium text-muted-foreground">{t.expenses.type}</label>
                 <select className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none"
                   value={form.type}
-                  onChange={e => setForm(f => ({
-                    ...f, type: e.target.value as any,
-                    category: catsForType(e.target.value)[0][0],
-                  }))}>
+                  onChange={e => setForm(f => ({ ...f, type: e.target.value as any, category: "" }))}>
                   <option value="office">{t.expenses.typeOffice}</option>
                   <option value="other">{t.expenses.typeOther}</option>
                   <option value="productCost">{t.expenses.typeProductCost}</option>
@@ -642,7 +649,9 @@ export default function ExpensePage() {
               {form.type === "marketing" && (
                 <div className="sm:col-span-2 flex flex-col gap-3 bg-secondary/30 rounded-lg p-3">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">{t.expenses.marketingLinkLabel}</label>
+                    <label className="text-xs font-medium text-muted-foreground">
+                      {format(t.expenses.marketingLinkNLabel, { n: "1" })}
+                    </label>
                     <div className="flex items-center gap-2 flex-wrap">
                       {([
                         ["product", t.common.navProducts],
@@ -650,8 +659,8 @@ export default function ExpensePage() {
                         ["pnl", t.common.navDashboard],
                       ] as const).map(([value, label]) => (
                         <button key={value} type="button"
-                          onClick={() => { setMarketingLinkType(value); setMarketingLinkName(""); }}
-                          className={`h-8 px-3 text-xs rounded-lg border ${marketingLinkType === value
+                          onClick={() => { setMarketingLink1Type(value); setMarketingLink1Name(""); }}
+                          className={`h-8 px-3 text-xs rounded-lg border ${marketingLink1Type === value
                             ? "bg-positive/15 text-positive border-positive/30"
                             : "bg-background text-muted-foreground border-border hover:bg-secondary/50"}`}>
                           {label}
@@ -659,16 +668,52 @@ export default function ExpensePage() {
                       ))}
                     </div>
                   </div>
-                  {marketingLinkType && (
+                  {marketingLink1Type && (
                     <div className="flex flex-col gap-1.5">
                       <label className="text-xs font-medium text-muted-foreground">{t.expenses.marketingEntityLabel}</label>
                       <Combobox
-                        value={marketingLinkName}
+                        value={marketingLink1Name}
                         onChange={(v) => {
-                          setMarketingLinkName(v);
+                          setMarketingLink1Name(v);
                           if (!form.description.trim()) setForm(f => ({ ...f, description: `${v} — Маркетинг` }));
                         }}
-                        options={marketingLinkOptions()}
+                        options={marketingLinkOptions(marketingLink1Type)}
+                        placeholder={t.expenses.marketingEntityPlaceholder} />
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      {format(t.expenses.marketingLinkNLabel, { n: "2" })}
+                    </label>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {([
+                        ["product", t.common.navProducts],
+                        ["partner", t.common.navPartners],
+                        ["pnl", t.common.navDashboard],
+                      ] as const).map(([value, label]) => (
+                        <button key={value} type="button"
+                          onClick={() => { setMarketingLink2Type(value); setMarketingLink2Name(""); }}
+                          className={`h-8 px-3 text-xs rounded-lg border ${marketingLink2Type === value
+                            ? "bg-positive/15 text-positive border-positive/30"
+                            : "bg-background text-muted-foreground border-border hover:bg-secondary/50"}`}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {marketingLink2Type && (
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">{t.expenses.marketingEntityLabel}</label>
+                      <Combobox
+                        value={marketingLink2Name}
+                        onChange={(v) => {
+                          setMarketingLink2Name(v);
+                          if (!form.description.trim()) {
+                            const prefix = marketingLink1Name ? `${marketingLink1Name} — ${v}` : v;
+                            setForm(f => ({ ...f, description: `${prefix} — Маркетинг` }));
+                          }
+                        }}
+                        options={marketingLinkOptions(marketingLink2Type)}
                         placeholder={t.expenses.marketingEntityPlaceholder} />
                     </div>
                   )}
