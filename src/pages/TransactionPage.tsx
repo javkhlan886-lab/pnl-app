@@ -17,7 +17,7 @@ import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { getRecent, addRecent } from "@/lib/recentValues";
 import { toast } from "@/lib/toast";
 import { fmtDate, toDateInputValue } from "@/lib/utils";
-import { Transaction, ContractSummary } from "@/types";
+import { Transaction, ContractSummary, PNLRecord } from "@/types";
 import { setAiPageContext } from "@/lib/aiPageContext";
 import { useLayoutMode } from "@/lib/layoutMode";
 import { Sidebar } from "@/components/Sidebar";
@@ -82,6 +82,7 @@ interface NewTx {
   productId: string;
   quantity: string;
   expenseType: string;
+  pnlIncomeRowIndex: string;
 }
 
 const EMPTY_TX: NewTx = {
@@ -95,6 +96,7 @@ const EMPTY_TX: NewTx = {
   productId: "",
   quantity: "",
   expenseType: "",
+  pnlIncomeRowIndex: "",
 };
 
 // Зардал хуудасны 4 төрөлтэй яг ижил — сонговол Гүйлгээний дэвтрийн
@@ -142,18 +144,26 @@ export default function TransactionPage() {
   const [contractNotFound, setContractNotFound] = useState(false);
 
   const [pnlContracts, setPnlContracts] = useState<{ contractNumber: string; company: string; label: string }[]>([]);
+  // Гэрээ сонгосны дараа тухайн тайлангийн орох ёстой орлогын мөрүүдээс
+  // сонгуулахад ашиглана (contractNumber → PNLRecord, давхардсан гэрээний
+  // дугаартай тайлан байвал сүүлд ирснийг нь авна — ховор тохиолдол).
+  const [pnlByContract, setPnlByContract] = useState<Record<string, PNLRecord>>({});
   useEffect(() => {
     getPNLList().then(list => {
       const seen = new Set<string>();
       const options: { contractNumber: string; company: string; label: string }[] = [];
+      const byContract: Record<string, PNLRecord> = {};
       list.forEach(r => {
         const num = r.contractNumber?.trim();
-        if (!num || seen.has(num)) return;
+        if (!num) return;
+        byContract[num] = r;
+        if (seen.has(num)) return;
         seen.add(num);
         options.push({ contractNumber: num, company: r.company || "", label: r.company ? `${num} — ${r.company}` : num });
       });
       setPnlContracts(options);
-    }).catch(() => setPnlContracts([]));
+      setPnlByContract(byContract);
+    }).catch(() => { setPnlContracts([]); setPnlByContract({}); });
   }, []);
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -161,6 +171,18 @@ export default function TransactionPage() {
     getProducts().then(setProducts).catch(() => setProducts([]));
   }, []);
   const selectedProduct = products.find(p => p._id === newTx.productId) ?? null;
+
+  // Сонгосон Гэрээний тайлангийн орох ёстой боловч Гүйлгээний дэвтэрт
+  // хараахан баталгаажаагүй орлогын мөрүүд — засаж буй гүйлгээ өөрөө
+  // тэмдэглэсэн мөрийг ("editingTxId"-тай тохирох receivedTransactionId)
+  // мөн жагсаалтад оруулна, эс тэгвэл засах үед сонголт алга болно.
+  const unreceivedIncomeRows = (() => {
+    const contract = newTx.contractNumber ? pnlByContract[newTx.contractNumber] : null;
+    if (!contract) return [];
+    return contract.incomeRows
+      .map((row, index) => ({ row, index }))
+      .filter(({ row }) => !row.received || (editingTxId && row.receivedTransactionId === editingTxId));
+  })();
 
   const NAV_ITEMS = [
     { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
@@ -344,6 +366,9 @@ export default function TransactionPage() {
         productId: linkProduct ? newTx.productId : null,
         quantity: linkProduct ? Number(newTx.quantity) : null,
         expenseType: newTx.type === "expense" ? (newTx.expenseType || null) : null,
+        pnlIncomeRowIndex: newTx.type === "income" && newTx.pnlIncomeRowIndex !== ""
+          ? Number(newTx.pnlIncomeRowIndex)
+          : null,
       };
       addCustomCategory(newTx.type === "income" ? "transactions_income" : "transactions_expense", newTx.category);
       addRecent("transactions", "description", payload.description);
@@ -374,6 +399,8 @@ export default function TransactionPage() {
 
   const openEditModal = (tx: Transaction) => {
     setEditingTxId(tx._id!);
+    const linkedContract = tx.contractNumber ? pnlByContract[tx.contractNumber] : null;
+    const receivedRowIndex = linkedContract?.incomeRows.findIndex(r => r.receivedTransactionId === tx._id) ?? -1;
     setNewTx({
       date: toDateInputValue(tx.date),
       description: tx.description,
@@ -385,6 +412,7 @@ export default function TransactionPage() {
       productId: tx.productId ?? "",
       quantity: tx.quantity != null ? String(tx.quantity) : "",
       expenseType: tx.expenseType ?? "",
+      pnlIncomeRowIndex: receivedRowIndex >= 0 ? String(receivedRowIndex) : "",
     });
     setSaveError("");
     setShowModal(true);
@@ -517,6 +545,7 @@ export default function TransactionPage() {
                       productId: txType === "income" ? prev.productId : "",
                       quantity: txType === "income" ? prev.quantity : "",
                       expenseType: txType === "expense" ? prev.expenseType : "",
+                      pnlIncomeRowIndex: txType === "income" ? prev.pnlIncomeRowIndex : "",
                     }));
                   }}
                     className={`flex-1 py-2.5 rounded-xl text-sm font-medium border-2 transition-colors ${
@@ -663,6 +692,7 @@ export default function TransactionPage() {
                       setNewTx(p => ({
                         ...p,
                         contractNumber: num,
+                        pnlIncomeRowIndex: "",
                         description: !p.description.trim() && contract?.company
                           ? `${contract.company} — ${num}`
                           : p.description,
@@ -674,6 +704,31 @@ export default function TransactionPage() {
                   </select>
                 </div>
               </div>
+
+              {newTx.type === "income" && newTx.contractNumber && unreceivedIncomeRows.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">{t.transactions.pnlIncomeRowLabel}</Label>
+                  <select
+                    value={newTx.pnlIncomeRowIndex}
+                    onChange={e => {
+                      const idxStr = e.target.value;
+                      const row = idxStr ? unreceivedIncomeRows.find(x => String(x.index) === idxStr) : null;
+                      setNewTx(p => ({
+                        ...p,
+                        pnlIncomeRowIndex: idxStr,
+                        amount: row ? formatAmount(String(row.row.amount)) : p.amount,
+                      }));
+                    }}
+                    className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring">
+                    <option value="">{t.transactions.pnlIncomeRowNone}</option>
+                    {unreceivedIncomeRows.map(({ index, row }) => (
+                      <option key={index} value={index}>
+                        {(row.name || t.transactions.pnlIncomeRowUnnamed)} — ₮{Number(row.amount).toLocaleString("mn-MN")}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <Label className="text-xs">{t.transactions.noteLabel}</Label>

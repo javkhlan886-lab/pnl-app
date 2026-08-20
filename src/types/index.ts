@@ -5,6 +5,11 @@ export interface Row {
   quantity?: number;
   amount: number;
   hasVat?: boolean;
+  // incomeRows-д ашиглана — Гүйлгээний дэвтэрт холбогдох орлого орсныг
+  // тэмдэглэнэ, зөвхөн backend-ээс автоматаар тохируулагдана.
+  received?: boolean;
+  receivedTransactionId?: string | null;
+  receivedDate?: string | null;
 }
 
 // Тайланг оруулсан хэрэглэгч — backend зөвхөн Level 1, 2 (admin, manager)-д илгээнэ.

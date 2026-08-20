@@ -133,7 +133,7 @@ const RowSection = ({ type, label, rows, currency, total, onUpdate, onAdd, onDel
       </div>
       {rows.map((r, i) => (
         <div key={i} className="grid grid-cols-12 gap-0 px-3 py-1.5 border-b last:border-0 hover:bg-muted/20 items-center">
-          <div className="col-span-3 pr-2">
+          <div className="col-span-3 pr-2 flex items-center gap-1.5">
             <Combobox
               value={r.name}
               onChange={(v) => onUpdate(i, "name", v)}
@@ -141,6 +141,11 @@ const RowSection = ({ type, label, rows, currency, total, onUpdate, onAdd, onDel
               placeholder={t.pnlForm.namePlaceholder}
               className={rowComboboxClassName}
             />
+            {type === "incomeRows" && r.received && (
+              <span title={t.pnlForm.incomeRowReceivedTitle} className="shrink-0 text-positive">
+                <CheckCircle2 className="w-4 h-4" />
+              </span>
+            )}
           </div>
           <div className="col-span-2 pr-2 opacity-60">
             <Combobox
