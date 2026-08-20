@@ -2,6 +2,9 @@ import { useEffect, useState, useCallback, useTransition } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { getExpenses, createExpense, updateExpense, deleteExpense } from "@/lib/expense";
+import { getProducts } from "@/lib/product";
+import { getPartners } from "@/lib/partner";
+import { getPNLList } from "@/lib/pnl";
 import { fmtDate, toDateInputValue } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocale, format } from "@/hooks/useLocale";
@@ -94,6 +97,19 @@ export default function ExpensePage() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [page, setPage] = useState(1);
 
+  // "Маркетинг" ангилалтай зардал нэмэхэд ашиглах холбоос/хувиар тооцоолол —
+  // Expense-д структуртай холбоос хадгалах багана байхгүй тул зөвхөн
+  // Тайлбар талбарыг бөглөхөд ашиглана (доор), тусад нь хадгалагдахгүй.
+  const [products, setProducts] = useState<any[]>([]);
+  const [partners, setPartners] = useState<any[]>([]);
+  const [pnlRecords, setPnlRecords] = useState<any[]>([]);
+  const [marketingLinkType, setMarketingLinkType] = useState<"" | "product" | "partner" | "pnl">("");
+  const [marketingLinkName, setMarketingLinkName] = useState("");
+  const [marketingMode, setMarketingMode] = useState<"amount" | "percent">("amount");
+  const [marketingBase, setMarketingBase] = useState(0);
+  const [marketingBaseDisplay, setMarketingBaseDisplay] = useState("");
+  const [marketingPercent, setMarketingPercent] = useState(0);
+
   const NAV_ITEMS = [
     { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
     { path: "/products", label: t.common.navProducts, icon: <Package className="w-4 h-4" /> },
@@ -120,6 +136,11 @@ export default function ExpensePage() {
   }, [t]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    getProducts().then(setProducts).catch(() => {});
+    getPartners().then(setPartners).catch(() => {});
+    getPNLList().then(setPnlRecords).catch(() => {});
+  }, []);
 
   const filtered = typeFilter ? expenses.filter(e => e.type === typeFilter) : expenses;
   const totalApproved = filtered.filter(e => e.status === "approved").reduce((s, e) => s + e.amount, 0);
@@ -179,15 +200,28 @@ export default function ExpensePage() {
     return () => setAiPageContext(null);
   }, [typeFilter, filtered.length, expenses.length, totalApproved, totalPending, officeTotal, otherTotal, t]);
 
+  const resetMarketingFields = () => {
+    setMarketingLinkType(""); setMarketingLinkName(""); setMarketingMode("amount");
+    setMarketingBase(0); setMarketingBaseDisplay(""); setMarketingPercent(0);
+  };
+
   const openCreate = () => {
-    setForm({ ...EMPTY }); setEditing(null); setUnitPriceDisplay(""); setQuantityInput(1); setAmountDisplay(""); setOpen(true);
+    setForm({ ...EMPTY }); setEditing(null); setUnitPriceDisplay(""); setQuantityInput(1); setAmountDisplay("");
+    resetMarketingFields(); setOpen(true);
   };
   const openEdit = (exp: any) => {
     setForm({ ...exp, date: toDateInputValue(exp.date) }); setEditing(exp._id);
     setUnitPriceDisplay(exp.unitPrice ? Number(exp.unitPrice).toLocaleString("mn-MN") : "");
     setQuantityInput(exp.quantity || 1);
     setAmountDisplay(exp.amount === 0 ? "" : exp.amount.toLocaleString("mn-MN"));
-    setOpen(true);
+    resetMarketingFields(); setOpen(true);
+  };
+
+  const marketingLinkOptions = (): string[] => {
+    if (marketingLinkType === "product") return products.map(p => p.name).filter(Boolean);
+    if (marketingLinkType === "partner") return partners.map(p => p.name).filter(Boolean);
+    if (marketingLinkType === "pnl") return pnlRecords.map(r => r.company || r.contractNumber).filter(Boolean);
+    return [];
   };
 
   const handleSave = async () => {
@@ -558,11 +592,11 @@ export default function ExpensePage() {
     </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editing ? t.expenses.editExpense : t.expenses.addExpense}</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col gap-3 py-2">
+          <div className="flex flex-col gap-3 py-2 max-h-[70vh] overflow-y-auto pr-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.expenses.type}</label>
@@ -593,45 +627,132 @@ export default function ExpensePage() {
                   options={getRecent("expenses", "description")}
                   placeholder={t.expenses.descriptionPlaceholder} />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">{t.expenses.unitPrice}</label>
-                <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
-                  inputMode="numeric" value={unitPriceDisplay}
-                  onChange={e => {
-                    const raw = e.target.value.replace(/[^0-9]/g, "");
-                    const num = Number(raw) || 0;
-                    setUnitPriceDisplay(num === 0 ? "" : num.toLocaleString("mn-MN"));
-                    setForm(f => {
-                      const qty = f.quantity || quantityInput || 1;
-                      const amount = num * qty;
-                      return { ...f, unitPrice: num, amount, quantity: qty };
-                    });
-                    setAmountDisplay(() => {
-                      const qty = quantityInput || 1;
-                      const total = (Number(raw) || 0) * qty;
-                      return total === 0 ? "" : total.toLocaleString("mn-MN");
-                    });
-                  }} placeholder="0" />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">{t.expenses.quantity}</label>
-                <input type="number" min={1} className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
-                  value={quantityInput}
-                  onChange={e => {
-                    const q = Math.max(1, Number(e.target.value) || 1);
-                    setQuantityInput(q);
-                    setForm(f => {
-                      const unit = f.unitPrice || (Number(unitPriceDisplay.replace(/[^0-9]/g, "")) || 0);
-                      const amount = unit * q;
-                      return { ...f, quantity: q, amount };
-                    });
-                    setAmountDisplay(() => {
-                      const unit = Number(unitPriceDisplay.replace(/[^0-9]/g, "")) || 0;
-                      const total = unit * q;
-                      return total === 0 ? "" : total.toLocaleString("mn-MN");
-                    });
-                  }} />
-              </div>
+              {form.type === "other" && form.category === "Маркетинг" && (
+                <div className="sm:col-span-2 flex flex-col gap-3 bg-secondary/30 rounded-lg p-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">{t.expenses.marketingLinkLabel}</label>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {([
+                        ["product", t.common.navProducts],
+                        ["partner", t.common.navPartners],
+                        ["pnl", t.common.navDashboard],
+                      ] as const).map(([value, label]) => (
+                        <button key={value} type="button"
+                          onClick={() => { setMarketingLinkType(value); setMarketingLinkName(""); }}
+                          className={`h-8 px-3 text-xs rounded-lg border ${marketingLinkType === value
+                            ? "bg-positive/15 text-positive border-positive/30"
+                            : "bg-background text-muted-foreground border-border hover:bg-secondary/50"}`}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {marketingLinkType && (
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">{t.expenses.marketingEntityLabel}</label>
+                      <Combobox
+                        value={marketingLinkName}
+                        onChange={(v) => {
+                          setMarketingLinkName(v);
+                          if (!form.description.trim()) setForm(f => ({ ...f, description: `${v} — Маркетинг` }));
+                        }}
+                        options={marketingLinkOptions()}
+                        placeholder={t.expenses.marketingEntityPlaceholder} />
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">{t.expenses.marketingModeLabel}</label>
+                    <div className="flex items-center gap-2">
+                      <button type="button" onClick={() => setMarketingMode("amount")}
+                        className={`h-8 px-3 text-xs rounded-lg border ${marketingMode === "amount"
+                          ? "bg-positive/15 text-positive border-positive/30"
+                          : "bg-background text-muted-foreground border-border hover:bg-secondary/50"}`}>
+                        {t.expenses.marketingModeAmount}
+                      </button>
+                      <button type="button" onClick={() => setMarketingMode("percent")}
+                        className={`h-8 px-3 text-xs rounded-lg border ${marketingMode === "percent"
+                          ? "bg-positive/15 text-positive border-positive/30"
+                          : "bg-background text-muted-foreground border-border hover:bg-secondary/50"}`}>
+                        {t.expenses.marketingModePercent}
+                      </button>
+                    </div>
+                  </div>
+                  {marketingMode === "percent" && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-muted-foreground">{t.expenses.marketingBaseLabel}</label>
+                        <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
+                          inputMode="numeric" value={marketingBaseDisplay}
+                          onChange={e => {
+                            const raw = e.target.value.replace(/[^0-9]/g, "");
+                            const num = Number(raw) || 0;
+                            setMarketingBaseDisplay(num === 0 ? "" : num.toLocaleString("mn-MN"));
+                            setMarketingBase(num);
+                            const amount = Math.round((num * marketingPercent) / 100);
+                            setForm(f => ({ ...f, amount, unitPrice: amount, quantity: 1 }));
+                            setAmountDisplay(amount === 0 ? "" : amount.toLocaleString("mn-MN"));
+                          }} placeholder="0" />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-muted-foreground">{t.expenses.marketingPercentLabel}</label>
+                        <input type="number" min={0} max={100} step={0.1}
+                          className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
+                          value={marketingPercent || ""}
+                          onChange={e => {
+                            const pct = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+                            setMarketingPercent(pct);
+                            const amount = Math.round((marketingBase * pct) / 100);
+                            setForm(f => ({ ...f, amount, unitPrice: amount, quantity: 1 }));
+                            setAmountDisplay(amount === 0 ? "" : amount.toLocaleString("mn-MN"));
+                          }} placeholder="0" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              {!(form.type === "other" && form.category === "Маркетинг" && marketingMode === "percent") && (
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">{t.expenses.unitPrice}</label>
+                    <input className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
+                      inputMode="numeric" value={unitPriceDisplay}
+                      onChange={e => {
+                        const raw = e.target.value.replace(/[^0-9]/g, "");
+                        const num = Number(raw) || 0;
+                        setUnitPriceDisplay(num === 0 ? "" : num.toLocaleString("mn-MN"));
+                        setForm(f => {
+                          const qty = f.quantity || quantityInput || 1;
+                          const amount = num * qty;
+                          return { ...f, unitPrice: num, amount, quantity: qty };
+                        });
+                        setAmountDisplay(() => {
+                          const qty = quantityInput || 1;
+                          const total = (Number(raw) || 0) * qty;
+                          return total === 0 ? "" : total.toLocaleString("mn-MN");
+                        });
+                      }} placeholder="0" />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">{t.expenses.quantity}</label>
+                    <input type="number" min={1} className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring text-right"
+                      value={quantityInput}
+                      onChange={e => {
+                        const q = Math.max(1, Number(e.target.value) || 1);
+                        setQuantityInput(q);
+                        setForm(f => {
+                          const unit = f.unitPrice || (Number(unitPriceDisplay.replace(/[^0-9]/g, "")) || 0);
+                          const amount = unit * q;
+                          return { ...f, quantity: q, amount };
+                        });
+                        setAmountDisplay(() => {
+                          const unit = Number(unitPriceDisplay.replace(/[^0-9]/g, "")) || 0;
+                          const total = unit * q;
+                          return total === 0 ? "" : total.toLocaleString("mn-MN");
+                        });
+                      }} />
+                  </div>
+                </>
+              )}
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.expenses.totalAmount}</label>
