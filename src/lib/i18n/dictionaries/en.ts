@@ -473,6 +473,7 @@ export const en: Dictionary = {
     searchPlaceholder: "Search — name, category, description...",
     colIndex: "No.",
     colName: "Name",
+    colDate: "Date",
     colCategory: "Category",
     colUnit: "Unit",
     colQuantity: "Qty",

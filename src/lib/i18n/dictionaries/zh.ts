@@ -472,6 +472,7 @@ export const zh: Dictionary = {
     searchPlaceholder: "搜索 — 名称、类别、说明...",
     colIndex: "序号",
     colName: "名称",
+    colDate: "日期",
     colCategory: "类别",
     colUnit: "计量单位",
     colQuantity: "数量",

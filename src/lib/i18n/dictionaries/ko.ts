@@ -473,6 +473,7 @@ export const ko: Dictionary = {
     searchPlaceholder: "검색 — 이름, 분류, 설명...",
     colIndex: "번호",
     colName: "이름",
+    colDate: "날짜",
     colCategory: "분류",
     colUnit: "단위",
     colQuantity: "수량",

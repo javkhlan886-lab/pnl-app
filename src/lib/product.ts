@@ -18,6 +18,7 @@ export interface Product {
   currency: string;
   status: string;
   note?: string | null;
+  createdAt: string;
 }
 
 export const getProducts = (params?: { category?: string; status?: string; search?: string }): Promise<Product[]> =>

@@ -474,6 +474,7 @@ export const mn = {
     searchPlaceholder: "Хайх — нэр, ангилал, тодорхойлолт...",
     colIndex: "Д/Д",
     colName: "Нэр",
+    colDate: "Хугацаа",
     colCategory: "Ангилал",
     colUnit: "Хэмжээ",
     colQuantity: "Тоо",

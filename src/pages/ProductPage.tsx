@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { getRecent, addRecent } from "@/lib/recentValues";
-import { toDateInputValue } from "@/lib/utils";
+import { toDateInputValue, fmtDate } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { setAiPageContext } from "@/lib/aiPageContext";
 import { useLayoutMode } from "@/lib/layoutMode";
@@ -69,7 +69,7 @@ const discountedValue = (list: any[]) => list.reduce((s, p) => s + sellingPrice(
 
 type SortKey =
   | "index" | "name" | "category" | "unit" | "quantity" | "price" | "cost"
-  | "sellingPrice" | "issuedQty" | "revenue" | "remainingQty" | "status";
+  | "sellingPrice" | "issuedQty" | "revenue" | "remainingQty" | "status" | "date";
 
 // Баганын толгой дээр дарахад ижил утгатай мөрүүд зэрэгцэн эрэмбэлэгдэж
 // харагдана (жишээ нь Ангилал, Төлөв баганаар эрэмбэлэхэд ижил утгатай
@@ -88,6 +88,7 @@ const sortValue = (p: any, idx: number, key: SortKey): string | number => {
     case "revenue": return p.issuedQty * sellingPrice(p);
     case "remainingQty": return p.remainingQty;
     case "status": return p.status;
+    case "date": return p.createdAt ? new Date(p.createdAt).getTime() : 0;
   }
 };
 
@@ -797,6 +798,7 @@ export default function ProductPage() {
                   </TableHead>
                   <SortableHead sortKeyName="index" label={t.products.colIndex} className="w-6" />
                   <SortableHead sortKeyName="name" label={t.products.colName} />
+                  <SortableHead sortKeyName="date" label={t.products.colDate} />
                   <SortableHead sortKeyName="category" label={t.products.colCategory} />
                   <SortableHead sortKeyName="unit" label={t.products.colUnit} />
                   <SortableHead sortKeyName="quantity" label={t.products.colQuantity} align="right" />
@@ -823,6 +825,7 @@ export default function ProductPage() {
                       <div className="font-medium">{p.name}</div>
                       {p.description && <div className="text-xs text-muted-foreground">{p.description}</div>}
                     </TableCell>
+                    <TableCell className="px-1.5 text-muted-foreground text-sm">{fmtDate(p.createdAt)}</TableCell>
                     <TableCell className="px-1.5 text-muted-foreground text-sm">{p.category}</TableCell>
                     <TableCell className="px-1.5 text-muted-foreground text-sm">{p.unit || "—"}</TableCell>
                     <TableCell className="px-1.5 text-right stat-number">{Number(p.quantity).toLocaleString("mn-MN")}</TableCell>
