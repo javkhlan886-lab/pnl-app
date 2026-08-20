@@ -39,7 +39,7 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
   ChevronLeft, BarChart2, TableIcon, Upload, Download, Search,
   FileText, TrendingUp, TrendingDown, X, Trash2, Plus, Users, Box, Receipt,
-  ArrowLeftRight, Pencil, ShieldCheck, HardHat, Handshake, Package,
+  ArrowLeftRight, Pencil, ShieldCheck, HardHat, Handshake, Package, Link2, ChevronDown,
 } from "lucide-react";
 
 const fmt = (n: number) => "₮" + Math.round(Math.abs(n)).toLocaleString("mn-MN");
@@ -83,6 +83,7 @@ interface NewTx {
   quantity: string;
   expenseType: string;
   pnlIncomeRowIndex: string;
+  pnlExpenseRowIndex: string;
 }
 
 const EMPTY_TX: NewTx = {
@@ -97,6 +98,7 @@ const EMPTY_TX: NewTx = {
   quantity: "",
   expenseType: "",
   pnlIncomeRowIndex: "",
+  pnlExpenseRowIndex: "",
 };
 
 // Зардал хуудасны 4 төрөлтэй яг ижил — сонговол Гүйлгээний дэвтрийн
@@ -134,6 +136,10 @@ export default function TransactionPage() {
 
   const [showModal, setShowModal] = useState(false);
   const [editingTxId, setEditingTxId] = useState<string | null>(null);
+  // "Холбоос" (Бараа/Гэрээ/Зардлын төрөл) хэсгийг үндсэн талбаруудаас
+  // тусад нь, шаардлагатай үед л дэлгэдэг болгож хэрэглэгчийг хэт олон
+  // сонголтоор төөрүүлэхгүй байх зорилготой.
+  const [showLinks, setShowLinks] = useState(false);
   const [newTx, setNewTx] = useState<NewTx>(EMPTY_TX);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -180,6 +186,16 @@ export default function TransactionPage() {
     const contract = newTx.contractNumber ? pnlByContract[newTx.contractNumber] : null;
     if (!contract) return [];
     return contract.incomeRows
+      .map((row, index) => ({ row, index }))
+      .filter(({ row }) => !row.received || (editingTxId && row.receivedTransactionId === editingTxId));
+  })();
+
+  // Ижил логик, гэхдээ сонгосон тайлангийн ГАРАХ ёстой (expenseRows) боловч
+  // Гүйлгээний дэвтэрт хараахан төлөгдөөгүй зардлын мөрүүд.
+  const unpaidExpenseRows = (() => {
+    const contract = newTx.contractNumber ? pnlByContract[newTx.contractNumber] : null;
+    if (!contract) return [];
+    return contract.expenseRows
       .map((row, index) => ({ row, index }))
       .filter(({ row }) => !row.received || (editingTxId && row.receivedTransactionId === editingTxId));
   })();
@@ -369,6 +385,9 @@ export default function TransactionPage() {
         pnlIncomeRowIndex: newTx.type === "income" && newTx.pnlIncomeRowIndex !== ""
           ? Number(newTx.pnlIncomeRowIndex)
           : null,
+        pnlExpenseRowIndex: newTx.type === "expense" && newTx.pnlExpenseRowIndex !== ""
+          ? Number(newTx.pnlExpenseRowIndex)
+          : null,
       };
       addCustomCategory(newTx.type === "income" ? "transactions_income" : "transactions_expense", newTx.category);
       addRecent("transactions", "description", payload.description);
@@ -393,6 +412,7 @@ export default function TransactionPage() {
   const openModal = () => {
     setEditingTxId(null);
     setNewTx(EMPTY_TX);
+    setShowLinks(false);
     setSaveError("");
     setShowModal(true);
   };
@@ -401,6 +421,7 @@ export default function TransactionPage() {
     setEditingTxId(tx._id!);
     const linkedContract = tx.contractNumber ? pnlByContract[tx.contractNumber] : null;
     const receivedRowIndex = linkedContract?.incomeRows.findIndex(r => r.receivedTransactionId === tx._id) ?? -1;
+    const paidRowIndex = linkedContract?.expenseRows.findIndex(r => r.receivedTransactionId === tx._id) ?? -1;
     setNewTx({
       date: toDateInputValue(tx.date),
       description: tx.description,
@@ -413,7 +434,9 @@ export default function TransactionPage() {
       quantity: tx.quantity != null ? String(tx.quantity) : "",
       expenseType: tx.expenseType ?? "",
       pnlIncomeRowIndex: receivedRowIndex >= 0 ? String(receivedRowIndex) : "",
+      pnlExpenseRowIndex: paidRowIndex >= 0 ? String(paidRowIndex) : "",
     });
+    setShowLinks(!!(tx.productId || tx.contractNumber || tx.expenseType));
     setSaveError("");
     setShowModal(true);
   };
@@ -546,6 +569,7 @@ export default function TransactionPage() {
                       quantity: txType === "income" ? prev.quantity : "",
                       expenseType: txType === "expense" ? prev.expenseType : "",
                       pnlIncomeRowIndex: txType === "income" ? prev.pnlIncomeRowIndex : "",
+                      pnlExpenseRowIndex: txType === "expense" ? prev.pnlExpenseRowIndex : "",
                     }));
                   }}
                     className={`flex-1 py-2.5 rounded-xl text-sm font-medium border-2 transition-colors ${
@@ -561,87 +585,6 @@ export default function TransactionPage() {
                   </button>
                 ))}
               </div>
-
-              {newTx.type === "income" && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="sm:col-span-2 space-y-1.5">
-                    <Label className="text-xs">{t.transactions.productLabel}</Label>
-                    <SearchableSelect
-                      value={newTx.productId}
-                      onChange={(id) => {
-                        const product = products.find(p => p._id === id) ?? null;
-                        setNewTx(p => ({
-                          ...p,
-                          productId: id,
-                          amount: product && p.quantity
-                            ? formatAmount(String(sellingPrice(product) * Number(p.quantity)))
-                            : p.amount,
-                        }));
-                      }}
-                      options={products.map(p => ({
-                        id: p._id,
-                        label: `${p.name} (${p.remainingQty}${p.unit ? " " + p.unit : ""})`,
-                      }))}
-                      placeholder={t.transactions.productPlaceholder}
-                    />
-                    {selectedProduct && (
-                      <p className="text-xs text-muted-foreground">
-                        {format(t.transactions.remainingStockLine, {
-                          count: String(selectedProduct.remainingQty),
-                          unit: selectedProduct.unit ? ` ${selectedProduct.unit}` : "",
-                        })}
-                        {" · "}₮{sellingPrice(selectedProduct).toLocaleString("mn-MN")}
-                      </p>
-                    )}
-                  </div>
-                  {newTx.productId && (
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">{t.transactions.quantityLabel}</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="any"
-                        value={newTx.quantity}
-                        onChange={e => {
-                          const quantity = e.target.value;
-                          setNewTx(p => ({
-                            ...p,
-                            quantity,
-                            amount: selectedProduct && quantity
-                              ? formatAmount(String(sellingPrice(selectedProduct) * Number(quantity)))
-                              : p.amount,
-                          }));
-                        }}
-                        placeholder="0"
-                        className="h-9 text-sm text-right"
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {newTx.type === "expense" && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs">{t.transactions.expenseTypeLabel}</Label>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {EXPENSE_TYPES.map(value => (
-                      <button key={value} type="button"
-                        onClick={() => setNewTx(p => ({ ...p, expenseType: p.expenseType === value ? "" : value }))}
-                        className={`h-8 px-3 text-xs rounded-lg border ${newTx.expenseType === value
-                          ? "bg-positive/15 text-positive border-positive/30"
-                          : "bg-background text-muted-foreground border-border hover:bg-secondary/50"}`}>
-                        {value === "office" ? t.expenses.typeOffice
-                          : value === "other" ? t.expenses.typeOther
-                          : value === "productCost" ? t.expenses.typeProductCost
-                          : t.expenses.typeMarketing}
-                      </button>
-                    ))}
-                  </div>
-                  {newTx.expenseType && (
-                    <p className="text-xs text-muted-foreground">{t.transactions.expenseTypeSyncNote}</p>
-                  )}
-                </div>
-              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
@@ -672,61 +615,182 @@ export default function TransactionPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">{t.transactions.categoryLabel}</Label>
-                  <Combobox
-                    value={newTx.category}
-                    onChange={(v) => setNewTx(p => ({ ...p, category: v }))}
-                    options={categories}
-                    placeholder={t.transactions.categoryAddNewPlaceholder}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">{t.transactions.contractNumberLabel}</Label>
-                  <select
-                    value={newTx.contractNumber}
-                    onChange={e => {
-                      const num = e.target.value;
-                      const contract = pnlContracts.find(c => c.contractNumber === num);
-                      setNewTx(p => ({
-                        ...p,
-                        contractNumber: num,
-                        pnlIncomeRowIndex: "",
-                        description: !p.description.trim() && contract?.company
-                          ? `${contract.company} — ${num}`
-                          : p.description,
-                      }));
-                    }}
-                    className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm font-mono tracking-wide focus:outline-none focus:ring-1 focus:ring-ring">
-                    <option value="">{t.transactions.contractNumberNone}</option>
-                    {pnlContracts.map(c => <option key={c.contractNumber} value={c.contractNumber}>{c.label}</option>)}
-                  </select>
-                </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t.transactions.categoryLabel}</Label>
+                <Combobox
+                  value={newTx.category}
+                  onChange={(v) => setNewTx(p => ({ ...p, category: v }))}
+                  options={categories}
+                  placeholder={t.transactions.categoryAddNewPlaceholder}
+                />
               </div>
 
-              {newTx.type === "income" && newTx.contractNumber && unreceivedIncomeRows.length > 0 && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs">{t.transactions.pnlIncomeRowLabel}</Label>
-                  <select
-                    value={newTx.pnlIncomeRowIndex}
-                    onChange={e => {
-                      const idxStr = e.target.value;
-                      const row = idxStr ? unreceivedIncomeRows.find(x => String(x.index) === idxStr) : null;
-                      setNewTx(p => ({
-                        ...p,
-                        pnlIncomeRowIndex: idxStr,
-                        amount: row ? formatAmount(String(row.row.amount)) : p.amount,
-                      }));
-                    }}
-                    className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring">
-                    <option value="">{t.transactions.pnlIncomeRowNone}</option>
-                    {unreceivedIncomeRows.map(({ index, row }) => (
-                      <option key={index} value={index}>
-                        {(row.name || t.transactions.pnlIncomeRowUnnamed)} — ₮{Number(row.amount).toLocaleString("mn-MN")}
-                      </option>
-                    ))}
-                  </select>
+              {/* Холбоос: Бараа/Гэрээ/Зардлын төрөл — сонголт ихтэй тул
+                  анхандаа хаалттай, шаардлагатай үед л дэлгэнэ. */}
+              <button type="button" onClick={() => setShowLinks(v => !v)}
+                className="w-full flex items-center gap-2 h-9 px-3 rounded-lg border border-dashed border-border text-xs text-muted-foreground hover:text-foreground hover:border-solid hover:bg-secondary/40 transition-colors">
+                <Link2 className="w-3.5 h-3.5 shrink-0" />
+                <span className="flex-1 text-left">
+                  {showLinks ? t.transactions.linksHide : t.transactions.linksShow}
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform ${showLinks ? "rotate-180" : ""}`} />
+              </button>
+
+              {showLinks && (
+                <div className="rounded-xl border border-border/60 bg-secondary/20 p-3 space-y-3">
+                  {newTx.type === "income" && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="sm:col-span-2 space-y-1.5">
+                        <Label className="text-xs">{t.transactions.productLabel}</Label>
+                        <SearchableSelect
+                          value={newTx.productId}
+                          onChange={(id) => {
+                            const product = products.find(p => p._id === id) ?? null;
+                            setNewTx(p => ({
+                              ...p,
+                              productId: id,
+                              amount: product && p.quantity
+                                ? formatAmount(String(sellingPrice(product) * Number(p.quantity)))
+                                : p.amount,
+                            }));
+                          }}
+                          options={products.map(p => ({
+                            id: p._id,
+                            label: `${p.name} (${p.remainingQty}${p.unit ? " " + p.unit : ""})`,
+                          }))}
+                          placeholder={t.transactions.productPlaceholder}
+                        />
+                        {selectedProduct && (
+                          <p className="text-xs text-muted-foreground">
+                            {format(t.transactions.remainingStockLine, {
+                              count: String(selectedProduct.remainingQty),
+                              unit: selectedProduct.unit ? ` ${selectedProduct.unit}` : "",
+                            })}
+                            {" · "}₮{sellingPrice(selectedProduct).toLocaleString("mn-MN")}
+                          </p>
+                        )}
+                      </div>
+                      {newTx.productId && (
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">{t.transactions.quantityLabel}</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="any"
+                            value={newTx.quantity}
+                            onChange={e => {
+                              const quantity = e.target.value;
+                              setNewTx(p => ({
+                                ...p,
+                                quantity,
+                                amount: selectedProduct && quantity
+                                  ? formatAmount(String(sellingPrice(selectedProduct) * Number(quantity)))
+                                  : p.amount,
+                              }));
+                            }}
+                            placeholder="0"
+                            className="h-9 text-sm text-right"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">{t.transactions.contractNumberLabel}</Label>
+                    <select
+                      value={newTx.contractNumber}
+                      onChange={e => {
+                        const num = e.target.value;
+                        const contract = pnlContracts.find(c => c.contractNumber === num);
+                        setNewTx(p => ({
+                          ...p,
+                          contractNumber: num,
+                          pnlIncomeRowIndex: "",
+                          pnlExpenseRowIndex: "",
+                          description: !p.description.trim() && contract?.company
+                            ? `${contract.company} — ${num}`
+                            : p.description,
+                        }));
+                      }}
+                      className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm font-mono tracking-wide focus:outline-none focus:ring-1 focus:ring-ring">
+                      <option value="">{t.transactions.contractNumberNone}</option>
+                      {pnlContracts.map(c => <option key={c.contractNumber} value={c.contractNumber}>{c.label}</option>)}
+                    </select>
+                  </div>
+
+                  {newTx.type === "income" && newTx.contractNumber && unreceivedIncomeRows.length > 0 && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">{t.transactions.pnlIncomeRowLabel}</Label>
+                      <select
+                        value={newTx.pnlIncomeRowIndex}
+                        onChange={e => {
+                          const idxStr = e.target.value;
+                          const row = idxStr ? unreceivedIncomeRows.find(x => String(x.index) === idxStr) : null;
+                          setNewTx(p => ({
+                            ...p,
+                            pnlIncomeRowIndex: idxStr,
+                            amount: row ? formatAmount(String(row.row.amount)) : p.amount,
+                          }));
+                        }}
+                        className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring">
+                        <option value="">{t.transactions.pnlIncomeRowNone}</option>
+                        {unreceivedIncomeRows.map(({ index, row }) => (
+                          <option key={index} value={index}>
+                            {(row.name || t.transactions.pnlIncomeRowUnnamed)} — ₮{Number(row.amount).toLocaleString("mn-MN")}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {newTx.type === "expense" && newTx.contractNumber && unpaidExpenseRows.length > 0 && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">{t.transactions.pnlExpenseRowLabel}</Label>
+                      <select
+                        value={newTx.pnlExpenseRowIndex}
+                        onChange={e => {
+                          const idxStr = e.target.value;
+                          const row = idxStr ? unpaidExpenseRows.find(x => String(x.index) === idxStr) : null;
+                          setNewTx(p => ({
+                            ...p,
+                            pnlExpenseRowIndex: idxStr,
+                            amount: row ? formatAmount(String(row.row.amount)) : p.amount,
+                          }));
+                        }}
+                        className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring">
+                        <option value="">{t.transactions.pnlExpenseRowNone}</option>
+                        {unpaidExpenseRows.map(({ index, row }) => (
+                          <option key={index} value={index}>
+                            {(row.name || t.transactions.pnlIncomeRowUnnamed)} — ₮{Number(row.amount).toLocaleString("mn-MN")}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {newTx.type === "expense" && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">{t.transactions.expenseTypeLabel}</Label>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {EXPENSE_TYPES.map(value => (
+                          <button key={value} type="button"
+                            onClick={() => setNewTx(p => ({ ...p, expenseType: p.expenseType === value ? "" : value }))}
+                            className={`h-8 px-3 text-xs rounded-lg border ${newTx.expenseType === value
+                              ? "bg-positive/15 text-positive border-positive/30"
+                              : "bg-background text-muted-foreground border-border hover:bg-secondary/50"}`}>
+                            {value === "office" ? t.expenses.typeOffice
+                              : value === "other" ? t.expenses.typeOther
+                              : value === "productCost" ? t.expenses.typeProductCost
+                              : t.expenses.typeMarketing}
+                          </button>
+                        ))}
+                      </div>
+                      {newTx.expenseType && (
+                        <p className="text-xs text-muted-foreground">{t.transactions.expenseTypeSyncNote}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
