@@ -567,6 +567,8 @@ export const mn = {
     productPlaceholder: "Бараа хайх, сонгох...",
     quantityLabel: "Тоо ширхэг",
     remainingStockLine: "Үлдэгдэл: {count}{unit}",
+    expenseTypeLabel: "Зардлын төрөл",
+    expenseTypeSyncNote: "Энэ зарлага Зардал menu рүү автоматаар нэмэгдэнэ.",
     quantityRequired: "Барааны тоо ширхэгийг оруулна уу",
     noteLabel: "Тэмдэглэл",
     notePlaceholder: "Нэмэлт тэмдэглэл...",

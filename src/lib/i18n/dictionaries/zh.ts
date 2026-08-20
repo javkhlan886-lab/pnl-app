@@ -565,6 +565,8 @@ export const zh: Dictionary = {
     productPlaceholder: "搜索并选择产品...",
     quantityLabel: "数量",
     remainingStockLine: "库存: {count}{unit}",
+    expenseTypeLabel: "费用类型",
+    expenseTypeSyncNote: "该费用将自动添加到 Зардал 菜单。",
     quantityRequired: "请输入数量",
     noteLabel: "备注",
     notePlaceholder: "补充备注...",

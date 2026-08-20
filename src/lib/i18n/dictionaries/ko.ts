@@ -566,6 +566,8 @@ export const ko: Dictionary = {
     productPlaceholder: "제품 검색 및 선택...",
     quantityLabel: "수량",
     remainingStockLine: "재고: {count}{unit}",
+    expenseTypeLabel: "지출 유형",
+    expenseTypeSyncNote: "이 지출은 Зардал 메뉴에 자동으로 추가됩니다.",
     quantityRequired: "수량을 입력하세요",
     noteLabel: "메모",
     notePlaceholder: "추가 메모...",

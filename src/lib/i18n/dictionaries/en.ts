@@ -566,6 +566,8 @@ export const en: Dictionary = {
     productPlaceholder: "Search and select a product...",
     quantityLabel: "Quantity",
     remainingStockLine: "Remaining: {count}{unit}",
+    expenseTypeLabel: "Expense type",
+    expenseTypeSyncNote: "This expense will be added to the Зардал menu automatically.",
     quantityRequired: "Please enter a quantity",
     noteLabel: "Note",
     notePlaceholder: "Additional note...",

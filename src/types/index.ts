@@ -51,6 +51,7 @@ export interface Transaction {
   createdAt?: string;
   productId?: string | null;
   quantity?: number | null;
+  expenseType?: string | null;
 }
 
 export interface ContractSummary {

@@ -81,6 +81,7 @@ interface NewTx {
   note: string;
   productId: string;
   quantity: string;
+  expenseType: string;
 }
 
 const EMPTY_TX: NewTx = {
@@ -93,7 +94,13 @@ const EMPTY_TX: NewTx = {
   note: "",
   productId: "",
   quantity: "",
+  expenseType: "",
 };
+
+// Зардал хуудасны 4 төрөлтэй яг ижил — сонговол Гүйлгээний дэвтрийн
+// зарлага Зардал menu рүү автоматаар синк хийгдэнэ (Saas Back-ийн
+// syncLinkedExpense, EXPENSE_TYPE_DEFAULT_CATEGORY-той тааруулсан).
+const EXPENSE_TYPES = ["office", "other", "productCost", "marketing"] as const;
 
 export default function TransactionPage() {
   const navigate = useNavigate();
@@ -134,16 +141,16 @@ export default function TransactionPage() {
   const [contractLoading, setContractLoading] = useState(false);
   const [contractNotFound, setContractNotFound] = useState(false);
 
-  const [pnlContracts, setPnlContracts] = useState<{ contractNumber: string; label: string }[]>([]);
+  const [pnlContracts, setPnlContracts] = useState<{ contractNumber: string; company: string; label: string }[]>([]);
   useEffect(() => {
     getPNLList().then(list => {
       const seen = new Set<string>();
-      const options: { contractNumber: string; label: string }[] = [];
+      const options: { contractNumber: string; company: string; label: string }[] = [];
       list.forEach(r => {
         const num = r.contractNumber?.trim();
         if (!num || seen.has(num)) return;
         seen.add(num);
-        options.push({ contractNumber: num, label: r.company ? `${num} — ${r.company}` : num });
+        options.push({ contractNumber: num, company: r.company || "", label: r.company ? `${num} — ${r.company}` : num });
       });
       setPnlContracts(options);
     }).catch(() => setPnlContracts([]));
@@ -336,6 +343,7 @@ export default function TransactionPage() {
         status: "approved",
         productId: linkProduct ? newTx.productId : null,
         quantity: linkProduct ? Number(newTx.quantity) : null,
+        expenseType: newTx.type === "expense" ? (newTx.expenseType || null) : null,
       };
       addCustomCategory(newTx.type === "income" ? "transactions_income" : "transactions_expense", newTx.category);
       addRecent("transactions", "description", payload.description);
@@ -376,6 +384,7 @@ export default function TransactionPage() {
       note: tx.note ?? "",
       productId: tx.productId ?? "",
       quantity: tx.quantity != null ? String(tx.quantity) : "",
+      expenseType: tx.expenseType ?? "",
     });
     setSaveError("");
     setShowModal(true);
@@ -507,6 +516,7 @@ export default function TransactionPage() {
                       category: txType === "income" ? CATEGORIES_INC[0] : CATEGORIES_EXP[0],
                       productId: txType === "income" ? prev.productId : "",
                       quantity: txType === "income" ? prev.quantity : "",
+                      expenseType: txType === "expense" ? prev.expenseType : "",
                     }));
                   }}
                     className={`flex-1 py-2.5 rounded-xl text-sm font-medium border-2 transition-colors ${
@@ -581,6 +591,29 @@ export default function TransactionPage() {
                 </div>
               )}
 
+              {newTx.type === "expense" && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">{t.transactions.expenseTypeLabel}</Label>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {EXPENSE_TYPES.map(value => (
+                      <button key={value} type="button"
+                        onClick={() => setNewTx(p => ({ ...p, expenseType: p.expenseType === value ? "" : value }))}
+                        className={`h-8 px-3 text-xs rounded-lg border ${newTx.expenseType === value
+                          ? "bg-positive/15 text-positive border-positive/30"
+                          : "bg-background text-muted-foreground border-border hover:bg-secondary/50"}`}>
+                        {value === "office" ? t.expenses.typeOffice
+                          : value === "other" ? t.expenses.typeOther
+                          : value === "productCost" ? t.expenses.typeProductCost
+                          : t.expenses.typeMarketing}
+                      </button>
+                    ))}
+                  </div>
+                  {newTx.expenseType && (
+                    <p className="text-xs text-muted-foreground">{t.transactions.expenseTypeSyncNote}</p>
+                  )}
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">{t.transactions.dateLabel}</Label>
@@ -624,7 +657,17 @@ export default function TransactionPage() {
                   <Label className="text-xs">{t.transactions.contractNumberLabel}</Label>
                   <select
                     value={newTx.contractNumber}
-                    onChange={e => setNewTx(p => ({ ...p, contractNumber: e.target.value }))}
+                    onChange={e => {
+                      const num = e.target.value;
+                      const contract = pnlContracts.find(c => c.contractNumber === num);
+                      setNewTx(p => ({
+                        ...p,
+                        contractNumber: num,
+                        description: !p.description.trim() && contract?.company
+                          ? `${contract.company} — ${num}`
+                          : p.description,
+                      }));
+                    }}
                     className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm font-mono tracking-wide focus:outline-none focus:ring-1 focus:ring-ring">
                     <option value="">{t.transactions.contractNumberNone}</option>
                     {pnlContracts.map(c => <option key={c.contractNumber} value={c.contractNumber}>{c.label}</option>)}
