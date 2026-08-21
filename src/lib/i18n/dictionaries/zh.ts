@@ -72,6 +72,8 @@ export const zh: Dictionary = {
     filteredNet: "净利润/亏损",
     reportsTotalTitle: "全部报告总计（{count} 份报告）",
     reportsTotalSub: "各报告自身记录的金额——与交易台账是否确认无关。",
+    companyAggregateSub: "{count} 份合同/报告的合计",
+    closedReportsTitle: "已完成报告（{count}）",
     selectedCount: "已选择 {count} 份报表",
     deselect: "取消选择",
     selectedLabel: "已选",

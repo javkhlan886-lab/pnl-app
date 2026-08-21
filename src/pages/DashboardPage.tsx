@@ -92,6 +92,7 @@ export default function DashboardPage() {
   const [ownerFilter, setOwnerFilter] = useState<string>("");
   const [ownerMenuOpen, setOwnerMenuOpen] = useState(false);
   const [openStatusId, setOpenStatusId] = useState<string | null>(null);
+  const [companyPopup, setCompanyPopup] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [search, setSearch] = useState("");
@@ -162,11 +163,17 @@ export default function DashboardPage() {
     </button>
   );
 
+  // "Дуссан" тайлангуудыг нийт жагсаалт/тайлангийн нийт дүнгээс бүрмөсөн
+  // тусад нь авч, доор өөрийн тусдаа (hide хийж болдог) хэсэгт харуулна —
+  // эндээс цааш бүх шүүлт/эрэмбэлэлт зөвхөн идэвхтэй/хүлээгдэж буй дээр ажиллана.
+  const nonClosedRecords = records.filter((r) => (r.status || "active") !== "closed");
+  const closedRecords = records.filter((r) => r.status === "closed");
+
   // Хэрэглэгчээр шүүх — эхлээд owner, дараа нь статус, эцэст нь огнооны
   // хязгаараар шүүнэ.
   const ownerScoped = ownerFilter
-    ? records.filter((r) => ownerKey(r) === ownerFilter)
-    : records;
+    ? nonClosedRecords.filter((r) => ownerKey(r) === ownerFilter)
+    : nonClosedRecords;
 
   const statusScoped = statusFilter
     ? ownerScoped.filter((r) => (r.status || "active") === statusFilter)
@@ -532,6 +539,27 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredRecords]);
 
+  // "Дуссан" тайлангуудын өөрийн (үндсэн хугацаа/хайлтын шүүлтүүрээс
+  // хамааралгүй) нэгдсэн дүн — доорх тусдаа хэсэгт харуулна.
+  const closedTotal = useMemo(() => {
+    const income = closedRecords.reduce((sum, record) => sum + totalIncome(record), 0);
+    const expense = closedRecords.reduce((sum, record) => sum + totalExpenseOf(record), 0);
+    return { income, expense, net: income - expense, count: closedRecords.length };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [closedRecords]);
+
+  // Байгууллагын нэр дээр дарахад тухайн байгууллагатай хийсэн БҮХ
+  // тайлан/гэрээ дээрх нийт орлого, цэвэр ашгийг (статусаас үл хамааран)
+  // нэгтгэж харуулна — ижил нэртэй олон гэрээтэй бол хамгийн ойлгомжтой.
+  const companyAggregate = useMemo(() => {
+    if (!companyPopup) return null;
+    const matches = records.filter((r) => (r.company || "") === companyPopup);
+    const income = matches.reduce((sum, record) => sum + totalIncome(record), 0);
+    const expense = matches.reduce((sum, record) => sum + totalExpenseOf(record), 0);
+    return { income, expense, net: income - expense, count: matches.length };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [records, companyPopup]);
+
   // Чагт тэмдэглэсэн (сонгосон) тайлангуудын нэгтгэл — export-д ашигладаг
   // ижил `selected` Set дээр суурилна.
   const selectedSummary = useMemo(() => {
@@ -816,6 +844,88 @@ export default function DashboardPage() {
           return reportsTotalOnTop ? <>{reportsSection}{mainSection}</> : <>{mainSection}{reportsSection}</>;
         })()}
 
+        {closedRecords.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
+              <p className="text-xs font-medium text-muted-foreground">
+                {format(t.dashboard.closedReportsTitle, { count: String(closedTotal.count) })}
+              </p>
+              <SectionHideBtn id="closedReports" />
+            </div>
+            {!collapsedSections.has("closedReports") && (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                  <div className="glass-card px-3.5 py-3">
+                    <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredIncome}</p>
+                    <p className="stat-number text-lg font-bold text-positive">{fmt(closedTotal.income, "₮")}</p>
+                  </div>
+                  <div className="glass-card px-3.5 py-3">
+                    <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredExpense}</p>
+                    <p className="stat-number text-lg font-bold text-negative">{fmt(closedTotal.expense, "₮")}</p>
+                  </div>
+                  <div className="glass-card px-3.5 py-3">
+                    <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredNet}</p>
+                    <p className={`stat-number text-lg font-bold ${closedTotal.net >= 0 ? "text-positive" : "text-negative"}`}>
+                      {fmt(closedTotal.net, "₮")}
+                    </p>
+                  </div>
+                </div>
+                <div className="glass-card overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border/50">
+                        <TableHead>{t.dashboard.colOrgName}</TableHead>
+                        <TableHead>{t.dashboard.colContractNumber}</TableHead>
+                        <TableHead className="text-right">{t.dashboard.colTotalIncome}</TableHead>
+                        <TableHead className="text-right">{t.dashboard.colNetProfit}</TableHead>
+                        <TableHead>{t.dashboard.colDate}</TableHead>
+                        <TableHead className="text-right">{t.dashboard.colActions}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {closedRecords.map((r) => {
+                        const income = totalIncome(r);
+                        const profit = netProfit(r);
+                        return (
+                          <TableRow key={r._id} className="border-border/50 hover:bg-secondary/30">
+                            <TableCell className="font-medium blur-number">
+                              <button type="button" onClick={() => setCompanyPopup(r.company || "")}
+                                className="hover:underline hover:text-info transition-colors text-left disabled:hover:no-underline disabled:hover:text-inherit"
+                                disabled={!r.company}>
+                                {r.company || "—"}
+                              </button>
+                            </TableCell>
+                            <TableCell>
+                              {r.contractNumber
+                                ? <Badge variant="outline" className="text-xs">{r.contractNumber}</Badge>
+                                : <span className="text-muted-foreground text-xs">—</span>}
+                            </TableCell>
+                            <TableCell className="text-right text-positive font-medium stat-number">{fmt(income, "₮")}</TableCell>
+                            <TableCell className="text-right">
+                              <Badge className={profit >= 0
+                                ? "bg-positive/15 text-positive hover:bg-positive/15 blur-number"
+                                : "bg-negative/15 text-negative hover:bg-negative/15 blur-number"}>
+                                {fmt(profit, "₮")}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-sm">{fmtDate(r.updatedAt)}</TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="ghost" size="icon" onClick={() => navigate(`/dashboard/${r._id}`)}>
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Хайлт */}
         <div className="flex items-center gap-2 mb-4 flex-wrap">
           <div className="relative">
@@ -828,7 +938,7 @@ export default function DashboardPage() {
 
         {/* Status filter */}
         <div className="flex items-center gap-2 mb-4 flex-wrap">
-          {(["", "active", "pending", "closed"] as const).map(s => (
+          {(["", "active", "pending"] as const).map(s => (
             <button key={s} onClick={() => setStatusFilter(s)}
               className={`h-8 px-3 text-xs rounded-full border flex items-center gap-1.5 transition-colors ${statusFilter === s
                 ? "bg-positive/15 text-positive border-positive/30"
@@ -1009,7 +1119,13 @@ export default function DashboardPage() {
                       <TableCell>
                         <input type="checkbox" checked={isSelected} onChange={() => toggleOne(r._id!)} className="w-4 h-4 cursor-pointer accent-positive" />
                       </TableCell>
-                      <TableCell className="font-medium blur-number">{r.company || "—"}</TableCell>
+                      <TableCell className="font-medium blur-number">
+                        <button type="button" onClick={() => setCompanyPopup(r.company || "")}
+                          className="hover:underline hover:text-info transition-colors text-left disabled:hover:no-underline disabled:hover:text-inherit"
+                          disabled={!r.company}>
+                          {r.company || "—"}
+                        </button>
+                      </TableCell>
                       {canSeeOwner && (
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -1194,6 +1310,33 @@ export default function DashboardPage() {
                 </TableBody>
               </Table>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!companyPopup} onOpenChange={(o) => !o && setCompanyPopup(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="blur-number">{companyPopup}</DialogTitle>
+            <DialogDescription>
+              {format(t.dashboard.companyAggregateSub, { count: String(companyAggregate?.count ?? 0) })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 py-2">
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredIncome}</p>
+              <p className="stat-number text-lg font-semibold text-positive break-words">{fmt(companyAggregate?.income ?? 0, "₮")}</p>
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredExpense}</p>
+              <p className="stat-number text-lg font-semibold text-negative break-words">{fmt(companyAggregate?.expense ?? 0, "₮")}</p>
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredNet}</p>
+              <p className={`stat-number text-lg font-semibold break-words ${(companyAggregate?.net ?? 0) >= 0 ? "text-positive" : "text-negative"}`}>
+                {fmt(companyAggregate?.net ?? 0, "₮")}
+              </p>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

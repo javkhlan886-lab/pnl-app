@@ -74,6 +74,8 @@ export const mn = {
     filteredNet: "Цэвэр ашиг/алдагдал",
     reportsTotalTitle: "Тайлангуудын нийт дүн ({count} тайлан)",
     reportsTotalSub: "Тайлан бүрийн өөрийн бичсэн дүн — Гүйлгээний дэвтэрт баталгаажсан эсэхээс үл хамаарна.",
+    companyAggregateSub: "{count} гэрээ/тайлан дээрх нийлбэр дүн",
+    closedReportsTitle: "Дуссан тайлангууд ({count})",
     selectedCount: "{count} тайлан сонгогдсон",
     deselect: "Цуцлах",
     selectedLabel: "Сонгосон",

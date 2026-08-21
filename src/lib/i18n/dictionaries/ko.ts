@@ -73,6 +73,8 @@ export const ko: Dictionary = {
     filteredNet: "순이익/손실",
     reportsTotalTitle: "전체 보고서 합계 ({count}건)",
     reportsTotalSub: "각 보고서 자체에 기록된 금액 — 거래 장부 확인 여부와 무관합니다.",
+    companyAggregateSub: "{count}건의 계약/보고서 합계",
+    closedReportsTitle: "완료된 보고서 ({count})",
     selectedCount: "{count}건 선택됨",
     deselect: "선택 해제",
     selectedLabel: "선택됨",
