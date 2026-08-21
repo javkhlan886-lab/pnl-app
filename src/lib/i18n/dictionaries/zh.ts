@@ -70,6 +70,8 @@ export const zh: Dictionary = {
     filteredIncome: "收入",
     filteredExpense: "支出",
     filteredNet: "净利润/亏损",
+    reportsTotalTitle: "全部报告总计（{count} 份报告）",
+    reportsTotalSub: "各报告自身记录的金额——与交易台账是否确认无关。",
     selectedCount: "已选择 {count} 份报表",
     deselect: "取消选择",
     selectedLabel: "已选",

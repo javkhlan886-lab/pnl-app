@@ -497,6 +497,17 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredRecords, isDateFiltered]);
 
+  // "Ерөнхий үзүүлэлт" (дээрх 3 карт)-аас ЗОРИУДАА тусад нь: тэр нь зөвхөн
+  // Гүйлгээний дэвтэрт баталгаажсан (received=true) дүнг харуулдаг, харин
+  // энэ талбар доорх жагсаалтад харагдаж буй БҮХ тайлангийн өөрсдийн бичсэн
+  // (баталгаажсан эсэхээс үл хамаарах) incomeRows/expenseRows нийлбэрийг харуулна.
+  const reportsTotal = useMemo(() => {
+    const income = filteredRecords.reduce((sum, record) => sum + totalIncome(record), 0);
+    const expense = filteredRecords.reduce((sum, record) => sum + totalExpenseOf(record), 0);
+    return { income, expense, net: income - expense, count: filteredRecords.length };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredRecords]);
+
   // Чагт тэмдэглэсэн (сонгосон) тайлангуудын нэгтгэл — export-д ашигладаг
   // ижил `selected` Set дээр суурилна.
   const selectedSummary = useMemo(() => {
@@ -892,6 +903,31 @@ export default function DashboardPage() {
                 <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredNet}</p>
                 <p className={`stat-number text-lg font-semibold break-words ${selectedSummary.net >= 0 ? "text-positive" : "text-negative"}`}>
                   {fmt(selectedSummary.net, "₮")}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {reportsTotal.count > 0 && (
+          <div className="glass-card px-5 py-4 mb-6">
+            <p className="text-xs text-muted-foreground mb-0.5">
+              {format(t.dashboard.reportsTotalTitle, { count: String(reportsTotal.count) })}
+            </p>
+            <p className="text-[11px] text-muted-foreground/70 mb-3">{t.dashboard.reportsTotalSub}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredIncome}</p>
+                <p className="stat-number text-lg font-semibold text-positive break-words">{fmt(reportsTotal.income, "₮")}</p>
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredExpense}</p>
+                <p className="stat-number text-lg font-semibold text-negative break-words">{fmt(reportsTotal.expense, "₮")}</p>
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredNet}</p>
+                <p className={`stat-number text-lg font-semibold break-words ${reportsTotal.net >= 0 ? "text-positive" : "text-negative"}`}>
+                  {fmt(reportsTotal.net, "₮")}
                 </p>
               </div>
             </div>

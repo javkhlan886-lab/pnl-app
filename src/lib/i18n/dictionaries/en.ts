@@ -71,6 +71,8 @@ export const en: Dictionary = {
     filteredIncome: "Income",
     filteredExpense: "Expense",
     filteredNet: "Net profit/loss",
+    reportsTotalTitle: "Total across all reports ({count} reports)",
+    reportsTotalSub: "Each report's own recorded amount — regardless of Transaction ledger confirmation.",
     selectedCount: "{count} reports selected",
     deselect: "Clear",
     selectedLabel: "Selected",
