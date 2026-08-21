@@ -48,7 +48,6 @@ export const mn = {
     summaryError:
       "Нийт дүнгийн мэдээллийг серверээс татаж чадсангүй тул тайлангаас тооцсон өгөгдлийг харуулж байна.",
     mainSectionTitle: "Ерөнхий үзүүлэлт",
-    incomeTrendTitle: "Орлогын график",
     dateRangeAllTime: "Бүх хугацаа",
     period7d: "7 хоног",
     period1m: "1 сар",

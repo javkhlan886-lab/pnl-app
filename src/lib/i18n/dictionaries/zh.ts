@@ -46,7 +46,6 @@ export const zh: Dictionary = {
     bulkDeleteConfirmDesc: "将删除已选择的 {count} 份报表。此操作无法撤销。",
     summaryError: "无法从服务器获取汇总数据，现显示根据报表计算的数据。",
     mainSectionTitle: "总览",
-    incomeTrendTitle: "收入趋势",
     dateRangeAllTime: "全部时间",
     period7d: "7 天",
     period1m: "1 个月",

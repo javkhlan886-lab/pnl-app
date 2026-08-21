@@ -47,7 +47,6 @@ export const ko: Dictionary = {
     summaryError:
       "서버에서 합계 데이터를 가져오지 못해 표시된 보고서 기준으로 계산한 값을 보여줍니다.",
     mainSectionTitle: "개요",
-    incomeTrendTitle: "수입 추이",
     dateRangeAllTime: "전체 기간",
     period7d: "7일",
     period1m: "1개월",

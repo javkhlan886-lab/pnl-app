@@ -47,7 +47,6 @@ export const en: Dictionary = {
     summaryError:
       "Couldn't fetch totals from the server, so figures are calculated from the reports shown.",
     mainSectionTitle: "Overview",
-    incomeTrendTitle: "Income trend",
     dateRangeAllTime: "All time",
     period7d: "7 days",
     period1m: "1 month",

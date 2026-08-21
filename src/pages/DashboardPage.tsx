@@ -14,7 +14,6 @@ import { LayoutToggleButton } from "@/components/LayoutToggleButton";
 import { LogoutButton } from "@/components/LogoutButton";
 import { BackToPortalLink } from "@/components/BackToPortalLink";
 import { Sidebar } from "@/components/Sidebar";
-import { IncomeTrendChart } from "@/components/IncomeTrendChart";
 import api from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -485,25 +484,6 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period]);
 
-  // Сарын орлогын хандлага — идэвхтэй тайлангуудыг огноогоор нь сараар
-  // бүлэглэж, сүүлийн 6 сарыг он-цагийн дарааллаар харуулна.
-  const incomeTrend = useMemo(() => {
-    const buckets = new Map<string, number>();
-    records.forEach((r) => {
-      if ((r.status || "active") !== "active") return;
-      const month = (r.date || "").slice(0, 7);
-      if (!month) return;
-      buckets.set(month, (buckets.get(month) || 0) + totalIncome(r));
-    });
-    return [...buckets.keys()]
-      .sort()
-      .slice(-6)
-      .map((month) => {
-        const [, m] = month.split("-");
-        return { label: `${m}/${month.slice(2, 4)}`, value: buckets.get(month) || 0 };
-      });
-  }, [records]);
-
   // Толгойн статистик карт (`summary`) нь бүх датаг тооцдог тул огнооны
   // шүүлтүүрт хамаарахгүй — тиймээс шүүсэн `filteredRecords`-с тусад нь
   // өөрийн дүнг тооцоод харуулна.
@@ -765,13 +745,6 @@ export default function DashboardPage() {
                   </div>
                 )}
               </div>
-              )}
-
-              {layoutMode === "sidebar" && incomeTrend.length > 1 && (
-                <div className="glass-card px-4 py-4 mb-5">
-                  <p className="text-xs font-medium text-muted-foreground mb-3">{t.dashboard.incomeTrendTitle}</p>
-                  <IncomeTrendChart data={incomeTrend} formatValue={(n) => fmt(n, "₮")} />
-                </div>
               )}
             </>
           );
