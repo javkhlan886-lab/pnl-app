@@ -431,15 +431,23 @@ export default function DashboardPage() {
     const inPeriod = periodSince
       ? active.filter((r) => r.date && new Date(r.date) >= periodSince)
       : active;
-    return inPeriod
+    const pnlRows = inPeriod
       .map((r) => ({
         id: r._id, date: r.date, name: r.company || "—",
         contractNumber: r.contractNumber || "—", amount: receivedIncomeOf(r),
       }))
-      .filter((x) => x.amount !== 0)
-      .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+      .filter((x) => x.amount !== 0);
+    // pnlIncome-д багтдаг ч ямар ч PnL мөрөөс ирдэггүй гэрээгүй орлогын
+    // гүйлгээ (жишээ нь шууд барааны борлуулалт) — backend-ийн /summary-аас
+    // аль хэдийн тухайн period-оор шүүгдсэн жагсаалт ирдэг тул энд дахин
+    // шүүхгүй.
+    const standaloneRows = (summary?.standaloneIncome ?? []).map((t: { id: string; date: string; description: string; category: string; amount: number }) => ({
+      id: t.id, date: t.date, name: t.description || t.category || "—",
+      contractNumber: "—", amount: t.amount,
+    }));
+    return [...pnlRows, ...standaloneRows].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [records, period]);
+  }, [records, period, summary]);
 
   // "Үйл ажиллагааны зардал" картын мөр мөрөөр задаргаа — backend-ийн
   // /summary-тэй яг ижил тодорхойлолт ашиглана: Зардал = office+other
