@@ -241,7 +241,8 @@ export default function ReceivablePage() {
     const unitPrice = Number(form.unitPrice || 0);
     const amount = Number(form.amount || unitPrice);
     const payload = { ...form, unitPrice, amount };
-    if (!payload.counterparty.trim() || payload.amount === 0) return;
+    if (!payload.counterparty.trim()) { toast.error(t.receivables.counterpartyRequired); return; }
+    if (payload.amount === 0) { toast.error(t.receivables.amountRequired); return; }
     setSaving(true);
     try {
       addRecent("receivables", "counterparty", payload.counterparty);

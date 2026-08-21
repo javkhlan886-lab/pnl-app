@@ -233,7 +233,7 @@ export default function AssetPage() {
     const unitPrice = Number(form.unitPrice || 0);
     const price = Number(form.price || unitPrice * quantity);
     const payload = { ...form, unitPrice, quantity, price };
-    if (!payload.name.trim()) return;
+    if (!payload.name.trim()) { toast.error(t.assets.nameRequired); return; }
     setSaving(true);
     try {
       addCustomCategory("assets", payload.category);

@@ -197,7 +197,7 @@ export default function PartnerPage() {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) return;
+    if (!form.name.trim()) { toast.error(t.partners.nameRequired); return; }
     setSaving(true);
     try {
       addRecent("partners", "name", form.name);

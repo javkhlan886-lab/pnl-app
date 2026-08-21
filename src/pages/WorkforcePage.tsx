@@ -301,7 +301,7 @@ export default function WorkforcePage() {
   };
 
   const handleSave = async () => {
-    if (!form.lastName.trim() || !form.firstName.trim()) return;
+    if (!form.lastName.trim() || !form.firstName.trim()) { toast.error(t.workforce.nameRequired); return; }
     setSaving(true);
     try {
       addRecent("workforce", "lastName", form.lastName);

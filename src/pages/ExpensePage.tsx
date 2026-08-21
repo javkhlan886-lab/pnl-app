@@ -238,7 +238,8 @@ export default function ExpensePage() {
     const unitPrice = Number(form.unitPrice || 0);
     const amount = Number(form.amount || unitPrice * quantity);
     const payload = { ...form, unitPrice, quantity, amount };
-    if (!payload.description.trim() || payload.amount === 0) return;
+    if (!payload.description.trim()) { toast.error(t.expenses.descRequired); return; }
+    if (payload.amount === 0) { toast.error(t.expenses.amountRequired); return; }
     setSaving(true);
     try {
       addCustomCategory(catsForType(payload.type)[1], payload.category);

@@ -224,7 +224,7 @@ export default function EmployeePage() {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) return;
+    if (!form.name.trim()) { toast.error(t.employees.nameRequired); return; }
     setSaving(true);
     try {
       addRecent("employees", "name", form.name);

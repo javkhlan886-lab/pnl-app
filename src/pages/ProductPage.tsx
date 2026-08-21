@@ -358,7 +358,7 @@ export default function ProductPage() {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) return;
+    if (!form.name.trim()) { toast.error(t.products.nameRequired); return; }
     setSaving(true);
     try {
       addCustomCategory("products", form.category);
