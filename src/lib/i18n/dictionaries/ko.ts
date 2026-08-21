@@ -81,6 +81,7 @@ export const ko: Dictionary = {
     showAllFields: "모두 표시",
     hideSection: "이 섹션 접기",
     showSection: "이 섹션 펼치기",
+    swapSectionsOrder: "전체 개요와 전체 보고서 합계의 순서 바꾸기",
     ownerFilterLabel: "입력자",
     noRecords: "보고서가 없습니다",
     createFirstReport: "새 보고서 만들기",

@@ -80,6 +80,7 @@ export const zh: Dictionary = {
     showAllFields: "全部显示",
     hideSection: "收起此部分",
     showSection: "展开此部分",
+    swapSectionsOrder: "交换总体概览与全部报告总计的顺序",
     ownerFilterLabel: "录入人",
     noRecords: "暂无报表",
     createFirstReport: "创建新报表",

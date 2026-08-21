@@ -82,6 +82,7 @@ export const mn = {
     showAllFields: "Бүгдийг харуулах",
     hideSection: "Энэ мөрийг нуух",
     showSection: "Энэ мөрийг харуулах",
+    swapSectionsOrder: "Ерөнхий үзүүлэлт ба Тайлангуудын нийт дүнгийн дарааллыг солих",
     ownerFilterLabel: "Оруулсан",
     noRecords: "Тайлан байхгүй байна",
     createFirstReport: "Шинэ тайлан үүсгэх",

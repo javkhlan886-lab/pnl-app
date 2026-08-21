@@ -52,3 +52,27 @@ export function saveCollapsedSections(ids: Set<string>, page: string = "dashboar
     // localStorage unavailable — чимээгүй алгасна.
   }
 }
+
+// "Ерөнхий үзүүлэлт" ба "Тайлангуудын нийт дүн" хоёр талбарын харагдах
+// дараалал (аль нь дээр байхыг) хэрэглэгч солиод хадгалдаг.
+const ORDER_KEY_PREFIX = "pnl_dashboard_reports_total_on_top";
+
+function orderKey(page: string): string {
+  return page === "dashboard" ? ORDER_KEY_PREFIX : `${ORDER_KEY_PREFIX}_${page}`;
+}
+
+export function getReportsTotalOnTop(page: string = "dashboard"): boolean {
+  try {
+    return localStorage.getItem(orderKey(page)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function saveReportsTotalOnTop(value: boolean, page: string = "dashboard"): void {
+  try {
+    localStorage.setItem(orderKey(page), value ? "1" : "0");
+  } catch {
+    // localStorage unavailable — чимээгүй алгасна.
+  }
+}

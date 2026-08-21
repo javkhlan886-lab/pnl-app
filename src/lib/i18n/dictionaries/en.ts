@@ -81,6 +81,7 @@ export const en: Dictionary = {
     showAllFields: "Show all",
     hideSection: "Collapse this section",
     showSection: "Expand this section",
+    swapSectionsOrder: "Swap the order of Overview and Total across all reports",
     ownerFilterLabel: "Entered by",
     noRecords: "No reports yet",
     createFirstReport: "Create a report",

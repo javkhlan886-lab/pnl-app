@@ -8,7 +8,7 @@ import { fmt, fmtDate } from "@/lib/utils";
 import { toMnt } from "@/lib/exchangeRates";
 import { setAiPageContext } from "@/lib/aiPageContext";
 import { toast } from "@/lib/toast";
-import { getHiddenFields, saveHiddenFields, getCollapsedSections, saveCollapsedSections } from "@/lib/dashboardHidden";
+import { getHiddenFields, saveHiddenFields, getCollapsedSections, saveCollapsedSections, getReportsTotalOnTop, saveReportsTotalOnTop } from "@/lib/dashboardHidden";
 import { useLayoutMode } from "@/lib/layoutMode";
 import { LayoutToggleButton } from "@/components/LayoutToggleButton";
 import { LogoutButton } from "@/components/LogoutButton";
@@ -32,7 +32,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { getExpenses } from "@/lib/expense";
 import { getEmployees } from "@/lib/employee";
-import { PlusCircle, Pencil, Trash2, Download, TrendingUp, TrendingDown, BarChart2, Users, Box, Receipt, ArrowLeftRight, TableIcon, ChevronDown, ShieldCheck, HardHat, Handshake, EyeOff, Package, Search } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Download, TrendingUp, TrendingDown, BarChart2, Users, Box, Receipt, ArrowLeftRight, TableIcon, ChevronDown, ShieldCheck, HardHat, Handshake, EyeOff, Package, Search, ArrowUpDown } from "lucide-react";
 
 // ── Оруулсан хэрэглэгчийг харуулах туслах функцууд ──────────────────────────
 // owner талбарыг backend зөвхөн Level 1, 2 (admin, manager)-д илгээдэг.
@@ -137,8 +137,27 @@ export default function DashboardPage() {
     <button
       onClick={() => toggleSection(id)}
       title={collapsedSections.has(id) ? t.dashboard.showSection : t.dashboard.hideSection}
-      className="text-muted-foreground hover:text-foreground ml-auto">
+      className="text-muted-foreground hover:text-foreground">
       <ChevronDown className={`w-3.5 h-3.5 transition-transform ${collapsedSections.has(id) ? "-rotate-90" : ""}`} />
+    </button>
+  );
+
+  // "Ерөнхий үзүүлэлт" ба "Тайлангуудын нийт дүн" хоёр талбарын дарааллыг
+  // сольж, browser-т хадгална.
+  const [reportsTotalOnTop, setReportsTotalOnTop] = useState<boolean>(() => getReportsTotalOnTop());
+  const toggleSectionOrder = () => {
+    setReportsTotalOnTop(prev => {
+      const next = !prev;
+      saveReportsTotalOnTop(next);
+      return next;
+    });
+  };
+  const SwapOrderBtn = () => (
+    <button
+      onClick={toggleSectionOrder}
+      title={t.dashboard.swapSectionsOrder}
+      className="text-muted-foreground hover:text-foreground ml-auto">
+      <ArrowUpDown className="w-3.5 h-3.5" />
     </button>
   );
 
@@ -657,103 +676,147 @@ export default function DashboardPage() {
           </div>
         )}
         {/* Summary cards */}
-        {displaySummary && (
-          <>
-            {summaryError && (
-              <div className="mb-4 flex items-center gap-3 bg-info/10 border border-info/30 rounded-lg px-4 py-3 text-sm text-info">
-                {summaryError}
-              </div>
-            )}
+        {(() => {
+          const mainSection = displaySummary && (
+            <>
+              {summaryError && (
+                <div className="mb-4 flex items-center gap-3 bg-info/10 border border-info/30 rounded-lg px-4 py-3 text-sm text-info">
+                  {summaryError}
+                </div>
+              )}
 
-            {hiddenFields.size > 0 && (
-              <div className="mb-4 flex items-center gap-3 bg-secondary/40 border border-border/50 rounded-lg px-4 py-2.5">
-                <span className="text-xs text-muted-foreground">
-                  {format(t.dashboard.hiddenFieldsCount, { count: String(hiddenFields.size) })}
-                </span>
-                <button onClick={showAllFields} className="text-xs text-info hover:underline ml-auto">
-                  {t.dashboard.showAllFields}
-                </button>
-              </div>
-            )}
-
-            <div className="flex items-center gap-1.5 mb-2 flex-wrap">
-              <span className="w-1.5 h-1.5 rounded-full bg-positive/60" />
-              <p className="text-xs font-medium text-muted-foreground">{t.dashboard.mainSectionTitle}</p>
-              <SectionHideBtn id="main" />
-              <div className="flex items-center gap-1 ml-auto">
-                {([
-                  ["", t.dashboard.dateRangeAllTime],
-                  ["7d", t.dashboard.period7d],
-                  ["1m", t.dashboard.period1m],
-                  ["3m", t.dashboard.period3m],
-                ] as const).map(([value, label]) => (
-                  <button key={value} onClick={() => setPeriod(value)}
-                    className={`h-6 px-2.5 text-[11px] rounded-full border transition-colors ${period === value
-                      ? "bg-positive/15 text-positive border-positive/30"
-                      : "bg-card/40 text-muted-foreground border-border/50 hover:bg-secondary/50"}`}>
-                    {label}
+              {hiddenFields.size > 0 && (
+                <div className="mb-4 flex items-center gap-3 bg-secondary/40 border border-border/50 rounded-lg px-4 py-2.5">
+                  <span className="text-xs text-muted-foreground">
+                    {format(t.dashboard.hiddenFieldsCount, { count: String(hiddenFields.size) })}
+                  </span>
+                  <button onClick={showAllFields} className="text-xs text-info hover:underline ml-auto">
+                    {t.dashboard.showAllFields}
                   </button>
-                ))}
-              </div>
-            </div>
-            {!collapsedSections.has("main") && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
-              {!hiddenFields.has("income") && (
-                <div className="glass-card glass-card-positive px-3.5 py-3 cursor-pointer"
-                  onClick={() => setBreakdownOpen("income")}>
-                  <HideFieldBtn id="income" />
-                  <div className="relative flex items-center justify-between mb-1.5">
-                    <p className="text-xs text-muted-foreground truncate">{t.dashboard.statIncome}</p>
-                    <span className="icon-badge-positive w-7 h-7 shrink-0"><BarChart2 className="w-3.5 h-3.5" /></span>
-                  </div>
-                  <p className="relative stat-number text-lg font-bold leading-tight">{fmt(displaySummary.pnlIncome, "₮")}</p>
-                  <div className="relative flex items-center justify-between mt-0.5">
-                    <p className="text-[11px] text-muted-foreground">
-                      {format(t.dashboard.statIncomeCount, { count: String(displaySummary.pnlCount) })}
-                    </p>
-                    <ChevronDown className="w-3 h-3 text-muted-foreground -rotate-90" />
-                  </div>
                 </div>
               )}
-              {!hiddenFields.has("opex") && (
-                <div className="glass-card glass-card-negative px-3.5 py-3 cursor-pointer"
-                  onClick={() => setBreakdownOpen("opex")}>
-                  <HideFieldBtn id="opex" />
-                  <div className="relative flex items-center justify-between mb-1.5">
-                    <p className="text-xs text-muted-foreground truncate">{t.dashboard.statOpEx}</p>
-                    <span className="icon-badge-negative w-7 h-7 shrink-0"><TrendingDown className="w-3.5 h-3.5" /></span>
-                  </div>
-                  <p className="relative stat-number text-lg font-bold leading-tight">{fmt(displaySummary.totalOperatingExpense, "₮")}</p>
-                  <div className="relative flex items-center justify-between mt-0.5">
-                    <p className="text-[11px] text-muted-foreground">{t.dashboard.statOpExSub}</p>
-                    <ChevronDown className="w-3 h-3 text-muted-foreground -rotate-90" />
-                  </div>
-                </div>
-              )}
-              {!hiddenFields.has("operatingProfit") && (
-                <div className={`glass-card ${displaySummary.pnlIncome - displaySummary.totalOperatingExpense >= 0 ? "glass-card-positive" : "glass-card-negative"} px-3.5 py-3`}>
-                  <HideFieldBtn id="operatingProfit" />
-                  <div className="relative flex items-center justify-between mb-1.5">
-                    <p className="text-xs text-muted-foreground truncate">{t.dashboard.statOperatingProfit}</p>
-                    <span className={`${displaySummary.pnlIncome - displaySummary.totalOperatingExpense >= 0 ? "icon-badge-positive" : "icon-badge-negative"} w-7 h-7 shrink-0`}><TrendingUp className="w-3.5 h-3.5" /></span>
-                  </div>
-                  <p className="relative stat-number text-lg font-bold leading-tight blur-number">{fmt(displaySummary.pnlIncome - displaySummary.totalOperatingExpense, "₮")}</p>
-                  <p className="relative text-[11px] text-muted-foreground mt-0.5">
-                    {format(t.dashboard.statMargin, { margin: String(displaySummary.pnlIncome > 0 ? Math.round(((displaySummary.pnlIncome - displaySummary.totalOperatingExpense) / displaySummary.pnlIncome) * 100) : 0) })}
-                  </p>
-                </div>
-              )}
-            </div>
-            )}
 
-            {layoutMode === "sidebar" && incomeTrend.length > 1 && (
-              <div className="glass-card px-4 py-4 mb-5">
-                <p className="text-xs font-medium text-muted-foreground mb-3">{t.dashboard.incomeTrendTitle}</p>
-                <IncomeTrendChart data={incomeTrend} formatValue={(n) => fmt(n, "₮")} />
+              <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+                <span className="w-1.5 h-1.5 rounded-full bg-positive/60" />
+                <p className="text-xs font-medium text-muted-foreground">{t.dashboard.mainSectionTitle}</p>
+                <SwapOrderBtn />
+                <SectionHideBtn id="main" />
+                <div className="flex items-center gap-1 ml-auto">
+                  {([
+                    ["", t.dashboard.dateRangeAllTime],
+                    ["7d", t.dashboard.period7d],
+                    ["1m", t.dashboard.period1m],
+                    ["3m", t.dashboard.period3m],
+                  ] as const).map(([value, label]) => (
+                    <button key={value} onClick={() => setPeriod(value)}
+                      className={`h-6 px-2.5 text-[11px] rounded-full border transition-colors ${period === value
+                        ? "bg-positive/15 text-positive border-positive/30"
+                        : "bg-card/40 text-muted-foreground border-border/50 hover:bg-secondary/50"}`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            )}
-          </>
-        )}
+              {!collapsedSections.has("main") && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+                {!hiddenFields.has("income") && (
+                  <div className="glass-card glass-card-positive px-3.5 py-3 cursor-pointer"
+                    onClick={() => setBreakdownOpen("income")}>
+                    <HideFieldBtn id="income" />
+                    <div className="relative flex items-center justify-between mb-1.5">
+                      <p className="text-xs text-muted-foreground truncate">{t.dashboard.statIncome}</p>
+                      <span className="icon-badge-positive w-7 h-7 shrink-0"><BarChart2 className="w-3.5 h-3.5" /></span>
+                    </div>
+                    <p className="relative stat-number text-lg font-bold leading-tight">{fmt(displaySummary.pnlIncome, "₮")}</p>
+                    <div className="relative flex items-center justify-between mt-0.5">
+                      <p className="text-[11px] text-muted-foreground">
+                        {format(t.dashboard.statIncomeCount, { count: String(displaySummary.pnlCount) })}
+                      </p>
+                      <ChevronDown className="w-3 h-3 text-muted-foreground -rotate-90" />
+                    </div>
+                  </div>
+                )}
+                {!hiddenFields.has("opex") && (
+                  <div className="glass-card glass-card-negative px-3.5 py-3 cursor-pointer"
+                    onClick={() => setBreakdownOpen("opex")}>
+                    <HideFieldBtn id="opex" />
+                    <div className="relative flex items-center justify-between mb-1.5">
+                      <p className="text-xs text-muted-foreground truncate">{t.dashboard.statOpEx}</p>
+                      <span className="icon-badge-negative w-7 h-7 shrink-0"><TrendingDown className="w-3.5 h-3.5" /></span>
+                    </div>
+                    <p className="relative stat-number text-lg font-bold leading-tight">{fmt(displaySummary.totalOperatingExpense, "₮")}</p>
+                    <div className="relative flex items-center justify-between mt-0.5">
+                      <p className="text-[11px] text-muted-foreground">{t.dashboard.statOpExSub}</p>
+                      <ChevronDown className="w-3 h-3 text-muted-foreground -rotate-90" />
+                    </div>
+                  </div>
+                )}
+                {!hiddenFields.has("operatingProfit") && (
+                  <div className={`glass-card ${displaySummary.pnlIncome - displaySummary.totalOperatingExpense >= 0 ? "glass-card-positive" : "glass-card-negative"} px-3.5 py-3`}>
+                    <HideFieldBtn id="operatingProfit" />
+                    <div className="relative flex items-center justify-between mb-1.5">
+                      <p className="text-xs text-muted-foreground truncate">{t.dashboard.statOperatingProfit}</p>
+                      <span className={`${displaySummary.pnlIncome - displaySummary.totalOperatingExpense >= 0 ? "icon-badge-positive" : "icon-badge-negative"} w-7 h-7 shrink-0`}><TrendingUp className="w-3.5 h-3.5" /></span>
+                    </div>
+                    <p className="relative stat-number text-lg font-bold leading-tight blur-number">{fmt(displaySummary.pnlIncome - displaySummary.totalOperatingExpense, "₮")}</p>
+                    <p className="relative text-[11px] text-muted-foreground mt-0.5">
+                      {format(t.dashboard.statMargin, { margin: String(displaySummary.pnlIncome > 0 ? Math.round(((displaySummary.pnlIncome - displaySummary.totalOperatingExpense) / displaySummary.pnlIncome) * 100) : 0) })}
+                    </p>
+                  </div>
+                )}
+              </div>
+              )}
+
+              {layoutMode === "sidebar" && incomeTrend.length > 1 && (
+                <div className="glass-card px-4 py-4 mb-5">
+                  <p className="text-xs font-medium text-muted-foreground mb-3">{t.dashboard.incomeTrendTitle}</p>
+                  <IncomeTrendChart data={incomeTrend} formatValue={(n) => fmt(n, "₮")} />
+                </div>
+              )}
+            </>
+          );
+
+          const reportsSection = reportsTotal.count > 0 && (
+            <div className="mb-5">
+              <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+                <span className="w-1.5 h-1.5 rounded-full bg-info/60" />
+                <p className="text-xs font-medium text-muted-foreground">
+                  {format(t.dashboard.reportsTotalTitle, { count: String(reportsTotal.count) })}
+                </p>
+                <SwapOrderBtn />
+                <SectionHideBtn id="reportsTotal" />
+              </div>
+              <p className="text-[11px] text-muted-foreground/70 mb-2">{t.dashboard.reportsTotalSub}</p>
+              {!collapsedSections.has("reportsTotal") && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="glass-card glass-card-positive px-3.5 py-3">
+                    <div className="relative flex items-center justify-between mb-1.5">
+                      <p className="text-xs text-muted-foreground truncate">{t.dashboard.filteredIncome}</p>
+                      <span className="icon-badge-positive w-7 h-7 shrink-0"><BarChart2 className="w-3.5 h-3.5" /></span>
+                    </div>
+                    <p className="relative stat-number text-lg font-bold leading-tight">{fmt(reportsTotal.income, "₮")}</p>
+                  </div>
+                  <div className="glass-card glass-card-negative px-3.5 py-3">
+                    <div className="relative flex items-center justify-between mb-1.5">
+                      <p className="text-xs text-muted-foreground truncate">{t.dashboard.filteredExpense}</p>
+                      <span className="icon-badge-negative w-7 h-7 shrink-0"><TrendingDown className="w-3.5 h-3.5" /></span>
+                    </div>
+                    <p className="relative stat-number text-lg font-bold leading-tight">{fmt(reportsTotal.expense, "₮")}</p>
+                  </div>
+                  <div className={`glass-card ${reportsTotal.net >= 0 ? "glass-card-positive" : "glass-card-negative"} px-3.5 py-3`}>
+                    <div className="relative flex items-center justify-between mb-1.5">
+                      <p className="text-xs text-muted-foreground truncate">{t.dashboard.filteredNet}</p>
+                      <span className={`${reportsTotal.net >= 0 ? "icon-badge-positive" : "icon-badge-negative"} w-7 h-7 shrink-0`}><TrendingUp className="w-3.5 h-3.5" /></span>
+                    </div>
+                    <p className="relative stat-number text-lg font-bold leading-tight">{fmt(reportsTotal.net, "₮")}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+
+          return reportsTotalOnTop ? <>{reportsSection}{mainSection}</> : <>{mainSection}{reportsSection}</>;
+        })()}
 
         {/* Хайлт */}
         <div className="flex items-center gap-2 mb-4 flex-wrap">
@@ -903,31 +966,6 @@ export default function DashboardPage() {
                 <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredNet}</p>
                 <p className={`stat-number text-lg font-semibold break-words ${selectedSummary.net >= 0 ? "text-positive" : "text-negative"}`}>
                   {fmt(selectedSummary.net, "₮")}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {reportsTotal.count > 0 && (
-          <div className="glass-card px-5 py-4 mb-6">
-            <p className="text-xs text-muted-foreground mb-0.5">
-              {format(t.dashboard.reportsTotalTitle, { count: String(reportsTotal.count) })}
-            </p>
-            <p className="text-[11px] text-muted-foreground/70 mb-3">{t.dashboard.reportsTotalSub}</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredIncome}</p>
-                <p className="stat-number text-lg font-semibold text-positive break-words">{fmt(reportsTotal.income, "₮")}</p>
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredExpense}</p>
-                <p className="stat-number text-lg font-semibold text-negative break-words">{fmt(reportsTotal.expense, "₮")}</p>
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground mb-1">{t.dashboard.filteredNet}</p>
-                <p className={`stat-number text-lg font-semibold break-words ${reportsTotal.net >= 0 ? "text-positive" : "text-negative"}`}>
-                  {fmt(reportsTotal.net, "₮")}
                 </p>
               </div>
             </div>
