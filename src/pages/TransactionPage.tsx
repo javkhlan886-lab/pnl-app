@@ -65,6 +65,11 @@ const sellingPrice = (p: Product): number => {
   return p.price * (1 - pct / 100);
 };
 
+// Орлогын гүйлгээ (борлуулалт) зарах үнээр, зарлагын гүйлгээ (худалдан
+// авалт/нөөц нөхөлт) өртгөөр тооцно.
+const productUnitPrice = (p: Product, type: "income" | "expense"): number =>
+  type === "income" ? sellingPrice(p) : Number(p.cost || 0);
+
 // Чөлөөт текст утга — backend-д хадгалагддаг тул хэлээр орчуулахгүй.
 const CATEGORIES_INC = ["Борлуулалт", "Зээл буцаалт", "Хүүгийн орлого", "Бусад орлого"];
 const CATEGORIES_EXP = ["Цалин", "НД / Татвар", "Түрээс", "Тээвэр", "Материал", "Татвар", "Зээл", "Эмчилгээ", "Офис", "Бусад"];
@@ -362,13 +367,13 @@ export default function TransactionPage() {
     if (!newTx.description.trim()) { setSaveError(t.transactions.descRequired); return; }
     const amount = parseAmount(newTx.amount);
     if (!amount || amount <= 0) { setSaveError(t.transactions.amountRequired); return; }
-    if (newTx.type === "income" && newTx.productId && !(Number(newTx.quantity) > 0)) {
+    if (newTx.productId && !(Number(newTx.quantity) > 0)) {
       setSaveError(t.transactions.quantityRequired);
       return;
     }
     setSaving(true);
     try {
-      const linkProduct = newTx.type === "income" && !!newTx.productId;
+      const linkProduct = !!newTx.productId;
       const payload = {
         date: newTx.date,
         description: newTx.description.trim(),
@@ -565,8 +570,6 @@ export default function TransactionPage() {
                       ...prev,
                       type: txType,
                       category: txType === "income" ? CATEGORIES_INC[0] : CATEGORIES_EXP[0],
-                      productId: txType === "income" ? prev.productId : "",
-                      quantity: txType === "income" ? prev.quantity : "",
                       expenseType: txType === "expense" ? prev.expenseType : "",
                       pnlIncomeRowIndex: txType === "income" ? prev.pnlIncomeRowIndex : "",
                       pnlExpenseRowIndex: txType === "expense" ? prev.pnlExpenseRowIndex : "",
@@ -638,63 +641,61 @@ export default function TransactionPage() {
 
               {showLinks && (
                 <div className="rounded-xl border border-border/60 bg-secondary/20 p-3 space-y-3">
-                  {newTx.type === "income" && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div className="sm:col-span-2 space-y-1.5">
-                        <Label className="text-xs">{t.transactions.productLabel}</Label>
-                        <SearchableSelect
-                          value={newTx.productId}
-                          onChange={(id) => {
-                            const product = products.find(p => p._id === id) ?? null;
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-2 space-y-1.5">
+                      <Label className="text-xs">{t.transactions.productLabel}</Label>
+                      <SearchableSelect
+                        value={newTx.productId}
+                        onChange={(id) => {
+                          const product = products.find(p => p._id === id) ?? null;
+                          setNewTx(p => ({
+                            ...p,
+                            productId: id,
+                            amount: product && p.quantity
+                              ? formatAmount(String(productUnitPrice(product, p.type) * Number(p.quantity)))
+                              : p.amount,
+                          }));
+                        }}
+                        options={products.map(p => ({
+                          id: p._id,
+                          label: `${p.name} (${p.remainingQty}${p.unit ? " " + p.unit : ""})`,
+                        }))}
+                        placeholder={t.transactions.productPlaceholder}
+                      />
+                      {selectedProduct && (
+                        <p className="text-xs text-muted-foreground">
+                          {format(t.transactions.remainingStockLine, {
+                            count: String(selectedProduct.remainingQty),
+                            unit: selectedProduct.unit ? ` ${selectedProduct.unit}` : "",
+                          })}
+                          {" · "}₮{productUnitPrice(selectedProduct, newTx.type).toLocaleString("mn-MN")}
+                        </p>
+                      )}
+                    </div>
+                    {newTx.productId && (
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">{t.transactions.quantityLabel}</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={newTx.quantity}
+                          onChange={e => {
+                            const quantity = e.target.value;
                             setNewTx(p => ({
                               ...p,
-                              productId: id,
-                              amount: product && p.quantity
-                                ? formatAmount(String(sellingPrice(product) * Number(p.quantity)))
+                              quantity,
+                              amount: selectedProduct && quantity
+                                ? formatAmount(String(productUnitPrice(selectedProduct, p.type) * Number(quantity)))
                                 : p.amount,
                             }));
                           }}
-                          options={products.map(p => ({
-                            id: p._id,
-                            label: `${p.name} (${p.remainingQty}${p.unit ? " " + p.unit : ""})`,
-                          }))}
-                          placeholder={t.transactions.productPlaceholder}
+                          placeholder="0"
+                          className="h-9 text-sm text-right"
                         />
-                        {selectedProduct && (
-                          <p className="text-xs text-muted-foreground">
-                            {format(t.transactions.remainingStockLine, {
-                              count: String(selectedProduct.remainingQty),
-                              unit: selectedProduct.unit ? ` ${selectedProduct.unit}` : "",
-                            })}
-                            {" · "}₮{sellingPrice(selectedProduct).toLocaleString("mn-MN")}
-                          </p>
-                        )}
                       </div>
-                      {newTx.productId && (
-                        <div className="space-y-1.5">
-                          <Label className="text-xs">{t.transactions.quantityLabel}</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="any"
-                            value={newTx.quantity}
-                            onChange={e => {
-                              const quantity = e.target.value;
-                              setNewTx(p => ({
-                                ...p,
-                                quantity,
-                                amount: selectedProduct && quantity
-                                  ? formatAmount(String(sellingPrice(selectedProduct) * Number(quantity)))
-                                  : p.amount,
-                              }));
-                            }}
-                            placeholder="0"
-                            className="h-9 text-sm text-right"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )}
+                    )}
+                  </div>
 
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t.transactions.contractNumberLabel}</Label>
