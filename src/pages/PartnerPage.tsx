@@ -424,8 +424,13 @@ export default function PartnerPage() {
                   </TableHead>
                   <SortableHead sortKeyName="index" label={t.partners.colIndex} className="w-6" />
                   <SortableHead sortKeyName="name" label={t.partners.colName} />
+                  <TableHead className="px-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.partners.colAddress}</TableHead>
                   <SortableHead sortKeyName="phone" label={t.partners.colPhone} />
+                  <TableHead className="px-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.partners.colEmail}</TableHead>
                   <SortableHead sortKeyName="offering" label={t.partners.colOffering} />
+                  <TableHead className="px-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.partners.colPriceInfo}</TableHead>
+                  <TableHead className="px-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.partners.colCollaboration}</TableHead>
+                  <TableHead className="px-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.partners.colNote}</TableHead>
                   <SortableHead sortKeyName="status" label={t.partners.colStatus} />
                   <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.partners.colActions}</TableHead>
                 </TableRow>
@@ -440,8 +445,13 @@ export default function PartnerPage() {
                     </TableCell>
                     <TableCell className="px-1.5 text-muted-foreground text-xs">{idx + 1}</TableCell>
                     <TableCell className="px-1.5 font-medium blur-number">{item.name}</TableCell>
+                    <TableCell className="px-1.5 text-muted-foreground text-sm max-w-[160px] truncate">{item.address || "—"}</TableCell>
                     <TableCell className="px-1.5 text-muted-foreground text-sm">{item.phone || "—"}</TableCell>
+                    <TableCell className="px-1.5 text-muted-foreground text-sm max-w-[160px] truncate">{item.email || "—"}</TableCell>
                     <TableCell className="px-1.5 text-muted-foreground text-sm max-w-xs truncate">{item.offering || "—"}</TableCell>
+                    <TableCell className="px-1.5 text-muted-foreground text-sm max-w-[160px] truncate">{item.priceInfo || "—"}</TableCell>
+                    <TableCell className="px-1.5 text-muted-foreground text-sm max-w-[180px] truncate">{item.collaboration || "—"}</TableCell>
+                    <TableCell className="px-1.5 text-muted-foreground text-sm max-w-[180px] truncate">{item.note || "—"}</TableCell>
                     <TableCell className="px-1.5">
                       <div className="relative inline-block">
                         <button type="button"

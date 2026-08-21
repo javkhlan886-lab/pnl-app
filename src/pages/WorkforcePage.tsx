@@ -45,6 +45,7 @@ interface WorkforceRecord {
   email: string;
   skills: string;
   rate: number;
+  paidAmount: number;
   status: "active" | "inactive";
   note: string;
   startDate: string;
@@ -54,7 +55,7 @@ interface WorkforceRecord {
 
 const EMPTY: WorkforceRecord = {
   lastName: "", firstName: "", registerNumber: "", address: "", phone: "", email: "", skills: "",
-  rate: 0, status: "active", note: "", startDate: "", endDate: "", partnerId: "",
+  rate: 0, paidAmount: 0, status: "active", note: "", startDate: "", endDate: "", partnerId: "",
 };
 
 const fullName = (item: WorkforceRecord) => [item.lastName, item.firstName].filter(Boolean).join(" ");
@@ -63,7 +64,7 @@ const fmt = (n: number) => "₮" + Math.round(n).toLocaleString("mn-MN");
 
 const PAGE_SIZE = 20;
 
-type SortKey = "index" | "fullName" | "phone" | "skills" | "rate" | "status";
+type SortKey = "index" | "fullName" | "phone" | "skills" | "rate" | "paidAmount" | "remaining" | "status";
 
 // Баганын толгой дээр дарахад ижил утгатай мөрүүд зэрэгцэн эрэмбэлэгдэж харагдана.
 const sortValue = (item: WorkforceRecord, idx: number, key: SortKey): string | number => {
@@ -73,6 +74,8 @@ const sortValue = (item: WorkforceRecord, idx: number, key: SortKey): string | n
     case "phone": return (item.phone || "").toLowerCase();
     case "skills": return (item.skills || "").toLowerCase();
     case "rate": return item.rate;
+    case "paidAmount": return item.paidAmount || 0;
+    case "remaining": return item.rate - (item.paidAmount || 0);
     case "status": return item.status;
   }
 };
@@ -114,6 +117,7 @@ export default function WorkforcePage() {
   const [editing, setEditing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [rateDisplay, setRateDisplay] = useState("");
+  const [paidAmountDisplay, setPaidAmountDisplay] = useState("");
   const [durationEnabled, setDurationEnabled] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"" | "active" | "inactive">("");
@@ -136,6 +140,7 @@ export default function WorkforcePage() {
 
   const [partners, setPartners] = useState<{ _id: string; name: string }[]>([]);
   useEffect(() => { getPartners().then(setPartners).catch(() => setPartners([])); }, []);
+  const partnerName = (id: string) => partners.find(p => p._id === id)?.name || "—";
 
   const activeCount = items.filter(i => i.status === "active").length;
 
@@ -200,7 +205,7 @@ export default function WorkforcePage() {
   const allSelected = filtered.length > 0 && filtered.every(i => selected.has(i._id!));
 
   const openCreate = () => {
-    setForm(EMPTY); setEditing(null); setRateDisplay(""); setDurationEnabled(false); setOpen(true);
+    setForm(EMPTY); setEditing(null); setRateDisplay(""); setPaidAmountDisplay(""); setDurationEnabled(false); setOpen(true);
   };
   const openEdit = (item: any) => {
     setForm({
@@ -211,6 +216,7 @@ export default function WorkforcePage() {
     });
     setEditing(item._id);
     setRateDisplay(item.rate ? Number(item.rate).toLocaleString("mn-MN") : "");
+    setPaidAmountDisplay(item.paidAmount ? Number(item.paidAmount).toLocaleString("mn-MN") : "");
     setDurationEnabled(!!(item.startDate || item.endDate));
     setOpen(true);
   };
@@ -462,9 +468,16 @@ export default function WorkforcePage() {
                   </TableHead>
                   <SortableHead sortKeyName="index" label={t.workforce.colIndex} className="w-6" />
                   <SortableHead sortKeyName="fullName" label={t.workforce.colName} />
+                  <TableHead className="px-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.workforce.colRegisterNumber}</TableHead>
+                  <TableHead className="px-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.workforce.colAddress}</TableHead>
                   <SortableHead sortKeyName="phone" label={t.workforce.colPhone} />
+                  <TableHead className="px-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.workforce.colEmail}</TableHead>
                   <SortableHead sortKeyName="skills" label={t.workforce.colSkills} />
+                  <TableHead className="px-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.workforce.colPartner}</TableHead>
                   <SortableHead sortKeyName="rate" label={t.workforce.colRate} align="right" />
+                  <SortableHead sortKeyName="paidAmount" label={t.workforce.colPaidAmount} align="right" />
+                  <SortableHead sortKeyName="remaining" label={t.workforce.colRemaining} align="right" />
+                  <TableHead className="px-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.workforce.colNote}</TableHead>
                   <SortableHead sortKeyName="status" label={t.workforce.colStatus} />
                   <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.workforce.colActions}</TableHead>
                 </TableRow>
@@ -479,9 +492,18 @@ export default function WorkforcePage() {
                     </TableCell>
                     <TableCell className="px-1.5 text-muted-foreground text-xs">{idx + 1}</TableCell>
                     <TableCell className="px-1.5 font-medium blur-number">{fullName(item)}</TableCell>
+                    <TableCell className="px-1.5 text-muted-foreground text-sm">{item.registerNumber || "—"}</TableCell>
+                    <TableCell className="px-1.5 text-muted-foreground text-sm max-w-[160px] truncate">{item.address || "—"}</TableCell>
                     <TableCell className="px-1.5 text-muted-foreground text-sm">{item.phone || "—"}</TableCell>
+                    <TableCell className="px-1.5 text-muted-foreground text-sm max-w-[160px] truncate">{item.email || "—"}</TableCell>
                     <TableCell className="px-1.5 text-muted-foreground text-sm max-w-xs truncate">{item.skills || "—"}</TableCell>
+                    <TableCell className="px-1.5 text-muted-foreground text-sm max-w-[140px] truncate">{item.partnerId ? partnerName(item.partnerId) : "—"}</TableCell>
                     <TableCell className="px-1.5 text-right stat-number">{fmt(item.rate)}</TableCell>
+                    <TableCell className="px-1.5 text-right stat-number">{fmt(item.paidAmount || 0)}</TableCell>
+                    <TableCell className={`px-1.5 text-right stat-number ${(item.rate - (item.paidAmount || 0)) > 0 ? "text-negative" : ""}`}>
+                      {fmt(item.rate - (item.paidAmount || 0))}
+                    </TableCell>
+                    <TableCell className="px-1.5 text-muted-foreground text-sm max-w-[180px] truncate">{item.note || "—"}</TableCell>
                     <TableCell className="px-1.5">
                       <div className="relative inline-block">
                         <button type="button"
@@ -638,6 +660,27 @@ export default function WorkforcePage() {
                     setForm(f => ({ ...f, rate: num }));
                   }}
                   placeholder="0" className="h-9 text-sm text-right" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs">{t.workforce.paidAmount}</Label>
+                <Input
+                  value={paidAmountDisplay}
+                  inputMode="numeric"
+                  onChange={e => {
+                    const raw = e.target.value.replace(/[^0-9]/g, "");
+                    const num = Number(raw) || 0;
+                    setPaidAmountDisplay(num === 0 ? "" : num.toLocaleString("mn-MN"));
+                    setForm(f => ({ ...f, paidAmount: num }));
+                  }}
+                  placeholder="0" className="h-9 text-sm text-right" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs">{t.workforce.remaining}</Label>
+                <div className="h-9 flex items-center justify-end px-3 rounded-md border border-dashed border-input bg-secondary/30 text-sm stat-number">
+                  {fmt(form.rate - form.paidAmount)}
+                </div>
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs">{t.workforce.status}</Label>
