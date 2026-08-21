@@ -66,6 +66,7 @@ export const en: Dictionary = {
     colType: "Type",
     colAmount: "Amount",
     typeSalaryShort: "Payroll",
+    typePnlExpenseShort: "Report expense",
     filteredSummaryTitle: "Result for selected period ({count} reports)",
     filteredIncome: "Income",
     filteredExpense: "Expense",

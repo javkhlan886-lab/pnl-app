@@ -67,6 +67,7 @@ export const mn = {
     colType: "Төрөл",
     colAmount: "Дүн",
     typeSalaryShort: "Цалин",
+    typePnlExpenseShort: "Тайлангийн зардал",
     filteredSummaryTitle: "Сонгосон хугацааны үр дүн ({count} тайлан)",
     filteredIncome: "Орлого",
     filteredExpense: "Зарлага",

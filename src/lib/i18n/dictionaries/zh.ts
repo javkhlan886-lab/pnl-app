@@ -65,6 +65,7 @@ export const zh: Dictionary = {
     colType: "类型",
     colAmount: "金额",
     typeSalaryShort: "薪酬",
+    typePnlExpenseShort: "报告费用",
     filteredSummaryTitle: "所选时间段结果（{count} 份报表）",
     filteredIncome: "收入",
     filteredExpense: "支出",

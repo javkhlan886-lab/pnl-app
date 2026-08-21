@@ -455,8 +455,12 @@ export default function DashboardPage() {
   // baseSalary+НД+НДШТ, сонгосон хугацаагаар (сарын харьцаагаар) хувь
   // тэнцүүлсэн — server талын proration-той адилхан.
   const opexBreakdown = useMemo(() => {
+    // backend-ийн otherExpense-тэй ижил 4 төрөл (office тусад нь, бусад 3 нь
+    // "Бусад/Хувьсах зардал"-д хамрагдана) — өмнө нь зөвхөн office/other
+    // шүүгдэж, productCost/marketing нийлбэрт орсон ч задаргаанд
+    // харагдахгүй чимээгүй орхигддог байсан.
     const expenseRows = expenses
-      .filter((e) => (e.type === "office" || e.type === "other") && (!periodSince || (e.date && new Date(e.date) >= periodSince)))
+      .filter((e) => ["office", "other", "productCost", "marketing"].includes(e.type) && (!periodSince || (e.date && new Date(e.date) >= periodSince)))
       .map((e) => ({
         id: e._id, date: e.date, label: e.description || e.category || t.dashboard.breakdownGeneralExpense,
         kind: "expense" as const, amount: Number(e.amount),
@@ -476,11 +480,29 @@ export default function DashboardPage() {
         };
       });
 
-    return [...expenseRows, ...salaryRows]
+    // Гэрээт ажлын тайлангийн Гүйлгээний дэвтэрт баталгаажсан (төлөгдсөн)
+    // зардлын мөрүүд — "Үйл ажиллагааны зардал" картад (backend-ийн
+    // pnlExpense) мөн адил орсон тул задаргаанд харагдах ёстой.
+    const active = records.filter((r) => (r.status || "active") === "active");
+    const pnlExpenseRows = active
+      .flatMap((r) =>
+        r.expenseRows
+          .filter((row) => row.received)
+          .map((row) => ({
+            id: `${r._id}-${row.receivedTransactionId}`,
+            date: row.receivedDate,
+            label: `${row.name || t.dashboard.breakdownGeneralExpense} (${r.company || "—"})`,
+            kind: "pnlExpense" as const,
+            amount: toMnt(Number(row.amount), r.currency, r.exchangeRate),
+          }))
+      )
+      .filter((x) => !periodSince || (x.date && new Date(x.date) >= periodSince));
+
+    return [...expenseRows, ...salaryRows, ...pnlExpenseRows]
       .filter((x) => x.amount !== 0)
       .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expenses, employees, period]);
+  }, [expenses, employees, records, period]);
 
   const periodRangeLabel = useMemo(() => {
     if (!period) return t.dashboard.dateRangeAllTime;
@@ -1167,7 +1189,9 @@ export default function DashboardPage() {
                       <TableCell className="text-muted-foreground">{row.date ? fmtDate(row.date) : "—"}</TableCell>
                       <TableCell className="font-medium max-w-[220px] break-words">{row.label}</TableCell>
                       <TableCell className="text-muted-foreground">
-                        {row.kind === "salary" ? t.dashboard.typeSalaryShort : t.dashboard.breakdownGeneralExpense}
+                        {row.kind === "salary" ? t.dashboard.typeSalaryShort
+                          : row.kind === "pnlExpense" ? t.dashboard.typePnlExpenseShort
+                          : t.dashboard.breakdownGeneralExpense}
                       </TableCell>
                       <TableCell className="text-right text-negative font-medium stat-number">{fmt(row.amount, "₮")}</TableCell>
                     </TableRow>

@@ -66,6 +66,7 @@ export const ko: Dictionary = {
     colType: "유형",
     colAmount: "금액",
     typeSalaryShort: "급여",
+    typePnlExpenseShort: "보고서 비용",
     filteredSummaryTitle: "선택한 기간의 결과 ({count}개 보고서)",
     filteredIncome: "수입",
     filteredExpense: "지출",
