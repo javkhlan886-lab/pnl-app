@@ -12,6 +12,8 @@ import { LogoutButton } from "@/components/LogoutButton";
 import { BackToPortalLink } from "@/components/BackToPortalLink";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ResizableHead } from "@/components/ui/resizable-head";
+import { useResizableColumns } from "@/lib/useResizableColumns";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -24,7 +26,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { TableIcon, Plus, Pencil, Archive, ChevronLeft, ChevronDown, Box, BarChart2, Users, Receipt, ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake, Package, Search } from "lucide-react";
+import { TableIcon, Plus, Pencil, Archive, ChevronLeft, Box, BarChart2, Users, Receipt, ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake, Package, Search } from "lucide-react";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { getRecent, addRecent } from "@/lib/recentValues";
 import { toast } from "@/lib/toast";
@@ -296,18 +298,9 @@ export default function AssetPage() {
     finally { setExporting(false); }
   };
 
-  const SortableHead = ({ sortKeyName, label, align = "left", className = "" }: { sortKeyName: SortKey; label: string; align?: "left" | "right" | "center"; className?: string }) => (
-    <TableHead
-      onClick={() => toggleSort(sortKeyName)}
-      className={`cursor-pointer select-none whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold hover:text-foreground transition-colors px-1.5 ${
-        sortKey === sortKeyName ? "text-foreground" : "text-muted-foreground/80"
-      } ${align === "right" ? "text-right" : align === "center" ? "text-center" : ""} ${className}`}>
-      <span className={`inline-flex items-center gap-0.5 ${align === "right" ? "flex-row-reverse" : ""}`}>
-        {label}
-        <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${sortKey === sortKeyName ? "opacity-100" : "opacity-0"} ${sortKey === sortKeyName && sortDir === "desc" ? "rotate-180" : ""}`} />
-      </span>
-    </TableHead>
-  );
+  const { widths: colWidths, startResize } = useResizableColumns("assets", {
+    index: 44, name: 160, category: 130, purchaseDate: 120, unitPrice: 120, quantity: 100, price: 130, assignedTo: 140, status: 110,
+  });
 
   const headerActions = (
     <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -485,15 +478,15 @@ export default function AssetPage() {
                   <TableHead className="w-8 px-1.5">
                     <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 cursor-pointer accent-positive" />
                   </TableHead>
-                  <SortableHead sortKeyName="index" label={t.assets.colIndex} className="w-6" />
-                  <SortableHead sortKeyName="name" label={t.assets.colName} />
-                  <SortableHead sortKeyName="category" label={t.assets.colCategory} />
-                  <SortableHead sortKeyName="purchaseDate" label={t.assets.purchaseDate} />
-                  <SortableHead sortKeyName="unitPrice" label={t.assets.colUnitPrice} align="right" />
-                  <SortableHead sortKeyName="quantity" label={t.assets.colQuantity} align="right" />
-                  <SortableHead sortKeyName="price" label={t.assets.colTotalPrice} align="right" />
-                  <SortableHead sortKeyName="assignedTo" label={t.assets.colAssignee} />
-                  <SortableHead sortKeyName="status" label={t.assets.colStatus} />
+                  <ResizableHead label={t.assets.colIndex} width={colWidths.index} onResizeStart={startResize("index")} sortActive={sortKey === "index"} sortDir={sortDir} onSort={() => toggleSort("index")} />
+                  <ResizableHead label={t.assets.colName} width={colWidths.name} onResizeStart={startResize("name")} sortActive={sortKey === "name"} sortDir={sortDir} onSort={() => toggleSort("name")} />
+                  <ResizableHead label={t.assets.colCategory} width={colWidths.category} onResizeStart={startResize("category")} sortActive={sortKey === "category"} sortDir={sortDir} onSort={() => toggleSort("category")} />
+                  <ResizableHead label={t.assets.purchaseDate} width={colWidths.purchaseDate} onResizeStart={startResize("purchaseDate")} sortActive={sortKey === "purchaseDate"} sortDir={sortDir} onSort={() => toggleSort("purchaseDate")} />
+                  <ResizableHead label={t.assets.colUnitPrice} width={colWidths.unitPrice} onResizeStart={startResize("unitPrice")} align="right" sortActive={sortKey === "unitPrice"} sortDir={sortDir} onSort={() => toggleSort("unitPrice")} />
+                  <ResizableHead label={t.assets.colQuantity} width={colWidths.quantity} onResizeStart={startResize("quantity")} align="right" sortActive={sortKey === "quantity"} sortDir={sortDir} onSort={() => toggleSort("quantity")} />
+                  <ResizableHead label={t.assets.colTotalPrice} width={colWidths.price} onResizeStart={startResize("price")} align="right" sortActive={sortKey === "price"} sortDir={sortDir} onSort={() => toggleSort("price")} />
+                  <ResizableHead label={t.assets.colAssignee} width={colWidths.assignedTo} onResizeStart={startResize("assignedTo")} sortActive={sortKey === "assignedTo"} sortDir={sortDir} onSort={() => toggleSort("assignedTo")} />
+                  <ResizableHead label={t.assets.colStatus} width={colWidths.status} onResizeStart={startResize("status")} sortActive={sortKey === "status"} sortDir={sortDir} onSort={() => toggleSort("status")} />
                   <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.assets.colActions}</TableHead>
                 </TableRow>
               </TableHeader>

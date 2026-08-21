@@ -633,6 +633,8 @@ export const ko: Dictionary = {
     colCategory: "분류",
     colAmount: "금액",
     colType: "구분",
+    colProduct: "제품",
+    colExpenseType: "지출 유형",
     colActions: "작업",
     deleteConfirmDesc: "이 거래가 삭제됩니다.",
     footerSummary: "{count}행 · 수입: {inc} · 지출: {exp} · 순액: {net}",

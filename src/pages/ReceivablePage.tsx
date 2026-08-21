@@ -11,6 +11,8 @@ import { LogoutButton } from "@/components/LogoutButton";
 import { BackToPortalLink } from "@/components/BackToPortalLink";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ResizableHead } from "@/components/ui/resizable-head";
+import { useResizableColumns } from "@/lib/useResizableColumns";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -307,18 +309,9 @@ export default function ReceivablePage() {
     finally { setExporting(false); }
   };
 
-  const SortableHead = ({ sortKeyName, label, align = "left", className = "" }: { sortKeyName: SortKey; label: string; align?: "left" | "right" | "center"; className?: string }) => (
-    <TableHead
-      onClick={() => toggleSort(sortKeyName)}
-      className={`cursor-pointer select-none whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold hover:text-foreground transition-colors px-1.5 ${
-        sortKey === sortKeyName ? "text-foreground" : "text-muted-foreground/80"
-      } ${align === "right" ? "text-right" : align === "center" ? "text-center" : ""} ${className}`}>
-      <span className={`inline-flex items-center gap-0.5 ${align === "right" ? "flex-row-reverse" : ""}`}>
-        {label}
-        <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${sortKey === sortKeyName ? "opacity-100" : "opacity-0"} ${sortKey === sortKeyName && sortDir === "desc" ? "rotate-180" : ""}`} />
-      </span>
-    </TableHead>
-  );
+  const { widths: colWidths, startResize } = useResizableColumns("receivables", {
+    index: 44, counterparty: 150, type: 110, amount: 130, interestRate: 120, accruedInterest: 130, dueDate: 120, status: 110,
+  });
 
   const headerActions = (
     <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -518,14 +511,14 @@ export default function ReceivablePage() {
                   <TableHead className="w-8 px-1.5">
                     <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 cursor-pointer accent-positive" />
                   </TableHead>
-                  <SortableHead sortKeyName="index" label={t.receivables.colIndex} className="w-6" />
-                  <SortableHead sortKeyName="counterparty" label={t.receivables.colCounterparty} />
-                  <SortableHead sortKeyName="type" label={t.receivables.colType} />
-                  <SortableHead sortKeyName="amount" label={t.receivables.colAmount} align="right" />
-                  <SortableHead sortKeyName="interestRate" label={t.receivables.colInterestRate} align="right" />
-                  <SortableHead sortKeyName="accruedInterest" label={t.receivables.colAccruedInterest} align="right" />
-                  <SortableHead sortKeyName="dueDate" label={t.receivables.colDueDate} />
-                  <SortableHead sortKeyName="status" label={t.receivables.colStatus} />
+                  <ResizableHead label={t.receivables.colIndex} width={colWidths.index} onResizeStart={startResize("index")} sortActive={sortKey === "index"} sortDir={sortDir} onSort={() => toggleSort("index")} />
+                  <ResizableHead label={t.receivables.colCounterparty} width={colWidths.counterparty} onResizeStart={startResize("counterparty")} sortActive={sortKey === "counterparty"} sortDir={sortDir} onSort={() => toggleSort("counterparty")} />
+                  <ResizableHead label={t.receivables.colType} width={colWidths.type} onResizeStart={startResize("type")} sortActive={sortKey === "type"} sortDir={sortDir} onSort={() => toggleSort("type")} />
+                  <ResizableHead label={t.receivables.colAmount} width={colWidths.amount} onResizeStart={startResize("amount")} align="right" sortActive={sortKey === "amount"} sortDir={sortDir} onSort={() => toggleSort("amount")} />
+                  <ResizableHead label={t.receivables.colInterestRate} width={colWidths.interestRate} onResizeStart={startResize("interestRate")} align="right" sortActive={sortKey === "interestRate"} sortDir={sortDir} onSort={() => toggleSort("interestRate")} />
+                  <ResizableHead label={t.receivables.colAccruedInterest} width={colWidths.accruedInterest} onResizeStart={startResize("accruedInterest")} align="right" sortActive={sortKey === "accruedInterest"} sortDir={sortDir} onSort={() => toggleSort("accruedInterest")} />
+                  <ResizableHead label={t.receivables.colDueDate} width={colWidths.dueDate} onResizeStart={startResize("dueDate")} sortActive={sortKey === "dueDate"} sortDir={sortDir} onSort={() => toggleSort("dueDate")} />
+                  <ResizableHead label={t.receivables.colStatus} width={colWidths.status} onResizeStart={startResize("status")} sortActive={sortKey === "status"} sortDir={sortDir} onSort={() => toggleSort("status")} />
                   <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.receivables.colActions}</TableHead>
                 </TableRow>
               </TableHeader>

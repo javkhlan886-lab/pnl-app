@@ -1,4 +1,5 @@
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
 interface ComboboxProps {
@@ -17,17 +18,46 @@ interface ComboboxProps {
 export function Combobox({ value, onChange, options, placeholder, className, id, disabled }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const wrapRef = React.useRef<HTMLDivElement>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const [rect, setRect] = React.useState<{ top: number; left: number; width: number } | null>(null);
 
   React.useEffect(() => {
     // pointerdown (mousedown+touchstart-той адил) — mobile browser дээр
     // "mousedown" зарим үед хожимдож/алгасаж бас dropdown хаагдахгүй
-    // үлддэг асуудлаас сэргийлнэ.
+    // үлддэг асуудлаас сэргийлнэ. Dropdown нь portal-оор document.body руу
+    // гардаг тул wrapRef-т биш dropdownRef-т багтах click-ийг ч мөн
+    // "дотоод" гэж тооцно.
     function onClickOutside(e: PointerEvent) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (wrapRef.current?.contains(target) || dropdownRef.current?.contains(target)) return;
+      setOpen(false);
     }
     document.addEventListener("pointerdown", onClickOutside);
     return () => document.removeEventListener("pointerdown", onClickOutside);
   }, []);
+
+  // Combobox нь scroll хийдэг modal/хэсгийн ёроолд байрлавал dropdown нь
+  // тухайн scroll container-ийн overflow-оор таслагдаж, санал болгож буй
+  // утгууд огт харагдахгүй болдог байсан (жишээ нь Гүйлгээ нэмэх цонхны хамгийн
+  // сүүлийн "Тэмдэглэл" талбар) — dropdown-ыг document.body руу portal хийж,
+  // input-ийн бодит дэлгэц дээрх байрлалаар "position: fixed" болгосноор
+  // ямар ч scroll container-т таслагдахгүй болно.
+  React.useEffect(() => {
+    if (!open) return;
+    const updateRect = () => {
+      const r = inputRef.current?.getBoundingClientRect();
+      if (r) setRect({ top: r.bottom, left: r.left, width: r.width });
+    };
+    updateRect();
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [open]);
 
   const filtered = value.trim()
     ? options.filter((o) => o.toLowerCase().includes(value.trim().toLowerCase()))
@@ -36,6 +66,7 @@ export function Combobox({ value, onChange, options, placeholder, className, id,
   return (
     <div ref={wrapRef} className="relative">
       <input
+        ref={inputRef}
         id={id}
         value={value}
         placeholder={placeholder}
@@ -48,8 +79,12 @@ export function Combobox({ value, onChange, options, placeholder, className, id,
           className
         )}
       />
-      {!disabled && open && filtered.length > 0 && (
-        <div className="absolute z-30 mt-1 w-full max-h-48 overflow-y-auto rounded-lg border border-border bg-popover shadow-lg py-1">
+      {!disabled && open && filtered.length > 0 && rect && createPortal(
+        <div
+          ref={dropdownRef}
+          style={{ position: "fixed", top: rect.top + 4, left: rect.left, width: rect.width }}
+          className="z-[9999] max-h-48 overflow-y-auto rounded-lg border border-border bg-popover shadow-lg py-1"
+        >
           {filtered.map((opt) => (
             <button
               key={opt}
@@ -63,7 +98,8 @@ export function Combobox({ value, onChange, options, placeholder, className, id,
               {opt}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

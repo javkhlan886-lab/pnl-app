@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Combobox } from "@/components/ui/combobox";
+import { ResizableHead } from "@/components/ui/resizable-head";
+import { useResizableColumns } from "@/lib/useResizableColumns";
 import { getRecent, addRecent } from "@/lib/recentValues";
 import { toast } from "@/lib/toast";
 import { setAiPageContext } from "@/lib/aiPageContext";
@@ -256,18 +258,10 @@ export default function PartnerPage() {
     finally { setExporting(false); }
   };
 
-  const SortableHead = ({ sortKeyName, label, align = "left", className = "" }: { sortKeyName: SortKey; label: string; align?: "left" | "right" | "center"; className?: string }) => (
-    <TableHead
-      onClick={() => toggleSort(sortKeyName)}
-      className={`cursor-pointer select-none whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold hover:text-foreground transition-colors px-1.5 ${
-        sortKey === sortKeyName ? "text-foreground" : "text-muted-foreground/80"
-      } ${align === "right" ? "text-right" : align === "center" ? "text-center" : ""} ${className}`}>
-      <span className={`inline-flex items-center gap-0.5 ${align === "right" ? "flex-row-reverse" : ""}`}>
-        {label}
-        <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${sortKey === sortKeyName ? "opacity-100" : "opacity-0"} ${sortKey === sortKeyName && sortDir === "desc" ? "rotate-180" : ""}`} />
-      </span>
-    </TableHead>
-  );
+  const { widths: colWidths, startResize } = useResizableColumns("partners", {
+    index: 44, name: 150, address: 150, phone: 110, email: 150, offering: 180,
+    priceInfo: 150, collaboration: 170, note: 170, status: 110,
+  });
 
   const headerActions = (
     <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -422,16 +416,16 @@ export default function PartnerPage() {
                   <TableHead className="w-8 px-1.5">
                     <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 cursor-pointer accent-positive" />
                   </TableHead>
-                  <SortableHead sortKeyName="index" label={t.partners.colIndex} className="w-6" />
-                  <SortableHead sortKeyName="name" label={t.partners.colName} />
-                  <TableHead className="px-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.partners.colAddress}</TableHead>
-                  <SortableHead sortKeyName="phone" label={t.partners.colPhone} />
-                  <TableHead className="px-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.partners.colEmail}</TableHead>
-                  <SortableHead sortKeyName="offering" label={t.partners.colOffering} />
-                  <TableHead className="px-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.partners.colPriceInfo}</TableHead>
-                  <TableHead className="px-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.partners.colCollaboration}</TableHead>
-                  <TableHead className="px-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.partners.colNote}</TableHead>
-                  <SortableHead sortKeyName="status" label={t.partners.colStatus} />
+                  <ResizableHead label={t.partners.colIndex} width={colWidths.index} onResizeStart={startResize("index")} sortActive={sortKey === "index"} sortDir={sortDir} onSort={() => toggleSort("index")} />
+                  <ResizableHead label={t.partners.colName} width={colWidths.name} onResizeStart={startResize("name")} sortActive={sortKey === "name"} sortDir={sortDir} onSort={() => toggleSort("name")} />
+                  <ResizableHead label={t.partners.colAddress} width={colWidths.address} onResizeStart={startResize("address")} />
+                  <ResizableHead label={t.partners.colPhone} width={colWidths.phone} onResizeStart={startResize("phone")} sortActive={sortKey === "phone"} sortDir={sortDir} onSort={() => toggleSort("phone")} />
+                  <ResizableHead label={t.partners.colEmail} width={colWidths.email} onResizeStart={startResize("email")} />
+                  <ResizableHead label={t.partners.colOffering} width={colWidths.offering} onResizeStart={startResize("offering")} sortActive={sortKey === "offering"} sortDir={sortDir} onSort={() => toggleSort("offering")} />
+                  <ResizableHead label={t.partners.colPriceInfo} width={colWidths.priceInfo} onResizeStart={startResize("priceInfo")} />
+                  <ResizableHead label={t.partners.colCollaboration} width={colWidths.collaboration} onResizeStart={startResize("collaboration")} />
+                  <ResizableHead label={t.partners.colNote} width={colWidths.note} onResizeStart={startResize("note")} />
+                  <ResizableHead label={t.partners.colStatus} width={colWidths.status} onResizeStart={startResize("status")} sortActive={sortKey === "status"} sortDir={sortDir} onSort={() => toggleSort("status")} />
                   <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.partners.colActions}</TableHead>
                 </TableRow>
               </TableHeader>

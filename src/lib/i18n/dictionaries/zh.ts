@@ -632,6 +632,8 @@ export const zh: Dictionary = {
     colCategory: "类别",
     colAmount: "金额",
     colType: "类型",
+    colProduct: "商品",
+    colExpenseType: "费用类型",
     colActions: "操作",
     deleteConfirmDesc: "此交易将被删除。",
     footerSummary: "{count} 行 · 收入：{inc} · 支出：{exp} · 净额：{net}",

@@ -27,6 +27,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Combobox } from "@/components/ui/combobox";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { ResizableHead } from "@/components/ui/resizable-head";
+import { useResizableColumns } from "@/lib/useResizableColumns";
 import { getRecent, addRecent } from "@/lib/recentValues";
 import { toast } from "@/lib/toast";
 import { toDateInputValue } from "@/lib/utils";
@@ -300,18 +302,10 @@ export default function WorkforcePage() {
     finally { setExporting(false); }
   };
 
-  const SortableHead = ({ sortKeyName, label, align = "left", className = "" }: { sortKeyName: SortKey; label: string; align?: "left" | "right" | "center"; className?: string }) => (
-    <TableHead
-      onClick={() => toggleSort(sortKeyName)}
-      className={`cursor-pointer select-none whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold hover:text-foreground transition-colors px-1.5 ${
-        sortKey === sortKeyName ? "text-foreground" : "text-muted-foreground/80"
-      } ${align === "right" ? "text-right" : align === "center" ? "text-center" : ""} ${className}`}>
-      <span className={`inline-flex items-center gap-0.5 ${align === "right" ? "flex-row-reverse" : ""}`}>
-        {label}
-        <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${sortKey === sortKeyName ? "opacity-100" : "opacity-0"} ${sortKey === sortKeyName && sortDir === "desc" ? "rotate-180" : ""}`} />
-      </span>
-    </TableHead>
-  );
+  const { widths: colWidths, startResize } = useResizableColumns("workforce", {
+    index: 44, fullName: 150, registerNumber: 120, address: 150, phone: 110, email: 150,
+    skills: 180, partner: 130, rate: 110, paidAmount: 110, remaining: 110, note: 160, status: 110,
+  });
 
   const headerActions = (
     <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -466,19 +460,19 @@ export default function WorkforcePage() {
                   <TableHead className="w-8 px-1.5">
                     <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 cursor-pointer accent-positive" />
                   </TableHead>
-                  <SortableHead sortKeyName="index" label={t.workforce.colIndex} className="w-6" />
-                  <SortableHead sortKeyName="fullName" label={t.workforce.colName} />
-                  <TableHead className="px-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.workforce.colRegisterNumber}</TableHead>
-                  <TableHead className="px-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.workforce.colAddress}</TableHead>
-                  <SortableHead sortKeyName="phone" label={t.workforce.colPhone} />
-                  <TableHead className="px-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.workforce.colEmail}</TableHead>
-                  <SortableHead sortKeyName="skills" label={t.workforce.colSkills} />
-                  <TableHead className="px-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.workforce.colPartner}</TableHead>
-                  <SortableHead sortKeyName="rate" label={t.workforce.colRate} align="right" />
-                  <SortableHead sortKeyName="paidAmount" label={t.workforce.colPaidAmount} align="right" />
-                  <SortableHead sortKeyName="remaining" label={t.workforce.colRemaining} align="right" />
-                  <TableHead className="px-1.5 text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.workforce.colNote}</TableHead>
-                  <SortableHead sortKeyName="status" label={t.workforce.colStatus} />
+                  <ResizableHead label={t.workforce.colIndex} width={colWidths.index} onResizeStart={startResize("index")} sortActive={sortKey === "index"} sortDir={sortDir} onSort={() => toggleSort("index")} />
+                  <ResizableHead label={t.workforce.colName} width={colWidths.fullName} onResizeStart={startResize("fullName")} sortActive={sortKey === "fullName"} sortDir={sortDir} onSort={() => toggleSort("fullName")} />
+                  <ResizableHead label={t.workforce.colRegisterNumber} width={colWidths.registerNumber} onResizeStart={startResize("registerNumber")} />
+                  <ResizableHead label={t.workforce.colAddress} width={colWidths.address} onResizeStart={startResize("address")} />
+                  <ResizableHead label={t.workforce.colPhone} width={colWidths.phone} onResizeStart={startResize("phone")} sortActive={sortKey === "phone"} sortDir={sortDir} onSort={() => toggleSort("phone")} />
+                  <ResizableHead label={t.workforce.colEmail} width={colWidths.email} onResizeStart={startResize("email")} />
+                  <ResizableHead label={t.workforce.colSkills} width={colWidths.skills} onResizeStart={startResize("skills")} sortActive={sortKey === "skills"} sortDir={sortDir} onSort={() => toggleSort("skills")} />
+                  <ResizableHead label={t.workforce.colPartner} width={colWidths.partner} onResizeStart={startResize("partner")} />
+                  <ResizableHead label={t.workforce.colRate} width={colWidths.rate} onResizeStart={startResize("rate")} align="right" sortActive={sortKey === "rate"} sortDir={sortDir} onSort={() => toggleSort("rate")} />
+                  <ResizableHead label={t.workforce.colPaidAmount} width={colWidths.paidAmount} onResizeStart={startResize("paidAmount")} align="right" sortActive={sortKey === "paidAmount"} sortDir={sortDir} onSort={() => toggleSort("paidAmount")} />
+                  <ResizableHead label={t.workforce.colRemaining} width={colWidths.remaining} onResizeStart={startResize("remaining")} align="right" sortActive={sortKey === "remaining"} sortDir={sortDir} onSort={() => toggleSort("remaining")} />
+                  <ResizableHead label={t.workforce.colNote} width={colWidths.note} onResizeStart={startResize("note")} />
+                  <ResizableHead label={t.workforce.colStatus} width={colWidths.status} onResizeStart={startResize("status")} sortActive={sortKey === "status"} sortDir={sortDir} onSort={() => toggleSort("status")} />
                   <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.workforce.colActions}</TableHead>
                 </TableRow>
               </TableHeader>

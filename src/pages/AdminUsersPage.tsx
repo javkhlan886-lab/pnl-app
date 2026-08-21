@@ -10,7 +10,9 @@ import { User } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
+import { ResizableHead } from "@/components/ui/resizable-head";
+import { useResizableColumns } from "@/lib/useResizableColumns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -129,11 +131,22 @@ export default function AdminUsersPage() {
   const otherUsers = (target: User) =>
     (users ?? []).filter((u) => u.id !== target.id && u.role === "company_user");
 
+  const [sortDir, setSortDir] = useState<"asc" | "desc" | null>(null);
+  const { widths: colWidths, startResize } = useResizableColumns("admin_users", {
+    user: 220, role: 130, level: 270, viewable: 160, collabMenus: 160,
+  });
+
   const filteredUsers = (users ?? []).filter((u) => u.role === "company_user").filter((u) => {
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
     return (u.name || "").toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q);
   });
+  if (sortDir) {
+    filteredUsers.sort((a, b) => {
+      const cmp = (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase());
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }
 
   const headerActions = (
     <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -222,11 +235,13 @@ export default function AdminUsersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t.admin.colUser}</TableHead>
-                  <TableHead>{t.admin.colRole}</TableHead>
-                  <TableHead>{t.admin.colLevel}</TableHead>
-                  <TableHead>{t.admin.colViewable}</TableHead>
-                  <TableHead>{t.admin.colCollabMenus}</TableHead>
+                  <ResizableHead label={t.admin.colUser} width={colWidths.user} onResizeStart={startResize("user")}
+                    sortActive={sortDir !== null} sortDir={sortDir ?? "asc"}
+                    onSort={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))} />
+                  <ResizableHead label={t.admin.colRole} width={colWidths.role} onResizeStart={startResize("role")} />
+                  <ResizableHead label={t.admin.colLevel} width={colWidths.level} onResizeStart={startResize("level")} />
+                  <ResizableHead label={t.admin.colViewable} width={colWidths.viewable} onResizeStart={startResize("viewable")} />
+                  <ResizableHead label={t.admin.colCollabMenus} width={colWidths.collabMenus} onResizeStart={startResize("collabMenus")} />
                 </TableRow>
               </TableHeader>
               <TableBody>

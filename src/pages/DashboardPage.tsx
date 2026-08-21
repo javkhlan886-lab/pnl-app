@@ -17,6 +17,8 @@ import { Sidebar } from "@/components/Sidebar";
 import api from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ResizableHead } from "@/components/ui/resizable-head";
+import { useResizableColumns } from "@/lib/useResizableColumns";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useLocale, format } from "@/hooks/useLocale";
@@ -222,16 +224,9 @@ export default function DashboardPage() {
   useEffect(() => { setPage(1); }, [statusFilter, ownerFilter, dateFrom, dateTo, search, sortKey, sortDir]);
   useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
 
-  const SortableHead = ({ sortKeyName, label, align = "left" }: { sortKeyName: SortKey; label: string; align?: "left" | "right" | "center" }) => (
-    <TableHead
-      onClick={() => toggleSort(sortKeyName)}
-      className={`cursor-pointer select-none whitespace-nowrap ${align === "right" ? "text-right" : align === "center" ? "text-center" : ""} ${sortKey === sortKeyName ? "text-foreground" : ""}`}>
-      <span className={`inline-flex items-center gap-0.5 ${align === "right" ? "flex-row-reverse" : ""}`}>
-        {label}
-        <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${sortKey === sortKeyName ? "opacity-100" : "opacity-0"} ${sortKey === sortKeyName && sortDir === "desc" ? "rotate-180" : ""}`} />
-      </span>
-    </TableHead>
-  );
+  const { widths: colWidths, startResize } = useResizableColumns("dashboard_reports", {
+    orgName: 150, contractNumber: 150, status: 110, income: 130, netProfit: 130, date: 110,
+  });
 
   // Dropdown-д харагдах хэрэглэгчдийн жагсаалт — бичлэгийн тооны дарааллаар.
   const ownerOptions = useMemo(() => {
@@ -993,13 +988,13 @@ export default function DashboardPage() {
                   <TableHead className="w-10">
                     <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 cursor-pointer accent-positive" />
                   </TableHead>
-                  <SortableHead sortKeyName="orgName" label={t.dashboard.colOrgName} />
+                  <ResizableHead label={t.dashboard.colOrgName} width={colWidths.orgName} onResizeStart={startResize("orgName")} sortActive={sortKey === "orgName"} sortDir={sortDir} onSort={() => toggleSort("orgName")} />
                   {canSeeOwner && <TableHead>{t.dashboard.colOwner}</TableHead>}
-                  <SortableHead sortKeyName="contractNumber" label={t.dashboard.colContractNumber} />
-                  <SortableHead sortKeyName="status" label={t.dashboard.colStatus} />
-                  <SortableHead sortKeyName="income" label={t.dashboard.colTotalIncome} align="right" />
-                  <SortableHead sortKeyName="netProfit" label={t.dashboard.colNetProfit} align="right" />
-                  <SortableHead sortKeyName="date" label={t.dashboard.colDate} />
+                  <ResizableHead label={t.dashboard.colContractNumber} width={colWidths.contractNumber} onResizeStart={startResize("contractNumber")} sortActive={sortKey === "contractNumber"} sortDir={sortDir} onSort={() => toggleSort("contractNumber")} />
+                  <ResizableHead label={t.dashboard.colStatus} width={colWidths.status} onResizeStart={startResize("status")} sortActive={sortKey === "status"} sortDir={sortDir} onSort={() => toggleSort("status")} />
+                  <ResizableHead label={t.dashboard.colTotalIncome} width={colWidths.income} onResizeStart={startResize("income")} align="right" sortActive={sortKey === "income"} sortDir={sortDir} onSort={() => toggleSort("income")} />
+                  <ResizableHead label={t.dashboard.colNetProfit} width={colWidths.netProfit} onResizeStart={startResize("netProfit")} align="right" sortActive={sortKey === "netProfit"} sortDir={sortDir} onSort={() => toggleSort("netProfit")} />
+                  <ResizableHead label={t.dashboard.colDate} width={colWidths.date} onResizeStart={startResize("date")} sortActive={sortKey === "date"} sortDir={sortDir} onSort={() => toggleSort("date")} />
                   <TableHead className="text-right">{t.dashboard.colActions}</TableHead>
                 </TableRow>
               </TableHeader>

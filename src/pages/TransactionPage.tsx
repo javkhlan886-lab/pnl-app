@@ -23,6 +23,8 @@ import { useLayoutMode } from "@/lib/layoutMode";
 import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ResizableHead } from "@/components/ui/resizable-head";
+import { useResizableColumns } from "@/lib/useResizableColumns";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -223,6 +225,13 @@ export default function TransactionPage() {
     return () => clearTimeout(timeout);
   }, [search]);
 
+  const [sortKey, setSortKey] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const toggleSort = (key: string) => {
+    if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortKey(key); setSortDir("asc"); }
+  };
+
   const loadTxs = useCallback(async () => {
     setLoading(true);
     try {
@@ -233,6 +242,7 @@ export default function TransactionPage() {
         search: debouncedSearch || undefined,
         page,
         limit: PAGE_SIZE,
+        ...(sortKey ? { sortBy: sortKey, sortDir } : {}),
       });
       setTxs(data.transactions);
       setTotalPages(data.totalPages);
@@ -241,11 +251,11 @@ export default function TransactionPage() {
     } finally {
       setLoading(false);
     }
-  }, [typeFilter, dateFrom, dateTo, debouncedSearch, page]);
+  }, [typeFilter, dateFrom, dateTo, debouncedSearch, page, sortKey, sortDir]);
 
   useEffect(() => { loadTxs(); }, [loadTxs]);
 
-  useEffect(() => { setPage(1); }, [typeFilter, dateFrom, dateTo, debouncedSearch]);
+  useEffect(() => { setPage(1); }, [typeFilter, dateFrom, dateTo, debouncedSearch, sortKey, sortDir]);
 
   // Хуудас/шүүлтүүр солиход харагдахгүй болсон мөрүүд сонгогдсон хэвээр
   // үлдэж, "сонгосон нийлбэр" ойлгомжгүй болохоос сэргийлж цэвэрлэнэ.
@@ -255,6 +265,12 @@ export default function TransactionPage() {
   const totalExp = summary.totalExpense;
   const netAmount = totalInc - totalExp;
   const filtered = txs;
+
+  const { widths: colWidths, startResize } = useResizableColumns("transactions", {
+    date: 90, description: 220, contractNumber: 100, category: 100, product: 150,
+    expenseType: 120, amount: 130, type: 80,
+  });
+  const productNameOf = (tx: Transaction) => products.find(p => p._id === tx.productId)?.name || "";
 
   const toggleOne = (id: string) => {
     setSelected(prev => {
@@ -999,12 +1015,14 @@ export default function TransactionPage() {
                       <TableHead className="w-[36px]">
                         <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 cursor-pointer accent-positive" />
                       </TableHead>
-                      <TableHead className="w-[90px]">{t.transactions.colDate}</TableHead>
-                      <TableHead>{t.transactions.colDescription}</TableHead>
-                      <TableHead className="w-[100px]">{t.transactions.colContract}</TableHead>
-                      <TableHead className="w-[90px]">{t.transactions.colCategory}</TableHead>
-                      <TableHead className="w-[130px] text-right">{t.transactions.colAmount}</TableHead>
-                      <TableHead className="w-[70px]">{t.transactions.colType}</TableHead>
+                      <ResizableHead label={t.transactions.colDate} width={colWidths.date} onResizeStart={startResize("date")} sortActive={sortKey === "date"} sortDir={sortDir} onSort={() => toggleSort("date")} />
+                      <ResizableHead label={t.transactions.colDescription} width={colWidths.description} onResizeStart={startResize("description")} sortActive={sortKey === "description"} sortDir={sortDir} onSort={() => toggleSort("description")} />
+                      <ResizableHead label={t.transactions.colContract} width={colWidths.contractNumber} onResizeStart={startResize("contractNumber")} sortActive={sortKey === "contractNumber"} sortDir={sortDir} onSort={() => toggleSort("contractNumber")} />
+                      <ResizableHead label={t.transactions.colCategory} width={colWidths.category} onResizeStart={startResize("category")} sortActive={sortKey === "category"} sortDir={sortDir} onSort={() => toggleSort("category")} />
+                      <ResizableHead label={t.transactions.colProduct} width={colWidths.product} onResizeStart={startResize("product")} sortActive={sortKey === "productName"} sortDir={sortDir} onSort={() => toggleSort("productName")} />
+                      <ResizableHead label={t.transactions.colExpenseType} width={colWidths.expenseType} onResizeStart={startResize("expenseType")} sortActive={sortKey === "expenseType"} sortDir={sortDir} onSort={() => toggleSort("expenseType")} />
+                      <ResizableHead label={t.transactions.colAmount} width={colWidths.amount} onResizeStart={startResize("amount")} align="right" sortActive={sortKey === "amount"} sortDir={sortDir} onSort={() => toggleSort("amount")} />
+                      <ResizableHead label={t.transactions.colType} width={colWidths.type} onResizeStart={startResize("type")} sortActive={sortKey === "type"} sortDir={sortDir} onSort={() => toggleSort("type")} />
                       <TableHead className="w-[60px] text-right">{t.transactions.colActions}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1027,6 +1045,17 @@ export default function TransactionPage() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-xs">{tx.category}</Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-xs">
+                          {tx.productId ? `${productNameOf(tx)}${tx.quantity ? ` × ${tx.quantity}` : ""}` : "—"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-xs">
+                          {tx.expenseType === "office" ? t.expenses.typeOffice
+                            : tx.expenseType === "other" ? t.expenses.typeOther
+                            : tx.expenseType === "productCost" ? t.expenses.typeProductCost
+                            : tx.expenseType === "marketing" ? t.expenses.typeMarketing
+                            : tx.expenseType === "salary" ? t.transactions.expenseTypeSalary
+                            : "—"}
                         </TableCell>
                         <TableCell className={`text-right font-medium stat-number ${tx.type === "income" ? "text-positive" : "text-negative"}`}>
                           {tx.type === "income" ? "+" : "-"}{fmt(tx.amount)}

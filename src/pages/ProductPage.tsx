@@ -10,6 +10,8 @@ import { LogoutButton } from "@/components/LogoutButton";
 import { BackToPortalLink } from "@/components/BackToPortalLink";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ResizableHead } from "@/components/ui/resizable-head";
+import { useResizableColumns } from "@/lib/useResizableColumns";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -479,18 +481,10 @@ export default function ProductPage() {
     finally { setExporting(false); }
   };
 
-  const SortableHead = ({ sortKeyName, label, align = "left", className = "" }: { sortKeyName: SortKey; label: string; align?: "left" | "right" | "center"; className?: string }) => (
-    <TableHead
-      onClick={() => toggleSort(sortKeyName)}
-      className={`cursor-pointer select-none whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold hover:text-foreground transition-colors px-1.5 ${
-        sortKey === sortKeyName ? "text-foreground" : "text-muted-foreground/80"
-      } ${align === "right" ? "text-right" : align === "center" ? "text-center" : ""} ${className}`}>
-      <span className={`inline-flex items-center gap-0.5 ${align === "right" ? "flex-row-reverse" : ""}`}>
-        {label}
-        <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${sortKey === sortKeyName ? "opacity-100" : "opacity-0"} ${sortKey === sortKeyName && sortDir === "desc" ? "rotate-180" : ""}`} />
-      </span>
-    </TableHead>
-  );
+  const { widths: colWidths, startResize } = useResizableColumns("products", {
+    index: 44, name: 160, date: 110, category: 130, unit: 90, quantity: 100, price: 110, cost: 110,
+    sellingPrice: 120, issuedQty: 110, revenue: 130, remainingQty: 110, status: 110,
+  });
 
   const headerActions = (
     <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -796,19 +790,19 @@ export default function ProductPage() {
                   <TableHead className="w-8 px-1.5">
                     <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 cursor-pointer accent-positive" />
                   </TableHead>
-                  <SortableHead sortKeyName="index" label={t.products.colIndex} className="w-6" />
-                  <SortableHead sortKeyName="name" label={t.products.colName} />
-                  <SortableHead sortKeyName="date" label={t.products.colDate} />
-                  <SortableHead sortKeyName="category" label={t.products.colCategory} />
-                  <SortableHead sortKeyName="unit" label={t.products.colUnit} />
-                  <SortableHead sortKeyName="quantity" label={t.products.colQuantity} align="right" />
-                  <SortableHead sortKeyName="price" label={t.products.colPrice} align="center" />
-                  <SortableHead sortKeyName="cost" label={t.products.colCost} align="center" />
-                  <SortableHead sortKeyName="sellingPrice" label={t.products.colSellingPrice} align="right" />
-                  <SortableHead sortKeyName="issuedQty" label={t.products.colIssuedQty} align="right" />
-                  <SortableHead sortKeyName="revenue" label={t.products.colRevenue} align="right" />
-                  <SortableHead sortKeyName="remainingQty" label={t.products.colRemainingQty} align="right" />
-                  <SortableHead sortKeyName="status" label={t.products.colStatus} />
+                  <ResizableHead label={t.products.colIndex} width={colWidths.index} onResizeStart={startResize("index")} sortActive={sortKey === "index"} sortDir={sortDir} onSort={() => toggleSort("index")} />
+                  <ResizableHead label={t.products.colName} width={colWidths.name} onResizeStart={startResize("name")} sortActive={sortKey === "name"} sortDir={sortDir} onSort={() => toggleSort("name")} />
+                  <ResizableHead label={t.products.colDate} width={colWidths.date} onResizeStart={startResize("date")} sortActive={sortKey === "date"} sortDir={sortDir} onSort={() => toggleSort("date")} />
+                  <ResizableHead label={t.products.colCategory} width={colWidths.category} onResizeStart={startResize("category")} sortActive={sortKey === "category"} sortDir={sortDir} onSort={() => toggleSort("category")} />
+                  <ResizableHead label={t.products.colUnit} width={colWidths.unit} onResizeStart={startResize("unit")} sortActive={sortKey === "unit"} sortDir={sortDir} onSort={() => toggleSort("unit")} />
+                  <ResizableHead label={t.products.colQuantity} width={colWidths.quantity} onResizeStart={startResize("quantity")} align="right" sortActive={sortKey === "quantity"} sortDir={sortDir} onSort={() => toggleSort("quantity")} />
+                  <ResizableHead label={t.products.colPrice} width={colWidths.price} onResizeStart={startResize("price")} align="center" sortActive={sortKey === "price"} sortDir={sortDir} onSort={() => toggleSort("price")} />
+                  <ResizableHead label={t.products.colCost} width={colWidths.cost} onResizeStart={startResize("cost")} align="center" sortActive={sortKey === "cost"} sortDir={sortDir} onSort={() => toggleSort("cost")} />
+                  <ResizableHead label={t.products.colSellingPrice} width={colWidths.sellingPrice} onResizeStart={startResize("sellingPrice")} align="right" sortActive={sortKey === "sellingPrice"} sortDir={sortDir} onSort={() => toggleSort("sellingPrice")} />
+                  <ResizableHead label={t.products.colIssuedQty} width={colWidths.issuedQty} onResizeStart={startResize("issuedQty")} align="right" sortActive={sortKey === "issuedQty"} sortDir={sortDir} onSort={() => toggleSort("issuedQty")} />
+                  <ResizableHead label={t.products.colRevenue} width={colWidths.revenue} onResizeStart={startResize("revenue")} align="right" sortActive={sortKey === "revenue"} sortDir={sortDir} onSort={() => toggleSort("revenue")} />
+                  <ResizableHead label={t.products.colRemainingQty} width={colWidths.remainingQty} onResizeStart={startResize("remainingQty")} align="right" sortActive={sortKey === "remainingQty"} sortDir={sortDir} onSort={() => toggleSort("remainingQty")} />
+                  <ResizableHead label={t.products.colStatus} width={colWidths.status} onResizeStart={startResize("status")} sortActive={sortKey === "status"} sortDir={sortDir} onSort={() => toggleSort("status")} />
                   <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colActions}</TableHead>
                 </TableRow>
               </TableHeader>

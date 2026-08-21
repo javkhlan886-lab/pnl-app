@@ -18,6 +18,8 @@ export const getTransactions = (params?: {
   search?: string;
   page?: number;
   limit?: number;
+  sortBy?: string;
+  sortDir?: "asc" | "desc";
 }): Promise<TransactionListResponse> =>
   api.get("/transactions", { params }).then(r => r.data);
 

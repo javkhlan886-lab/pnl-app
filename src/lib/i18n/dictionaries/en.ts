@@ -633,6 +633,8 @@ export const en: Dictionary = {
     colCategory: "Category",
     colAmount: "Amount",
     colType: "Type",
+    colProduct: "Product",
+    colExpenseType: "Expense type",
     colActions: "Actions",
     deleteConfirmDesc: "This transaction will be deleted.",
     footerSummary: "{count} rows · Income: {inc} · Expense: {exp} · Net: {net}",

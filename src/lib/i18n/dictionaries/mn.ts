@@ -634,6 +634,8 @@ export const mn = {
     colCategory: "Ангилал",
     colAmount: "Дүн",
     colType: "Төрөл",
+    colProduct: "Бараа",
+    colExpenseType: "Зардлын төрөл",
     colActions: "Үйлдэл",
     deleteConfirmDesc: "Энэ гүйлгээг устгана.",
     footerSummary: "{count} мөр · Орлого: {inc} · Зарлага: {exp} · Цэвэр: {net}",
