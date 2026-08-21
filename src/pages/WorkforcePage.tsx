@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { getWorkforce, createWorkforce, updateWorkforce, deleteWorkforce } from "@/lib/workforce";
+import { getWorkforceTasks, createWorkforceTask, updateWorkforceTask, deleteWorkforceTask } from "@/lib/workforceTasks";
 import { getPartners } from "@/lib/partner";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocale, format } from "@/hooks/useLocale";
@@ -35,7 +36,7 @@ import { toDateInputValue } from "@/lib/utils";
 import { setAiPageContext } from "@/lib/aiPageContext";
 import { useLayoutMode } from "@/lib/layoutMode";
 import { Sidebar } from "@/components/Sidebar";
-import { Plus, Pencil, Trash2, ChevronLeft, ChevronDown, BarChart2, Users, Box, Receipt, ArrowLeftRight, TableIcon, ShieldCheck, HardHat, Handshake, Package, Search, Download } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, ChevronDown, BarChart2, Users, Box, Receipt, ArrowLeftRight, TableIcon, ShieldCheck, HardHat, Handshake, Package, Search, Download, CalendarDays, CheckCircle2, Circle } from "lucide-react";
 
 interface WorkforceRecord {
   _id?: string;
@@ -129,6 +130,82 @@ export default function WorkforcePage() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [page, setPage] = useState(1);
   const [exporting, setExporting] = useState(false);
+
+  // Компанийн бүх хэрэглэгчид нийтлэг харагдах "Төлөвлөгөө" (Apple Calendar-ийн
+  // өдрийн харагдацтай төстэй) — тодорхой нэг ажилтантай холбогдоогүй.
+  const [viewTab, setViewTab] = useState<"list" | "calendar">("list");
+  const toYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const [calDate, setCalDate] = useState(() => toYMD(new Date()));
+  const [calTasks, setCalTasks] = useState<any[]>([]);
+  const [calLoading, setCalLoading] = useState(false);
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [taskForm, setTaskForm] = useState({ date: calDate, time: "09:00", title: "", note: "" });
+  const [savingTask, setSavingTask] = useState(false);
+
+  const weekStart = useMemo(() => {
+    const d = new Date(calDate + "T00:00:00");
+    const day = d.getDay();
+    d.setDate(d.getDate() + ((day === 0 ? -6 : 1) - day));
+    return d;
+  }, [calDate]);
+  const weekDays = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => { const d = new Date(weekStart); d.setDate(weekStart.getDate() + i); return d; }),
+    [weekStart]
+  );
+
+  const loadTasks = useCallback(async () => {
+    setCalLoading(true);
+    try {
+      const data = await getWorkforceTasks({ dateFrom: toYMD(weekDays[0]), dateTo: toYMD(weekDays[6]) });
+      setCalTasks(data);
+    } catch { setCalTasks([]); }
+    finally { setCalLoading(false); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekDays]);
+
+  useEffect(() => { if (viewTab === "calendar") loadTasks(); }, [viewTab, loadTasks]);
+
+  const dayTasks = calTasks
+    .filter(t => (t.date || "").slice(0, 10) === calDate)
+    .sort((a, b) => a.time.localeCompare(b.time));
+  const tasksByDay = useMemo(() => {
+    const map = new Map<string, number>();
+    calTasks.forEach(t => { const key = (t.date || "").slice(0, 10); map.set(key, (map.get(key) || 0) + 1); });
+    return map;
+  }, [calTasks]);
+
+  const openAddTask = () => {
+    setEditingTaskId(null);
+    setTaskForm({ date: calDate, time: "09:00", title: "", note: "" });
+    setTaskModalOpen(true);
+  };
+  const openEditTask = (task: any) => {
+    setEditingTaskId(task._id);
+    setTaskForm({ date: (task.date || "").slice(0, 10), time: task.time, title: task.title, note: task.note || "" });
+    setTaskModalOpen(true);
+  };
+  const handleSaveTask = async () => {
+    if (!taskForm.title.trim()) return;
+    setSavingTask(true);
+    try {
+      addRecent("workforceTasks", "note", taskForm.note);
+      if (editingTaskId) await updateWorkforceTask(editingTaskId, taskForm);
+      else await createWorkforceTask(taskForm);
+      setTaskModalOpen(false);
+      loadTasks();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || t.workforce.saveError);
+    } finally { setSavingTask(false); }
+  };
+  const handleDeleteTask = async (id: string) => {
+    await deleteWorkforceTask(id);
+    setCalTasks(prev => prev.filter(t => t._id !== id));
+  };
+  const handleToggleTaskDone = async (task: any) => {
+    const updated = await updateWorkforceTask(task._id, { done: !task.done });
+    setCalTasks(prev => prev.map(t => t._id === task._id ? updated : t));
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -391,6 +468,21 @@ export default function WorkforcePage() {
           </div>
         </div>
 
+        <div className="flex gap-1 bg-secondary/50 rounded-lg p-1 mb-5 w-fit">
+          {(["list", "calendar"] as const).map(tabKey => (
+            <button key={tabKey} onClick={() => setViewTab(tabKey)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-medium transition-colors ${
+                viewTab === tabKey ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}>
+              {tabKey === "list"
+                ? <><TableIcon className="w-3.5 h-3.5" />{t.workforce.tabList}</>
+                : <><CalendarDays className="w-3.5 h-3.5" />{t.workforce.tabCalendar}</>}
+            </button>
+          ))}
+        </div>
+
+        {viewTab === "list" && (
+        <>
         {selected.size > 0 && (
           <div className="mb-4 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-positive/60" />
@@ -566,6 +658,89 @@ export default function WorkforcePage() {
           )}
           </>
         )}
+        </>
+        )}
+
+        {viewTab === "calendar" && (
+          <div className="glass-card p-4">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => {
+                  const d = new Date(calDate + "T00:00:00"); d.setDate(d.getDate() - 1); setCalDate(toYMD(d));
+                }}>
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <div className="text-sm font-medium min-w-40 text-center">
+                  {new Date(calDate + "T00:00:00").toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric", weekday: "long" })}
+                </div>
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => {
+                  const d = new Date(calDate + "T00:00:00"); d.setDate(d.getDate() + 1); setCalDate(toYMD(d));
+                }}>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+                <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setCalDate(toYMD(new Date()))}>
+                  {t.workforce.taskToday}
+                </Button>
+              </div>
+              <Button onClick={openAddTask} size="sm" className="bg-positive text-background hover:bg-positive/90">
+                <Plus className="w-4 h-4 mr-1.5" />{t.workforce.taskAdd}
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1.5 mb-4">
+              {weekDays.map(d => {
+                const ymd = toYMD(d);
+                const isSelected = ymd === calDate;
+                const isToday = ymd === toYMD(new Date());
+                const count = tasksByDay.get(ymd) || 0;
+                return (
+                  <button key={ymd} onClick={() => setCalDate(ymd)}
+                    className={`flex flex-col items-center gap-1 py-2 rounded-lg border transition-colors ${
+                      isSelected ? "bg-positive/15 border-positive/40 text-positive"
+                        : isToday ? "border-info/40 text-foreground" : "border-border/50 text-muted-foreground hover:bg-secondary/40"
+                    }`}>
+                    <span className="text-[10px] uppercase tracking-wide">{d.toLocaleDateString(locale, { weekday: "short" })}</span>
+                    <span className="text-sm font-semibold stat-number">{d.getDate()}</span>
+                    <span className={`w-1.5 h-1.5 rounded-full ${count > 0 ? "bg-positive" : "bg-transparent"}`} />
+                  </button>
+                );
+              })}
+            </div>
+
+            {calLoading ? (
+              <div className="text-center py-16 text-muted-foreground text-sm">{t.common.loading}</div>
+            ) : dayTasks.length === 0 ? (
+              <div className="text-center py-16 flex flex-col items-center gap-3">
+                <p className="text-muted-foreground text-sm">{t.workforce.taskNoRecords}</p>
+                <Button onClick={openAddTask} variant="outline" size="sm">{t.workforce.taskAdd}</Button>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[55vh] overflow-y-auto pr-1">
+                {dayTasks.map(task => (
+                  <div key={task._id}
+                    className={`flex items-start gap-3 rounded-lg border px-3 py-2.5 ${task.done ? "border-border/40 opacity-60" : "border-border/60"}`}>
+                    <button onClick={() => handleToggleTaskDone(task)} className="mt-0.5 text-muted-foreground hover:text-positive shrink-0">
+                      {task.done ? <CheckCircle2 className="w-4 h-4 text-positive" /> : <Circle className="w-4 h-4" />}
+                    </button>
+                    <div className="w-12 shrink-0 text-xs font-medium stat-number pt-0.5">{task.time}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium truncate ${task.done ? "line-through" : ""}`}>{task.title}</p>
+                      {task.note && <p className="text-xs text-muted-foreground truncate">{task.note}</p>}
+                    </div>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditTask(task)}>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDeleteTask(task._id)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </main>
       </div>
     </div>
@@ -697,6 +872,41 @@ export default function WorkforcePage() {
             <Button onClick={handleSave} disabled={saving || !form.lastName.trim() || !form.firstName.trim()}
               className="bg-positive text-background hover:bg-positive/90">
               {saving ? t.common.saving : editing ? t.common.save : t.common.add}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={taskModalOpen} onOpenChange={setTaskModalOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{editingTaskId ? t.workforce.taskEditTitle : t.workforce.taskNewTitle}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs">{t.workforce.taskDate}</Label>
+                <Input type="date" value={taskForm.date} onChange={e => setTaskForm(f => ({ ...f, date: e.target.value }))} className="h-9 text-sm" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs">{t.workforce.taskTime}</Label>
+                <Input type="time" value={taskForm.time} onChange={e => setTaskForm(f => ({ ...f, time: e.target.value }))} className="h-9 text-sm" />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs">{t.workforce.taskTitle}</Label>
+              <Input value={taskForm.title} onChange={e => setTaskForm(f => ({ ...f, title: e.target.value }))} placeholder={t.workforce.taskTitlePlaceholder} className="h-9 text-sm" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs">{t.workforce.note}</Label>
+              <Combobox value={taskForm.note} onChange={v => setTaskForm(f => ({ ...f, note: v }))} options={getRecent("workforceTasks", "note")} className="h-9 text-sm" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTaskModalOpen(false)}>{t.common.cancel}</Button>
+            <Button onClick={handleSaveTask} disabled={savingTask || !taskForm.title.trim()}
+              className="bg-positive text-background hover:bg-positive/90">
+              {savingTask ? t.common.saving : editingTaskId ? t.common.save : t.common.add}
             </Button>
           </DialogFooter>
         </DialogContent>
