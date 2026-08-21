@@ -605,47 +605,10 @@ export default function TransactionPage() {
                 ))}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">{t.transactions.dateLabel}</Label>
-                  <Input type="date" value={newTx.date}
-                    onChange={e => setNewTx(p => ({ ...p, date: e.target.value }))}
-                    className="h-9 text-sm" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">{t.transactions.amountLabel}</Label>
-                  <Input
-                    value={newTx.amount}
-                    onChange={e => setNewTx(p => ({ ...p, amount: formatAmount(e.target.value) }))}
-                    placeholder="0"
-                    className="h-9 text-sm text-right font-medium"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs">{t.transactions.descriptionLabel}</Label>
-                <Combobox
-                  value={newTx.description}
-                  onChange={(v) => setNewTx(p => ({ ...p, description: v }))}
-                  options={getRecent("transactions", "description")}
-                  placeholder={t.transactions.descriptionPlaceholder}
-                  className="h-9 text-sm"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs">{t.transactions.categoryLabel}</Label>
-                <Combobox
-                  value={newTx.category}
-                  onChange={(v) => setNewTx(p => ({ ...p, category: v }))}
-                  options={categories}
-                  placeholder={t.transactions.categoryAddNewPlaceholder}
-                />
-              </div>
-
               {/* Холбоос: Бараа/Гэрээ/Зардлын төрөл — сонголт ихтэй тул
-                  анхандаа хаалттай, шаардлагатай үед л дэлгэнэ. */}
+                  анхандаа хаалттай, шаардлагатай үед л дэлгэнэ. Хэрэглэгчийн
+                  хамгийн олон ашигладаг талбар тул үндсэн талбаруудын
+                  (Огноо/Дүн/Тайлбар/Ангилал) өмнө, 2 дугаарт байрлана. */}
               <button type="button" onClick={() => setShowLinks(v => !v)}
                 className="w-full flex items-center gap-2 h-9 px-3 rounded-lg border border-dashed border-border text-xs text-muted-foreground hover:text-foreground hover:border-solid hover:bg-secondary/40 transition-colors">
                 <Link2 className="w-3.5 h-3.5 shrink-0" />
@@ -813,6 +776,45 @@ export default function TransactionPage() {
                   )}
                 </div>
               )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">{t.transactions.dateLabel}</Label>
+                  <Input type="date" value={newTx.date}
+                    onChange={e => setNewTx(p => ({ ...p, date: e.target.value }))}
+                    className="h-9 text-sm" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">{t.transactions.amountLabel}</Label>
+                  <Input
+                    value={newTx.amount}
+                    onChange={e => setNewTx(p => ({ ...p, amount: formatAmount(e.target.value) }))}
+                    placeholder="0"
+                    className="h-9 text-sm text-right font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t.transactions.descriptionLabel}</Label>
+                <Combobox
+                  value={newTx.description}
+                  onChange={(v) => setNewTx(p => ({ ...p, description: v }))}
+                  options={getRecent("transactions", "description")}
+                  placeholder={t.transactions.descriptionPlaceholder}
+                  className="h-9 text-sm"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t.transactions.categoryLabel}</Label>
+                <Combobox
+                  value={newTx.category}
+                  onChange={(v) => setNewTx(p => ({ ...p, category: v }))}
+                  options={categories}
+                  placeholder={t.transactions.categoryAddNewPlaceholder}
+                />
+              </div>
 
               <div className="space-y-1.5">
                 <Label className="text-xs">{t.transactions.noteLabel}</Label>

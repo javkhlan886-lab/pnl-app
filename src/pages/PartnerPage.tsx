@@ -46,6 +46,18 @@ interface PartnerRecord {
   note: string;
 }
 
+// "Үнийн мэдээлэл" талбар чөлөөт текст ("Ойролцоо үнэ, хямдралын нөхцөл г.м.")
+// боловч хэрэглэгч ихэвчлэн зүгээр л тоо бичдэг тул зөвхөн бүхэлдээ тоо
+// оруулсан үед мянгатын таслалтай болгож харуулна — үг холилдсон чөлөөт
+// текстийг хэвээр нь үлдээнэ.
+const formatIfNumeric = (value: string): string => {
+  const digits = value.replace(/,/g, "");
+  if (digits && /^[0-9]+$/.test(digits)) {
+    return Number(digits).toLocaleString("mn-MN");
+  }
+  return value;
+};
+
 const EMPTY: PartnerRecord = {
   name: "", address: "", phone: "", email: "", offering: "", priceInfo: "", collaboration: "", status: "active", note: "",
 };
@@ -548,7 +560,7 @@ export default function PartnerPage() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">{t.partners.priceInfo}</Label>
-              <Combobox value={form.priceInfo} onChange={v => setForm(f => ({ ...f, priceInfo: v }))} options={getRecent("partners", "priceInfo")} placeholder={t.partners.priceInfoPlaceholder} className="h-9 text-sm" />
+              <Combobox value={form.priceInfo} onChange={v => setForm(f => ({ ...f, priceInfo: formatIfNumeric(v) }))} options={getRecent("partners", "priceInfo")} placeholder={t.partners.priceInfoPlaceholder} className="h-9 text-sm" />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">{t.partners.collaboration}</Label>
