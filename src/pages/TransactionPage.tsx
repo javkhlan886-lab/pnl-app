@@ -13,6 +13,7 @@ import {
 } from "@/lib/transaction";
 import { getPNLList } from "@/lib/pnl";
 import { getProducts, type Product } from "@/lib/product";
+import { getAssets } from "@/lib/asset";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { getRecent, addRecent } from "@/lib/recentValues";
 import { toast } from "@/lib/toast";
@@ -78,6 +79,16 @@ const CATEGORIES_EXP = ["Цалин", "НД / Татвар", "Түрээс", "Т
 
 type Tab = "range" | "contract";
 
+// Хөрөнгийн менюгийн жагсаалт харуулахад хэрэгтэй хамгийн бага мэдээлэл —
+// @/lib/asset нь энэ талбаруудтай объект буцаадаг (AssetPage.tsx-тэй адил).
+interface AssetOption {
+  _id: string;
+  name: string;
+  unitPrice: number;
+  quantity: number;
+  status: string;
+}
+
 interface NewTx {
   date: string;
   description: string;
@@ -87,6 +98,7 @@ interface NewTx {
   contractNumber: string;
   note: string;
   productId: string;
+  assetId: string;
   quantity: string;
   expenseType: string;
   pnlIncomeRowIndex: string;
@@ -102,6 +114,7 @@ const EMPTY_TX: NewTx = {
   contractNumber: "",
   note: "",
   productId: "",
+  assetId: "",
   quantity: "",
   expenseType: "",
   pnlIncomeRowIndex: "",
@@ -184,6 +197,12 @@ export default function TransactionPage() {
     getProducts().then(setProducts).catch(() => setProducts([]));
   }, []);
   const selectedProduct = products.find(p => p._id === newTx.productId) ?? null;
+
+  const [assets, setAssets] = useState<AssetOption[]>([]);
+  useEffect(() => {
+    getAssets().then(setAssets).catch(() => setAssets([]));
+  }, []);
+  const selectedAsset = assets.find(a => a._id === newTx.assetId) ?? null;
 
   // Сонгосон Гэрээний тайлангийн орох ёстой боловч Гүйлгээний дэвтэрт
   // хараахан баталгаажаагүй орлогын мөрүүд — засаж буй гүйлгээ өөрөө
@@ -271,6 +290,7 @@ export default function TransactionPage() {
     expenseType: 120, amount: 130, type: 80,
   });
   const productNameOf = (tx: Transaction) => products.find(p => p._id === tx.productId)?.name || "";
+  const assetNameOf = (tx: Transaction) => assets.find(a => a._id === tx.assetId)?.name || "";
 
   const toggleOne = (id: string) => {
     setSelected(prev => {
@@ -387,9 +407,14 @@ export default function TransactionPage() {
       setSaveError(t.transactions.quantityRequired);
       return;
     }
+    if (newTx.assetId && !(Number(newTx.quantity) > 0)) {
+      setSaveError(t.transactions.assetQuantityRequired);
+      return;
+    }
     setSaving(true);
     try {
       const linkProduct = !!newTx.productId;
+      const linkAsset = !linkProduct && !!newTx.assetId;
       const payload = {
         date: newTx.date,
         description: newTx.description.trim(),
@@ -401,7 +426,8 @@ export default function TransactionPage() {
         currency: "₮",
         status: "approved",
         productId: linkProduct ? newTx.productId : null,
-        quantity: linkProduct ? Number(newTx.quantity) : null,
+        assetId: linkAsset ? newTx.assetId : null,
+        quantity: linkProduct || linkAsset ? Number(newTx.quantity) : null,
         expenseType: newTx.type === "expense" ? (newTx.expenseType || null) : null,
         pnlIncomeRowIndex: newTx.type === "income" && newTx.pnlIncomeRowIndex !== ""
           ? Number(newTx.pnlIncomeRowIndex)
@@ -452,12 +478,13 @@ export default function TransactionPage() {
       contractNumber: tx.contractNumber ?? "",
       note: tx.note ?? "",
       productId: tx.productId ?? "",
+      assetId: tx.assetId ?? "",
       quantity: tx.quantity != null ? String(tx.quantity) : "",
       expenseType: tx.expenseType ?? "",
       pnlIncomeRowIndex: receivedRowIndex >= 0 ? String(receivedRowIndex) : "",
       pnlExpenseRowIndex: paidRowIndex >= 0 ? String(paidRowIndex) : "",
     });
-    setShowLinks(!!(tx.productId || tx.contractNumber || tx.expenseType));
+    setShowLinks(!!(tx.productId || tx.assetId || tx.contractNumber || tx.expenseType));
     setSaveError("");
     setShowModal(true);
   };
@@ -630,6 +657,7 @@ export default function TransactionPage() {
                           setNewTx(p => ({
                             ...p,
                             productId: id,
+                            assetId: id ? "" : p.assetId,
                             amount: product && p.quantity
                               ? formatAmount(String(productUnitPrice(product, p.type) * Number(p.quantity)))
                               : p.amount,
@@ -651,7 +679,7 @@ export default function TransactionPage() {
                         </p>
                       )}
                     </div>
-                    {newTx.productId && (
+                    {(newTx.productId || newTx.assetId) && (
                       <div className="space-y-1.5">
                         <Label className="text-xs">{t.transactions.quantityLabel}</Label>
                         <Input
@@ -666,6 +694,8 @@ export default function TransactionPage() {
                               quantity,
                               amount: selectedProduct && quantity
                                 ? formatAmount(String(productUnitPrice(selectedProduct, p.type) * Number(quantity)))
+                                : selectedAsset && quantity
+                                ? formatAmount(String(Number(selectedAsset.unitPrice) * Number(quantity)))
                                 : p.amount,
                             }));
                           }}
@@ -673,6 +703,35 @@ export default function TransactionPage() {
                           className="h-9 text-sm text-right"
                         />
                       </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">{t.transactions.assetLabel}</Label>
+                    <SearchableSelect
+                      value={newTx.assetId}
+                      onChange={(id) => {
+                        const asset = assets.find(a => a._id === id) ?? null;
+                        setNewTx(p => ({
+                          ...p,
+                          assetId: id,
+                          productId: id ? "" : p.productId,
+                          amount: asset && p.quantity
+                            ? formatAmount(String(Number(asset.unitPrice) * Number(p.quantity)))
+                            : p.amount,
+                        }));
+                      }}
+                      options={assets.map(a => ({
+                        id: a._id,
+                        label: `${a.name} (${a.quantity})`,
+                      }))}
+                      placeholder={t.transactions.assetPlaceholder}
+                    />
+                    {selectedAsset && (
+                      <p className="text-xs text-muted-foreground">
+                        {format(t.transactions.remainingAssetLine, { count: String(selectedAsset.quantity) })}
+                        {" · "}₮{Number(selectedAsset.unitPrice).toLocaleString("mn-MN")}
+                      </p>
                     )}
                   </div>
 
@@ -1049,7 +1108,11 @@ export default function TransactionPage() {
                           <Badge variant="outline" className="text-xs">{tx.category}</Badge>
                         </TableCell>
                         <TableCell className="text-muted-foreground text-xs">
-                          {tx.productId ? `${productNameOf(tx)}${tx.quantity ? ` × ${tx.quantity}` : ""}` : "—"}
+                          {tx.productId
+                            ? `${productNameOf(tx)}${tx.quantity ? ` × ${tx.quantity}` : ""}`
+                            : tx.assetId
+                            ? `${assetNameOf(tx)}${tx.quantity ? ` × ${tx.quantity}` : ""}`
+                            : "—"}
                         </TableCell>
                         <TableCell className="text-muted-foreground text-xs">
                           {tx.expenseType === "office" ? t.expenses.typeOffice
