@@ -48,6 +48,8 @@
     --negative: 0.58 0.21 25;
     --info: 0.55 0.18 255;
     --warn: 0.65 0.15 70;
+    /* Хуудас бүрийн дэвсгэрт зориулсан чимэглэлийн ягаан glow */
+    --accent-purple: 0.55 0.16 305;
   }
   .dark {
     /* Гүн хар-цэнхэр дэвсгэр — neon glow-той зураач харагдах ёстой */
@@ -93,6 +95,7 @@
     --negative: 0.62 0.21 16;
     --info: 0.65 0.18 250;
     --warn: 0.75 0.15 80;
+    --accent-purple: 0.65 0.18 305;
   }
   * {
     @apply border-border;
@@ -127,6 +130,14 @@
    Бүх хуудсанд ашиглагдах glass-card болон glow эффектүүд.
    ═══════════════════════════════════════════════════════════════ */
 @layer components {
+  /* Хуудас бүрийн (min-h-screen bg-background) дэвсгэрт зориулсан 15%
+     opacity-той ягаан glow — background-image учир background-color
+     (bg-background)-ийн дээр давхарлагдаж, доторх агуулга (header/main)
+     үргэлж түүний дээгүүр зурагдана (нэмэлт z-index/pseudo хэрэггүй). */
+  .min-h-screen.bg-background {
+    background-image: radial-gradient(circle at 82% 6%, color-mix(in oklch, oklch(var(--accent-purple)) 15%, transparent), transparent 55%);
+    background-repeat: no-repeat;
+  }
   /* Үндсэн glass-эффект карт — арын radial glow-той */
   .glass-card {
     @apply relative rounded-2xl border bg-card/60 backdrop-blur-sm overflow-hidden;
