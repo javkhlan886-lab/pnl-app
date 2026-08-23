@@ -130,12 +130,12 @@
    Бүх хуудсанд ашиглагдах glass-card болон glow эффектүүд.
    ═══════════════════════════════════════════════════════════════ */
 @layer components {
-  /* Хуудас бүрийн (min-h-screen bg-background) дэвсгэрт зориулсан 15%
+  /* Хуудас бүрийн (min-h-screen bg-background) дэвсгэрт зориулсан 35%
      opacity-той ягаан glow — background-image учир background-color
      (bg-background)-ийн дээр давхарлагдаж, доторх агуулга (header/main)
      үргэлж түүний дээгүүр зурагдана (нэмэлт z-index/pseudo хэрэггүй). */
   .min-h-screen.bg-background {
-    background-image: radial-gradient(circle at 82% 6%, color-mix(in oklch, oklch(var(--accent-purple)) 15%, transparent), transparent 55%);
+    background-image: radial-gradient(circle at 82% 6%, color-mix(in oklch, oklch(var(--accent-purple)) 35%, transparent), transparent 55%);
     background-repeat: no-repeat;
   }
   /* Үндсэн glass-эффект карт — арын radial glow-той */
