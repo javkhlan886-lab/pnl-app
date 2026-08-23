@@ -28,13 +28,14 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { TableIcon, Plus, Pencil, Trash2, ChevronLeft, ChevronDown, Receipt, BarChart2, Users, Box, ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronDown, Receipt, Download } from "lucide-react";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { getRecent, addRecent } from "@/lib/recentValues";
 import { toast } from "@/lib/toast";
 import { setAiPageContext } from "@/lib/aiPageContext";
 import { useLayoutMode } from "@/lib/layoutMode";
 import { Sidebar } from "@/components/Sidebar";
+import { getNavItems } from "@/lib/navigation";
 import { Combobox } from "@/components/ui/combobox";
 
 // Чөлөөт текст утга — backend-д хадгалагддаг тул хэлээр орчуулахгүй.
@@ -117,18 +118,7 @@ export default function ExpensePage() {
   const [marketingBaseDisplay, setMarketingBaseDisplay] = useState("");
   const [marketingPercent, setMarketingPercent] = useState(0);
 
-  const NAV_ITEMS = [
-    { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
-    { path: "/products", label: t.common.navProducts, icon: <Package className="w-4 h-4" /> },
-    { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
-    { path: "/employees", label: t.common.navEmployees, icon: <Users className="w-4 h-4" /> },
-    { path: "/assets", label: t.common.navAssets, icon: <Box className="w-4 h-4" /> },
-    { path: "/expenses", label: t.common.navExpenses, icon: <Receipt className="w-4 h-4" /> },
-    { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
-    { path: "/workforce", label: t.common.navWorkforce, icon: <HardHat className="w-4 h-4" /> },
-    { path: "/partners", label: t.common.navPartners, icon: <Handshake className="w-4 h-4" /> },
-    ...(isAdmin ? [{ path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> }] : []),
-  ];
+  const NAV_ITEMS = getNavItems(t, isAdmin);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -506,7 +496,7 @@ export default function ExpensePage() {
                   <ResizableHead label={t.expenses.colSoldQty} width={colWidths.quantity} onResizeStart={startResize("quantity")} align="right" sortActive={sortKey === "quantity"} sortDir={sortDir} onSort={() => toggleSort("quantity")} />
                   <ResizableHead label={t.expenses.colTotalCost} width={colWidths.amount} onResizeStart={startResize("amount")} align="right" sortActive={sortKey === "amount"} sortDir={sortDir} onSort={() => toggleSort("amount")} />
                   <ResizableHead label={t.expenses.colStatus} width={colWidths.status} onResizeStart={startResize("status")} sortActive={sortKey === "status"} sortDir={sortDir} onSort={() => toggleSort("status")} />
-                  <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.expenses.colActions}</TableHead>
+                  <TableHead className="text-right px-1.5 whitespace-nowrap text-xs uppercase tracking-wide font-semibold text-muted-foreground/80">{t.expenses.colActions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

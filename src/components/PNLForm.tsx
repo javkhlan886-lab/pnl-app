@@ -150,7 +150,7 @@ const RowSection = ({ type, label, rows, currency, total, onUpdate, onAdd, onDel
             {locked && (
               <span
                 title={type === "incomeRows" ? t.pnlForm.incomeRowReceivedTitle : t.pnlForm.expenseRowReceivedTitle}
-                className="shrink-0 inline-flex items-center gap-1 text-[11px] font-medium text-positive bg-positive/10 border border-positive/30 rounded-full px-2 py-0.5"
+                className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-positive bg-positive/10 border border-positive/30 rounded-full px-2 py-0.5"
               >
                 <CheckCircle2 className="w-3 h-3" />
                 {t.pnlForm.rowLockedBadge}

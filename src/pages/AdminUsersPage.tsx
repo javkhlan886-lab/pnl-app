@@ -17,12 +17,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  ChevronLeft, ShieldCheck, BarChart2, Users, Box, Receipt,
-  ArrowLeftRight, TableIcon, HardHat, Handshake, Package, Search,
-} from "lucide-react";
+import { ChevronLeft, ShieldCheck, Search } from "lucide-react";
 import { useLayoutMode } from "@/lib/layoutMode";
 import { Sidebar } from "@/components/Sidebar";
+import { getNavItems } from "@/lib/navigation";
 import { LogoutButton } from "@/components/LogoutButton";
 import { BackToPortalLink } from "@/components/BackToPortalLink";
 
@@ -60,18 +58,7 @@ export default function AdminUsersPage() {
     employees: t.common.navEmployees,
   };
 
-  const NAV_ITEMS = [
-    { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
-    { path: "/products", label: t.common.navProducts, icon: <Package className="w-4 h-4" /> },
-    { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
-    { path: "/employees", label: t.common.navEmployees, icon: <Users className="w-4 h-4" /> },
-    { path: "/assets", label: t.common.navAssets, icon: <Box className="w-4 h-4" /> },
-    { path: "/expenses", label: t.common.navExpenses, icon: <Receipt className="w-4 h-4" /> },
-    { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
-    { path: "/workforce", label: t.common.navWorkforce, icon: <HardHat className="w-4 h-4" /> },
-    { path: "/partners", label: t.common.navPartners, icon: <Handshake className="w-4 h-4" /> },
-    { path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> },
-  ];
+  const NAV_ITEMS = getNavItems(t, isAdmin);
 
   useEffect(() => {
     if (!company) return;

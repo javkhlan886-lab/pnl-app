@@ -26,16 +26,14 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  TableIcon, Plus, Pencil, Trash2, Users, ChevronLeft, ChevronDown, BarChart2, Box, Receipt,
-  ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake, Package, Search,
-} from "lucide-react";
+import { Plus, Pencil, Trash2, Users, ChevronLeft, ChevronDown, Download, Search } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import { getRecent, addRecent } from "@/lib/recentValues";
 import { toast } from "@/lib/toast";
 import { setAiPageContext } from "@/lib/aiPageContext";
 import { useLayoutMode } from "@/lib/layoutMode";
 import { Sidebar } from "@/components/Sidebar";
+import { getNavItems } from "@/lib/navigation";
 
 interface Employee {
   _id?: string;
@@ -92,18 +90,7 @@ export default function EmployeePage() {
     inactive: { label: t.employees.statusInactive, cls: "bg-muted text-muted-foreground hover:bg-muted" },
   };
 
-  const NAV_ITEMS = [
-    { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
-    { path: "/products", label: t.common.navProducts, icon: <Package className="w-4 h-4" /> },
-    { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
-    { path: "/employees", label: t.common.navEmployees, icon: <Users className="w-4 h-4" /> },
-    { path: "/assets", label: t.common.navAssets, icon: <Box className="w-4 h-4" /> },
-    { path: "/expenses", label: t.common.navExpenses, icon: <Receipt className="w-4 h-4" /> },
-    { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
-    { path: "/workforce", label: t.common.navWorkforce, icon: <HardHat className="w-4 h-4" /> },
-    { path: "/partners", label: t.common.navPartners, icon: <Handshake className="w-4 h-4" /> },
-    ...(isAdmin ? [{ path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> }] : []),
-  ];
+  const NAV_ITEMS = getNavItems(t, isAdmin);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -493,7 +480,7 @@ export default function EmployeePage() {
                   <ResizableHead label={t.employees.colNdsht} width={colWidths.ndsht} onResizeStart={startResize("ndsht")} align="right" sortActive={sortKey === "ndsht"} sortDir={sortDir} onSort={() => toggleSort("ndsht")} />
                   <ResizableHead label={t.employees.colTotalCost} width={colWidths.totalCost} onResizeStart={startResize("totalCost")} align="right" sortActive={sortKey === "totalCost"} sortDir={sortDir} onSort={() => toggleSort("totalCost")} />
                   <ResizableHead label={t.employees.colStatus} width={colWidths.status} onResizeStart={startResize("status")} sortActive={sortKey === "status"} sortDir={sortDir} onSort={() => toggleSort("status")} />
-                  <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.employees.colActions}</TableHead>
+                  <TableHead className="text-right px-1.5 whitespace-nowrap text-xs uppercase tracking-wide font-semibold text-muted-foreground/80">{t.employees.colActions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

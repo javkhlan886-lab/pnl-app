@@ -31,7 +31,8 @@ import { toast } from "@/lib/toast";
 import { setAiPageContext } from "@/lib/aiPageContext";
 import { useLayoutMode } from "@/lib/layoutMode";
 import { Sidebar } from "@/components/Sidebar";
-import { Plus, Pencil, Trash2, ChevronLeft, ChevronDown, BarChart2, Users, Box, Receipt, ArrowLeftRight, TableIcon, ShieldCheck, HardHat, Handshake, Package, Search, Download } from "lucide-react";
+import { getNavItems } from "@/lib/navigation";
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronDown, Handshake, Search, Download } from "lucide-react";
 
 interface PartnerRecord {
   _id?: string;
@@ -93,18 +94,7 @@ export default function PartnerPage() {
     active: t.partners.statusActive, inactive: t.partners.statusInactive,
   };
 
-  const NAV_ITEMS = [
-    { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
-    { path: "/products", label: t.common.navProducts, icon: <Package className="w-4 h-4" /> },
-    { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
-    { path: "/employees", label: t.common.navEmployees, icon: <Users className="w-4 h-4" /> },
-    { path: "/assets", label: t.common.navAssets, icon: <Box className="w-4 h-4" /> },
-    { path: "/expenses", label: t.common.navExpenses, icon: <Receipt className="w-4 h-4" /> },
-    { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
-    { path: "/workforce", label: t.common.navWorkforce, icon: <HardHat className="w-4 h-4" /> },
-    { path: "/partners", label: t.common.navPartners, icon: <Handshake className="w-4 h-4" /> },
-    ...(isAdmin ? [{ path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> }] : []),
-  ];
+  const NAV_ITEMS = getNavItems(t, isAdmin);
 
   const [items, setItems] = useState<PartnerRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -438,7 +428,7 @@ export default function PartnerPage() {
                   <ResizableHead label={t.partners.colCollaboration} width={colWidths.collaboration} onResizeStart={startResize("collaboration")} />
                   <ResizableHead label={t.partners.colNote} width={colWidths.note} onResizeStart={startResize("note")} />
                   <ResizableHead label={t.partners.colStatus} width={colWidths.status} onResizeStart={startResize("status")} sortActive={sortKey === "status"} sortDir={sortDir} onSort={() => toggleSort("status")} />
-                  <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.partners.colActions}</TableHead>
+                  <TableHead className="text-right px-1.5 whitespace-nowrap text-xs uppercase tracking-wide font-semibold text-muted-foreground/80">{t.partners.colActions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

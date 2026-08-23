@@ -36,7 +36,8 @@ import { toDateInputValue } from "@/lib/utils";
 import { setAiPageContext } from "@/lib/aiPageContext";
 import { useLayoutMode } from "@/lib/layoutMode";
 import { Sidebar } from "@/components/Sidebar";
-import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, ChevronDown, BarChart2, Users, Box, Receipt, ArrowLeftRight, TableIcon, ShieldCheck, HardHat, Handshake, Package, Search, Download, CalendarDays, CheckCircle2, Circle } from "lucide-react";
+import { getNavItems } from "@/lib/navigation";
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, ChevronDown, TableIcon, HardHat, Search, Download, CalendarDays, CheckCircle2, Circle } from "lucide-react";
 
 interface WorkforceRecord {
   _id?: string;
@@ -99,18 +100,7 @@ export default function WorkforcePage() {
     active: t.workforce.statusActive, inactive: t.workforce.statusInactive,
   };
 
-  const NAV_ITEMS = [
-    { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
-    { path: "/products", label: t.common.navProducts, icon: <Package className="w-4 h-4" /> },
-    { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
-    { path: "/employees", label: t.common.navEmployees, icon: <Users className="w-4 h-4" /> },
-    { path: "/assets", label: t.common.navAssets, icon: <Box className="w-4 h-4" /> },
-    { path: "/expenses", label: t.common.navExpenses, icon: <Receipt className="w-4 h-4" /> },
-    { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
-    { path: "/workforce", label: t.common.navWorkforce, icon: <HardHat className="w-4 h-4" /> },
-    { path: "/partners", label: t.common.navPartners, icon: <Handshake className="w-4 h-4" /> },
-    ...(isAdmin ? [{ path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> }] : []),
-  ];
+  const NAV_ITEMS = getNavItems(t, isAdmin);
 
   const [items, setItems] = useState<WorkforceRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -565,7 +555,7 @@ export default function WorkforcePage() {
                   <ResizableHead label={t.workforce.colRemaining} width={colWidths.remaining} onResizeStart={startResize("remaining")} align="right" sortActive={sortKey === "remaining"} sortDir={sortDir} onSort={() => toggleSort("remaining")} />
                   <ResizableHead label={t.workforce.colNote} width={colWidths.note} onResizeStart={startResize("note")} />
                   <ResizableHead label={t.workforce.colStatus} width={colWidths.status} onResizeStart={startResize("status")} sortActive={sortKey === "status"} sortDir={sortDir} onSort={() => toggleSort("status")} />
-                  <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.workforce.colActions}</TableHead>
+                  <TableHead className="text-right px-1.5 whitespace-nowrap text-xs uppercase tracking-wide font-semibold text-muted-foreground/80">{t.workforce.colActions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -699,7 +689,7 @@ export default function WorkforcePage() {
                       isSelected ? "bg-positive/15 border-positive/40 text-positive"
                         : isToday ? "border-info/40 text-foreground" : "border-border/50 text-muted-foreground hover:bg-secondary/40"
                     }`}>
-                    <span className="text-[10px] uppercase tracking-wide">{d.toLocaleDateString(locale, { weekday: "short" })}</span>
+                    <span className="text-xs uppercase tracking-wide">{d.toLocaleDateString(locale, { weekday: "short" })}</span>
                     <span className="text-sm font-semibold stat-number">{d.getDate()}</span>
                     <span className={`w-1.5 h-1.5 rounded-full ${count > 0 ? "bg-positive" : "bg-transparent"}`} />
                   </button>

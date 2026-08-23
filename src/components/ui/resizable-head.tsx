@@ -24,7 +24,7 @@ export const ResizableHead = React.forwardRef<HTMLTableCellElement, ResizableHea
       onClick={onSort}
       style={width ? { width, minWidth: width, maxWidth: width } : undefined}
       className={cn(
-        "relative select-none whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold px-1.5",
+        "relative select-none whitespace-nowrap text-xs uppercase tracking-wide font-semibold px-1.5",
         onSort && "cursor-pointer hover:text-foreground transition-colors",
         sortActive ? "text-foreground" : "text-muted-foreground/80",
         align === "right" && "text-right",

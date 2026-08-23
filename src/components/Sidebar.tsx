@@ -30,7 +30,7 @@ export function Sidebar({ navItems, activePath, onNavigate, companyName, product
           <CompanyLogo name={companyName} size={40} className="!min-h-0 !py-1.5 !px-2.5" />
           <div className="min-w-0">
             <p className="text-sm font-medium truncate">{productName}</p>
-            <span className="inline-flex items-center gap-1 text-[10px] text-positive">
+            <span className="inline-flex items-center gap-1 text-xs text-positive">
               <span className="live-dot" /> {liveLabel}
             </span>
           </div>
@@ -64,7 +64,7 @@ export function Sidebar({ navItems, activePath, onNavigate, companyName, product
           </span>
           <div className="min-w-0">
             <p className="text-xs font-medium truncate">{userName}</p>
-            <span className="inline-flex items-center gap-1 text-[10px] text-positive">
+            <span className="inline-flex items-center gap-1 text-xs text-positive">
               <span className="live-dot" /> {liveLabel}
             </span>
           </div>

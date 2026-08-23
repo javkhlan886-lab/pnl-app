@@ -94,18 +94,26 @@
     --info: 0.65 0.18 250;
     --warn: 0.75 0.15 80;
   }
-  .theme {
-    --font-sans: 'Noto Sans Variable', sans-serif;
-    --font-heading: 'Playfair Display Variable', serif;
-  }
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
   }
+  /* "font-sans" Tailwind utility-ийн үндсэн stack (ui-sans-serif/system-ui)
+     нь энд импортолсон Noto Sans Variable-г огт ашигладаггүй байсан тул
+     (tailwind.config.js-д fontFamily.sans override хийгээгүй, харин
+     ".theme" гэдэг хэзээ ч ямар ч элемент дээр байгаагүй class-д
+     тохируулсан байсан — үнэндээ идэвхгүй байсан) html/body дээр шууд
+     тохируулна. */
   html {
-    @apply font-sans;
+    font-family: 'Noto Sans Variable', ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  }
+  /* Гарчгийн ялгаатай, арай илүү бэлэгдлийн шинжтэй фонт — өмнө нь мөн
+     адил идэвхгүй байсан Playfair Display-г жинхэнэ хуудасны гарчигт
+     (h1) идэвхжүүлнэ. */
+  h1 {
+    font-family: 'Playfair Display Variable', 'Noto Sans Variable', serif;
   }
 }
 

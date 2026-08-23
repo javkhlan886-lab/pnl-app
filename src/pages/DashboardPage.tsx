@@ -14,6 +14,7 @@ import { LayoutToggleButton } from "@/components/LayoutToggleButton";
 import { LogoutButton } from "@/components/LogoutButton";
 import { BackToPortalLink } from "@/components/BackToPortalLink";
 import { Sidebar } from "@/components/Sidebar";
+import { getNavItems } from "@/lib/navigation";
 import api from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +34,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { getExpenses } from "@/lib/expense";
 import { getEmployees } from "@/lib/employee";
-import { PlusCircle, Pencil, Trash2, Download, TrendingUp, TrendingDown, BarChart2, Users, Box, Receipt, ArrowLeftRight, TableIcon, ChevronDown, ShieldCheck, HardHat, Handshake, EyeOff, Package, Search, ArrowUpDown } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Download, TrendingUp, TrendingDown, BarChart2, Users, ChevronDown, EyeOff, Search, ArrowUpDown } from "lucide-react";
 
 // ── Оруулсан хэрэглэгчийг харуулах туслах функцууд ──────────────────────────
 // owner талбарыг backend зөвхөн Level 1, 2 (admin, manager)-д илгээдэг.
@@ -600,18 +601,7 @@ export default function DashboardPage() {
     displaySummary, filteredSummary, selectedSummary, selected.size, t,
   ]);
 
-  const NAV_ITEMS = [
-    { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
-    { path: "/products", label: t.common.navProducts, icon: <Package className="w-4 h-4" /> },
-    { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
-    { path: "/employees", label: t.common.navEmployees, icon: <Users className="w-4 h-4" /> },
-    { path: "/assets", label: t.common.navAssets, icon: <Box className="w-4 h-4" /> },
-    { path: "/expenses", label: t.common.navExpenses, icon: <Receipt className="w-4 h-4" /> },
-    { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
-    { path: "/workforce", label: t.common.navWorkforce, icon: <HardHat className="w-4 h-4" /> },
-    { path: "/partners", label: t.common.navPartners, icon: <Handshake className="w-4 h-4" /> },
-    ...(isAdmin ? [{ path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> }] : []),
-  ];
+  const NAV_ITEMS = getNavItems(t, isAdmin);
 
   const headerActions = (
     <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -656,7 +646,7 @@ export default function DashboardPage() {
             <div>
               <h1 className="text-lg font-medium flex items-center gap-2">
                 {t.common.productName}
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full bg-positive/15 text-positive">
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full bg-positive/15 text-positive">
                   <span className="live-dot" /> LIVE
                 </span>
               </h1>
@@ -742,7 +732,7 @@ export default function DashboardPage() {
                     ["3m", t.dashboard.period3m],
                   ] as const).map(([value, label]) => (
                     <button key={value} onClick={() => setPeriod(value)}
-                      className={`h-6 px-2.5 text-[11px] rounded-full border transition-colors ${period === value
+                      className={`h-6 px-2.5 text-xs rounded-full border transition-colors ${period === value
                         ? "bg-positive/15 text-positive border-positive/30"
                         : "bg-card/40 text-muted-foreground border-border/50 hover:bg-secondary/50"}`}>
                       {label}
@@ -762,7 +752,7 @@ export default function DashboardPage() {
                     </div>
                     <p className="relative stat-number text-lg font-bold leading-tight">{fmt(displaySummary.pnlIncome, "₮")}</p>
                     <div className="relative flex items-center justify-between mt-0.5">
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {format(t.dashboard.statIncomeCount, { count: String(displaySummary.pnlCount) })}
                       </p>
                       <ChevronDown className="w-3 h-3 text-muted-foreground -rotate-90" />
@@ -779,7 +769,7 @@ export default function DashboardPage() {
                     </div>
                     <p className="relative stat-number text-lg font-bold leading-tight">{fmt(displaySummary.totalOperatingExpense, "₮")}</p>
                     <div className="relative flex items-center justify-between mt-0.5">
-                      <p className="text-[11px] text-muted-foreground">{t.dashboard.statOpExSub}</p>
+                      <p className="text-xs text-muted-foreground">{t.dashboard.statOpExSub}</p>
                       <ChevronDown className="w-3 h-3 text-muted-foreground -rotate-90" />
                     </div>
                   </div>
@@ -792,7 +782,7 @@ export default function DashboardPage() {
                       <span className={`${displaySummary.pnlIncome - displaySummary.totalOperatingExpense >= 0 ? "icon-badge-positive" : "icon-badge-negative"} w-7 h-7 shrink-0`}><TrendingUp className="w-3.5 h-3.5" /></span>
                     </div>
                     <p className="relative stat-number text-lg font-bold leading-tight blur-number">{fmt(displaySummary.pnlIncome - displaySummary.totalOperatingExpense, "₮")}</p>
-                    <p className="relative text-[11px] text-muted-foreground mt-0.5">
+                    <p className="relative text-xs text-muted-foreground mt-0.5">
                       {format(t.dashboard.statMargin, { margin: String(displaySummary.pnlIncome > 0 ? Math.round(((displaySummary.pnlIncome - displaySummary.totalOperatingExpense) / displaySummary.pnlIncome) * 100) : 0) })}
                     </p>
                   </div>
@@ -812,7 +802,7 @@ export default function DashboardPage() {
                 <SwapOrderBtn />
                 <SectionHideBtn id="reportsTotal" />
               </div>
-              <p className="text-[11px] text-muted-foreground/70 mb-2">{t.dashboard.reportsTotalSub}</p>
+              <p className="text-xs text-muted-foreground/70 mb-2">{t.dashboard.reportsTotalSub}</p>
               {!collapsedSections.has("reportsTotal") && (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="glass-card glass-card-positive px-3.5 py-3">
@@ -1129,7 +1119,7 @@ export default function DashboardPage() {
                       {canSeeOwner && (
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <span className={`w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-[10px] font-semibold ${ownerColor(r)}`}>
+                            <span className={`w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-xs font-semibold ${ownerColor(r)}`}>
                               {ownerInitials(r)}
                             </span>
                             <div className="min-w-0">

@@ -22,6 +22,7 @@ import { Transaction, ContractSummary, PNLRecord } from "@/types";
 import { setAiPageContext } from "@/lib/aiPageContext";
 import { useLayoutMode } from "@/lib/layoutMode";
 import { Sidebar } from "@/components/Sidebar";
+import { getNavItems } from "@/lib/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ResizableHead } from "@/components/ui/resizable-head";
@@ -41,8 +42,8 @@ import { Combobox } from "@/components/ui/combobox";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
   ChevronLeft, BarChart2, TableIcon, Upload, Download, Search,
-  FileText, TrendingUp, TrendingDown, X, Trash2, Plus, Users, Box, Receipt,
-  ArrowLeftRight, Pencil, ShieldCheck, HardHat, Handshake, Package, Link2, ChevronDown,
+  FileText, TrendingUp, TrendingDown, X, Trash2, Plus,
+  Pencil, Link2, ChevronDown,
 } from "lucide-react";
 
 const fmt = (n: number) => "₮" + Math.round(Math.abs(n)).toLocaleString("mn-MN");
@@ -226,18 +227,7 @@ export default function TransactionPage() {
       .filter(({ row }) => !row.received || (editingTxId && row.receivedTransactionId === editingTxId));
   })();
 
-  const NAV_ITEMS = [
-    { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
-    { path: "/products", label: t.common.navProducts, icon: <Package className="w-4 h-4" /> },
-    { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
-    { path: "/employees", label: t.common.navEmployees, icon: <Users className="w-4 h-4" /> },
-    { path: "/assets", label: t.common.navAssets, icon: <Box className="w-4 h-4" /> },
-    { path: "/expenses", label: t.common.navExpenses, icon: <Receipt className="w-4 h-4" /> },
-    { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
-    { path: "/workforce", label: t.common.navWorkforce, icon: <HardHat className="w-4 h-4" /> },
-    { path: "/partners", label: t.common.navPartners, icon: <Handshake className="w-4 h-4" /> },
-    ...(isAdmin ? [{ path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> }] : []),
-  ];
+  const NAV_ITEMS = getNavItems(t, isAdmin);
 
   useEffect(() => {
     const timeout = setTimeout(() => setDebouncedSearch(search), 400);

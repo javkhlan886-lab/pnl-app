@@ -24,10 +24,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  TableIcon, Plus, Pencil, Trash2, ChevronLeft, ChevronDown, Box, BarChart2, Users, Receipt,
-  ArrowLeftRight, Download, ShieldCheck, HardHat, Handshake, Package, Search, EyeOff,
-} from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronDown, Download, Package, Search, EyeOff } from "lucide-react";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { getRecent, addRecent } from "@/lib/recentValues";
 import { toDateInputValue, fmtDate } from "@/lib/utils";
@@ -35,6 +32,7 @@ import { toast } from "@/lib/toast";
 import { setAiPageContext } from "@/lib/aiPageContext";
 import { useLayoutMode } from "@/lib/layoutMode";
 import { Sidebar } from "@/components/Sidebar";
+import { getNavItems } from "@/lib/navigation";
 import { Combobox } from "@/components/ui/combobox";
 import { getHiddenFields, saveHiddenFields, getCollapsedSections, saveCollapsedSections } from "@/lib/dashboardHidden";
 
@@ -175,18 +173,7 @@ export default function ProductPage() {
     </button>
   );
 
-  const NAV_ITEMS = [
-    { path: "/dashboard", label: t.common.navDashboard, icon: <BarChart2 className="w-4 h-4" /> },
-    { path: "/products", label: t.common.navProducts, icon: <Package className="w-4 h-4" /> },
-    { path: "/transactions", label: t.common.navTransactions, icon: <TableIcon className="w-4 h-4" /> },
-    { path: "/employees", label: t.common.navEmployees, icon: <Users className="w-4 h-4" /> },
-    { path: "/assets", label: t.common.navAssets, icon: <Box className="w-4 h-4" /> },
-    { path: "/expenses", label: t.common.navExpenses, icon: <Receipt className="w-4 h-4" /> },
-    { path: "/receivables", label: t.common.navReceivables, icon: <ArrowLeftRight className="w-4 h-4" /> },
-    { path: "/workforce", label: t.common.navWorkforce, icon: <HardHat className="w-4 h-4" /> },
-    { path: "/partners", label: t.common.navPartners, icon: <Handshake className="w-4 h-4" /> },
-    ...(isAdmin ? [{ path: "/admin/users", label: t.common.navAdmin, icon: <ShieldCheck className="w-4 h-4" /> }] : []),
-  ];
+  const NAV_ITEMS = getNavItems(t, isAdmin);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -803,7 +790,7 @@ export default function ProductPage() {
                   <ResizableHead label={t.products.colRevenue} width={colWidths.revenue} onResizeStart={startResize("revenue")} align="right" sortActive={sortKey === "revenue"} sortDir={sortDir} onSort={() => toggleSort("revenue")} />
                   <ResizableHead label={t.products.colRemainingQty} width={colWidths.remainingQty} onResizeStart={startResize("remainingQty")} align="right" sortActive={sortKey === "remainingQty"} sortDir={sortDir} onSort={() => toggleSort("remainingQty")} />
                   <ResizableHead label={t.products.colStatus} width={colWidths.status} onResizeStart={startResize("status")} sortActive={sortKey === "status"} sortDir={sortDir} onSort={() => toggleSort("status")} />
-                  <TableHead className="text-right px-1.5 whitespace-nowrap text-[11px] uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colActions}</TableHead>
+                  <TableHead className="text-right px-1.5 whitespace-nowrap text-xs uppercase tracking-wide font-semibold text-muted-foreground/80">{t.products.colActions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -828,7 +815,7 @@ export default function ProductPage() {
                     <TableCell className="px-1.5 text-right stat-number">
                       <div className="flex items-center justify-end gap-1.5">
                         {p.discountPercent > 0 && sellingPrice(p) < p.price && (
-                          <span className="text-[10px] font-medium text-negative bg-negative/10 rounded px-1 py-0.5">-{p.discountPercent}%</span>
+                          <span className="text-xs font-medium text-negative bg-negative/10 rounded px-1 py-0.5">-{p.discountPercent}%</span>
                         )}
                         {fmt(sellingPrice(p))}
                       </div>

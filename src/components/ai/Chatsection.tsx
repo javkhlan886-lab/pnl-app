@@ -316,7 +316,7 @@ export default function ChatSection() {
               {format(t.chat.levelBadge, { level: String(level) })}
             </span>
           </p>
-          <p className="text-[10px] text-muted-foreground truncate" title={GEMINI_MODEL}>
+          <p className="text-xs text-muted-foreground truncate" title={GEMINI_MODEL}>
             {SCOPE_LABEL[level]}
             {pageContext ? ` · ${pageContext.title}` : ""}
             {context ? "" : t.chat.loadingSuffix}
@@ -390,7 +390,7 @@ export default function ChatSection() {
                 <div className="rounded-lg border border-border/50 bg-secondary/30 overflow-hidden">
                   <button
                     onClick={() => setOpenThoughtId(openThoughtId === m.id ? null : m.id)}
-                    className="w-full flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-foreground"
+                    className="w-full flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground"
                   >
                     <Brain className="w-3 h-3" />
                     {streaming && !m.text ? t.chat.thinkingLabel : t.chat.thoughtLabel}
@@ -399,7 +399,7 @@ export default function ChatSection() {
                     />
                   </button>
                   {openThoughtId === m.id && (
-                    <p className="px-2.5 pb-2 text-[11px] text-muted-foreground whitespace-pre-wrap border-t border-border/50 pt-2">
+                    <p className="px-2.5 pb-2 text-xs text-muted-foreground whitespace-pre-wrap border-t border-border/50 pt-2">
                       {m.thought}
                     </p>
                   )}
@@ -460,7 +460,7 @@ export default function ChatSection() {
             </Button>
           )}
         </div>
-        <p className="mt-1.5 text-[10px] text-muted-foreground">
+        <p className="mt-1.5 text-xs text-muted-foreground">
           {t.chat.footerHint}
         </p>
       </div>
