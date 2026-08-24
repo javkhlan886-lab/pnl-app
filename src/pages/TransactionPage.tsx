@@ -75,7 +75,7 @@ const productUnitPrice = (p: Product, type: "income" | "expense"): number =>
   type === "income" ? sellingPrice(p) : Number(p.cost || 0);
 
 // Чөлөөт текст утга — backend-д хадгалагддаг тул хэлээр орчуулахгүй.
-const CATEGORIES_INC = ["Борлуулалт", "Зээл буцаалт", "Хүүгийн орлого", "Бусад орлого"];
+const CATEGORIES_INC = ["Зээл буцаалт", "Хүүгийн орлого", "Бусад орлого"];
 const CATEGORIES_EXP = ["Цалин", "НД / Татвар", "Түрээс", "Тээвэр", "Материал", "Татвар", "Зээл", "Эмчилгээ", "Офис", "Бусад"];
 
 type Tab = "range" | "contract";
@@ -111,7 +111,7 @@ const EMPTY_TX: NewTx = {
   description: "",
   amount: "",
   type: "income",
-  category: "Борлуулалт",
+  category: "",
   contractNumber: "",
   note: "",
   productId: "",
@@ -602,7 +602,7 @@ export default function TransactionPage() {
                     setNewTx(prev => ({
                       ...prev,
                       type: txType,
-                      category: txType === "income" ? CATEGORIES_INC[0] : CATEGORIES_EXP[0],
+                      category: txType === "income" ? "" : CATEGORIES_EXP[0],
                       expenseType: txType === "expense" ? prev.expenseType : "",
                       pnlIncomeRowIndex: txType === "income" ? prev.pnlIncomeRowIndex : "",
                       pnlExpenseRowIndex: txType === "expense" ? prev.pnlExpenseRowIndex : "",

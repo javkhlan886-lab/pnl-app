@@ -82,7 +82,7 @@ export function Combobox({ value, onChange, options, placeholder, className, id,
       {!disabled && open && filtered.length > 0 && rect && createPortal(
         <div
           ref={dropdownRef}
-          style={{ position: "fixed", top: rect.top + 4, left: rect.left, width: rect.width }}
+          style={{ position: "fixed", top: rect.top + 4, left: rect.left, width: rect.width, pointerEvents: "auto" }}
           className="z-[9999] max-h-48 overflow-y-auto rounded-lg border border-border bg-popover shadow-lg py-1"
         >
           {filtered.map((opt) => (
