@@ -56,6 +56,7 @@ export interface Transaction {
   createdAt?: string;
   productId?: string | null;
   assetId?: string | null;
+  expenseId?: string | null;
   quantity?: number | null;
   expenseType?: string | null;
 }

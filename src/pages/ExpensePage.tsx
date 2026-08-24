@@ -82,6 +82,10 @@ export default function ExpensePage() {
     approved: { label: t.expenses.statusApproved, cls: "bg-positive/15 text-positive hover:bg-positive/15" },
     pending: { label: t.expenses.statusPending, cls: "bg-amber-400/15 text-amber-300 hover:bg-amber-400/15" },
     rejected: { label: t.expenses.statusRejected, cls: "bg-negative/15 text-negative hover:bg-negative/15" },
+    // Гүйлгээний дэвтэрт холбогдсон төлбөрүүдийн нийлбэр (paidAmount) энэ
+    // зардлын дүнтэй тэнцэхэд backend автоматаар тохируулна — гараар
+    // сонгогддоггүй (see applyExpensePaymentDelta).
+    closed: { label: t.expenses.statusClosed, cls: "bg-info/15 text-info hover:bg-info/15" },
   };
 
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -524,7 +528,14 @@ export default function ExpensePage() {
                     <TableCell className="px-1.5 font-medium">{exp.description}</TableCell>
                     <TableCell className="px-1.5 text-right text-muted-foreground stat-number">{fmt(exp.unitPrice)}</TableCell>
                     <TableCell className="px-1.5 text-right text-muted-foreground stat-number">{Number(exp.quantity).toLocaleString("mn-MN")}</TableCell>
-                    <TableCell className="px-1.5 text-right font-medium text-negative stat-number">{fmt(exp.amount)}</TableCell>
+                    <TableCell className="px-1.5 text-right font-medium text-negative stat-number">
+                      {fmt(exp.amount)}
+                      {exp.paidAmount > 0 && (
+                        <p className="text-xs font-normal text-muted-foreground">
+                          {format(t.expenses.remainingLine, { remaining: fmt(Math.max(0, exp.amount - exp.paidAmount)) })}
+                        </p>
+                      )}
+                    </TableCell>
                     <TableCell className="px-1.5">
                       <div className="relative inline-block">
                         <button type="button"

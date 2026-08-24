@@ -14,6 +14,7 @@ import {
 import { getPNLList } from "@/lib/pnl";
 import { getProducts, type Product } from "@/lib/product";
 import { getAssets } from "@/lib/asset";
+import { getExpenses } from "@/lib/expense";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { getRecent, addRecent } from "@/lib/recentValues";
 import { toast } from "@/lib/toast";
@@ -90,6 +91,15 @@ interface AssetOption {
   status: string;
 }
 
+// Одоо байгаа (тогтмол/хувьсах гэх мэт) Зардлыг сонгож, хэсэгчилсэн/бүрэн
+// төлбөр хийхэд ашиглана — @/lib/expense нь энэ талбаруудтай объект буцаадаг.
+interface ExpenseOption {
+  _id: string;
+  description: string;
+  amount: number;
+  paidAmount: number;
+}
+
 interface NewTx {
   date: string;
   description: string;
@@ -100,6 +110,7 @@ interface NewTx {
   note: string;
   productId: string;
   assetId: string;
+  expenseId: string;
   quantity: string;
   expenseType: string;
   pnlIncomeRowIndex: string;
@@ -116,6 +127,7 @@ const EMPTY_TX: NewTx = {
   note: "",
   productId: "",
   assetId: "",
+  expenseId: "",
   quantity: "",
   expenseType: "",
   pnlIncomeRowIndex: "",
@@ -205,6 +217,18 @@ export default function TransactionPage() {
   }, []);
   const selectedAsset = assets.find(a => a._id === newTx.assetId) ?? null;
 
+  const [expenses, setExpenses] = useState<ExpenseOption[]>([]);
+  useEffect(() => {
+    getExpenses().then(setExpenses).catch(() => setExpenses([]));
+  }, []);
+  // Одоо байгаа, бүрэн төлөгдөж хаагдаагүй зардлууд — засаж буй гүйлгээ
+  // өөрөө холбогдсон зардлыг (editingExpenseId) хэдийн бүрэн хаасан ч
+  // жагсаалтад орхиж, сонголт алга болохоос сэргийлнэ.
+  const openExpenses = expenses.filter(
+    e => e.amount - e.paidAmount > 0 || e._id === newTx.expenseId
+  );
+  const selectedExpense = expenses.find(e => e._id === newTx.expenseId) ?? null;
+
   // Сонгосон Гэрээний тайлангийн орох ёстой боловч Гүйлгээний дэвтэрт
   // хараахан баталгаажаагүй орлогын мөрүүд — засаж буй гүйлгээ өөрөө
   // тэмдэглэсэн мөрийг ("editingTxId"-тай тохирох receivedTransactionId)
@@ -281,6 +305,7 @@ export default function TransactionPage() {
   });
   const productNameOf = (tx: Transaction) => products.find(p => p._id === tx.productId)?.name || "";
   const assetNameOf = (tx: Transaction) => assets.find(a => a._id === tx.assetId)?.name || "";
+  const expenseNameOf = (tx: Transaction) => expenses.find(e => e._id === tx.expenseId)?.description || "";
 
   const toggleOne = (id: string) => {
     setSelected(prev => {
@@ -405,6 +430,7 @@ export default function TransactionPage() {
     try {
       const linkProduct = !!newTx.productId;
       const linkAsset = !linkProduct && !!newTx.assetId;
+      const linkExpense = newTx.type === "expense" && !!newTx.expenseId;
       const payload = {
         date: newTx.date,
         description: newTx.description.trim(),
@@ -418,7 +444,8 @@ export default function TransactionPage() {
         productId: linkProduct ? newTx.productId : null,
         assetId: linkAsset ? newTx.assetId : null,
         quantity: linkProduct || linkAsset ? Number(newTx.quantity) : null,
-        expenseType: newTx.type === "expense" ? (newTx.expenseType || null) : null,
+        expenseId: linkExpense ? newTx.expenseId : null,
+        expenseType: newTx.type === "expense" && !linkExpense ? (newTx.expenseType || null) : null,
         pnlIncomeRowIndex: newTx.type === "income" && newTx.pnlIncomeRowIndex !== ""
           ? Number(newTx.pnlIncomeRowIndex)
           : null,
@@ -469,12 +496,13 @@ export default function TransactionPage() {
       note: tx.note ?? "",
       productId: tx.productId ?? "",
       assetId: tx.assetId ?? "",
+      expenseId: tx.expenseId ?? "",
       quantity: tx.quantity != null ? String(tx.quantity) : "",
       expenseType: tx.expenseType ?? "",
       pnlIncomeRowIndex: receivedRowIndex >= 0 ? String(receivedRowIndex) : "",
       pnlExpenseRowIndex: paidRowIndex >= 0 ? String(paidRowIndex) : "",
     });
-    setShowLinks(!!(tx.productId || tx.assetId || tx.contractNumber || tx.expenseType));
+    setShowLinks(!!(tx.productId || tx.assetId || tx.expenseId || tx.contractNumber || tx.expenseType));
     setSaveError("");
     setShowModal(true);
   };
@@ -800,6 +828,39 @@ export default function TransactionPage() {
 
                   {newTx.type === "expense" && (
                     <div className="space-y-1.5">
+                      <Label className="text-xs">{t.transactions.existingExpenseLabel}</Label>
+                      <SearchableSelect
+                        value={newTx.expenseId}
+                        onChange={(id) => {
+                          const exp = openExpenses.find(e => e._id === id) ?? null;
+                          setNewTx(p => ({
+                            ...p,
+                            expenseId: id,
+                            expenseType: id ? "" : p.expenseType,
+                            amount: exp
+                              ? formatAmount(String(Math.round(exp.amount - exp.paidAmount)))
+                              : p.amount,
+                          }));
+                        }}
+                        options={openExpenses.map(e => ({
+                          id: e._id,
+                          label: `${e.description} (${t.transactions.existingExpenseRemaining}: ₮${Math.round(e.amount - e.paidAmount).toLocaleString("mn-MN")})`,
+                        }))}
+                        placeholder={t.transactions.existingExpensePlaceholder}
+                      />
+                      {selectedExpense && (
+                        <p className="text-xs text-muted-foreground">
+                          {format(t.transactions.existingExpenseRemainingLine, {
+                            remaining: Math.round(selectedExpense.amount - selectedExpense.paidAmount).toLocaleString("mn-MN"),
+                            total: Math.round(selectedExpense.amount).toLocaleString("mn-MN"),
+                          })}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {newTx.type === "expense" && !newTx.expenseId && (
+                    <div className="space-y-1.5">
                       <Label className="text-xs">{t.transactions.expenseTypeLabel}</Label>
                       <div className="flex items-center gap-2 flex-wrap">
                         {EXPENSE_TYPES.map(value => (
@@ -1110,6 +1171,7 @@ export default function TransactionPage() {
                             : tx.expenseType === "productCost" ? t.expenses.typeProductCost
                             : tx.expenseType === "marketing" ? t.expenses.typeMarketing
                             : tx.expenseType === "salary" ? t.transactions.expenseTypeSalary
+                            : tx.expenseId ? expenseNameOf(tx)
                             : "—"}
                         </TableCell>
                         <TableCell className={`text-right font-medium stat-number ${tx.type === "income" ? "text-positive" : "text-negative"}`}>
