@@ -898,7 +898,7 @@ export default function ProductPage() {
     </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editing ? t.products.editTitle : t.products.newTitle}</DialogTitle>
           </DialogHeader>
@@ -1060,7 +1060,7 @@ export default function ProductPage() {
       </Dialog>
 
       <Dialog open={bulkDiscountOpen} onOpenChange={setBulkDiscountOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>{t.products.applyDiscountDialogTitle}</DialogTitle>
           </DialogHeader>

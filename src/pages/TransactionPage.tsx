@@ -645,7 +645,7 @@ export default function TransactionPage() {
                     setNewTx(prev => ({
                       ...prev,
                       type: txType,
-                      category: txType === "income" ? "" : CATEGORIES_EXP[0],
+                      category: "",
                       expenseType: txType === "expense" ? prev.expenseType : "",
                       pnlIncomeRowIndex: txType === "income" ? prev.pnlIncomeRowIndex : "",
                       pnlExpenseRowIndex: txType === "expense" ? prev.pnlExpenseRowIndex : "",

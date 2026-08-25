@@ -586,7 +586,7 @@ export default function ExpensePage() {
     </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editing ? t.expenses.editExpense : t.expenses.addExpense}</DialogTitle>
           </DialogHeader>

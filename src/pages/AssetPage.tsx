@@ -597,7 +597,7 @@ export default function AssetPage() {
     </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editing ? t.assets.editAsset : t.assets.addAsset}</DialogTitle>
           </DialogHeader>

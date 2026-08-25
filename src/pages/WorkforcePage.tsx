@@ -868,7 +868,7 @@ export default function WorkforcePage() {
       </Dialog>
 
       <Dialog open={taskModalOpen} onOpenChange={setTaskModalOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>{editingTaskId ? t.workforce.taskEditTitle : t.workforce.taskNewTitle}</DialogTitle>
           </DialogHeader>

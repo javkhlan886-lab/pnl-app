@@ -1228,7 +1228,7 @@ export default function DashboardPage() {
     </div>
 
       <Dialog open={breakdownOpen === "income"} onOpenChange={(o) => setBreakdownOpen(o ? "income" : null)}>
-        <DialogContent className="max-w-[67.2rem]">
+        <DialogContent className="sm:max-w-[67.2rem]">
           <DialogHeader className="flex-row items-center gap-3 space-y-0">
             <span className="icon-badge-positive w-9 h-9 shrink-0"><BarChart2 className="w-4 h-4" /></span>
             <div>
@@ -1236,7 +1236,7 @@ export default function DashboardPage() {
               <DialogDescription>{t.dashboard.statIncome} · {periodRangeLabel}</DialogDescription>
             </div>
           </DialogHeader>
-          <div className="max-h-[72vh] overflow-y-auto overflow-x-auto -mx-6 px-6">
+          <div className="max-h-[78vh] overflow-y-auto overflow-x-auto -mx-6 px-6">
             {incomeBreakdown.length === 0 ? (
               <p className="text-sm text-muted-foreground py-6 text-center">{t.dashboard.breakdownEmpty}</p>
             ) : (
@@ -1268,7 +1268,7 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={breakdownOpen === "opex"} onOpenChange={(o) => setBreakdownOpen(o ? "opex" : null)}>
-        <DialogContent className="max-w-[67.2rem]">
+        <DialogContent className="sm:max-w-[67.2rem]">
           <DialogHeader className="flex-row items-center gap-3 space-y-0">
             <span className="icon-badge-negative w-9 h-9 shrink-0"><TrendingDown className="w-4 h-4" /></span>
             <div>
@@ -1276,7 +1276,7 @@ export default function DashboardPage() {
               <DialogDescription>{t.dashboard.statOpExSub} · {periodRangeLabel}</DialogDescription>
             </div>
           </DialogHeader>
-          <div className="max-h-[72vh] overflow-y-auto overflow-x-auto -mx-6 px-6">
+          <div className="max-h-[78vh] overflow-y-auto overflow-x-auto -mx-6 px-6">
             {opexBreakdown.length === 0 ? (
               <p className="text-sm text-muted-foreground py-6 text-center">{t.dashboard.breakdownEmpty}</p>
             ) : (
