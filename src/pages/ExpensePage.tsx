@@ -28,7 +28,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, ChevronLeft, ChevronDown, Receipt, Download } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, Receipt, Download } from "lucide-react";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { getRecent, addRecent } from "@/lib/recentValues";
 import { toast } from "@/lib/toast";
@@ -48,7 +48,7 @@ const EMPTY = {
   type: "office" as "office" | "other" | "productCost" | "marketing",
   category: "", description: "",
   unitPrice: 0, quantity: 1, amount: 0, date: new Date().toISOString().split("T")[0],
-  status: "pending" as "approved" | "pending" | "rejected", note: "",
+  status: "approved" as "approved" | "pending" | "rejected", note: "",
 };
 
 const fmt = (n: number) => "₮" + Math.round(n).toLocaleString("mn-MN");
@@ -78,15 +78,6 @@ export default function ExpensePage() {
   const { t, locale } = useLocale();
   const layoutMode = useLayoutMode();
 
-  const statusMap: Record<string, { label: string; cls: string }> = {
-    approved: { label: t.expenses.statusApproved, cls: "bg-positive/15 text-positive hover:bg-positive/15" },
-    pending: { label: t.expenses.statusPending, cls: "bg-amber-400/15 text-amber-300 hover:bg-amber-400/15" },
-    rejected: { label: t.expenses.statusRejected, cls: "bg-negative/15 text-negative hover:bg-negative/15" },
-    // Гүйлгээний дэвтэрт холбогдсон төлбөрүүдийн нийлбэр (paidAmount) энэ
-    // зардлын дүнтэй тэнцэхэд backend автоматаар тохируулна — гараар
-    // сонгогддоггүй (see applyExpensePaymentDelta).
-    closed: { label: t.expenses.statusClosed, cls: "bg-info/15 text-info hover:bg-info/15" },
-  };
 
   const [expenses, setExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,7 +93,6 @@ export default function ExpensePage() {
   const [amountDisplay, setAmountDisplay] = useState("");
   const [, startTransition] = useTransition();
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [openStatusId, setOpenStatusId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [page, setPage] = useState(1);
@@ -144,10 +134,16 @@ export default function ExpensePage() {
   }, []);
 
   const filtered = typeFilter ? expenses.filter(e => e.type === typeFilter) : expenses;
-  const totalApproved = filtered.filter(e => e.status === "approved").reduce((s, e) => s + e.amount, 0);
-  const totalPending = filtered.filter(e => e.status === "pending").reduce((s, e) => s + e.amount, 0);
-  const officeTotal = expenses.filter(e => e.type === "office" && e.status === "approved").reduce((s, e) => s + e.amount, 0);
-  const otherTotal = expenses.filter(e => e.type === "other" && e.status === "approved").reduce((s, e) => s + e.amount, 0);
+  const totalAll = filtered.reduce((s, e) => s + e.amount, 0);
+  const officeTotal = expenses.filter(e => e.type === "office").reduce((s, e) => s + e.amount, 0);
+  const otherTotal = expenses.filter(e => e.type === "other").reduce((s, e) => s + e.amount, 0);
+  // Тогтмол зардал (жишээ нь Түрээс) сар бүр дахин төлөгддөг тул энэ сарын
+  // үлдэгдлийг тус бүрээр нь тооцоолж нийлбэрлэнэ (currentPeriod энэ сартай
+  // таарахгүй бол өмнөх сарын дүн хамаагүй — бүтэн дүн үлдэгдэлтэй гэж үзнэ).
+  const thisPeriod = new Date().toISOString().slice(0, 7);
+  const officeRemainingThisMonth = expenses
+    .filter(e => e.type === "office")
+    .reduce((s, e) => s + (e.currentPeriod === thisPeriod ? Math.max(0, e.amount - e.paidAmount) : e.amount), 0);
 
   let sortedFiltered = filtered;
   if (sortKey) {
@@ -194,12 +190,12 @@ export default function ExpensePage() {
     const lines = [
       `Идэвхтэй шүүлтүүр: ${typeFilter === "" ? "бүгд" : typeFilter === "office" ? "оффис" : "бусад"}`,
       `Харагдаж буй мөр: ${filtered.length} / Нийт: ${expenses.length}`,
-      `Батлагдсан: ${fmt(totalApproved)} | Хүлээгдэж буй: ${fmt(totalPending)}`,
-      `Оффис зардал (батлагдсан): ${fmt(officeTotal)} | Бусад зардал (батлагдсан): ${fmt(otherTotal)}`,
+      `Нийт зардал (шүүлтүүрт): ${fmt(totalAll)}`,
+      `Тогтмол зардал: ${fmt(officeTotal)} (энэ сарын үлдэгдэл: ${fmt(officeRemainingThisMonth)}) | Бусад зардал: ${fmt(otherTotal)}`,
     ];
     setAiPageContext({ title: t.expenses.pageTitle, lines });
     return () => setAiPageContext(null);
-  }, [typeFilter, filtered.length, expenses.length, totalApproved, totalPending, officeTotal, otherTotal, t]);
+  }, [typeFilter, filtered.length, expenses.length, totalAll, officeTotal, officeRemainingThisMonth, otherTotal, t]);
 
   const resetMarketingFields = () => {
     setMarketingLink1Type(""); setMarketingLink1Name("");
@@ -256,17 +252,6 @@ export default function ExpensePage() {
   const handleDelete = async (id: string) => {
     await deleteExpense(id);
     setExpenses(prev => prev.filter(e => e._id !== id));
-  };
-
-  // Хүснэгтэн дэх мөр бүрийн төлвийг цонх нээхгүйгээр шууд солих.
-  const handleInlineStatusChange = async (exp: any, next: string) => {
-    setOpenStatusId(null);
-    try {
-      const updated = await updateExpense(exp._id, { ...exp, status: next });
-      setExpenses(prev => prev.map(x => x._id === exp._id ? updated : x));
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || t.expenses.saveError);
-    }
   };
 
   const handleBulkDelete = async () => {
@@ -393,28 +378,30 @@ export default function ExpensePage() {
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <div className="glass-card glass-card-negative px-4 py-3">
-            <p className="relative text-xs text-muted-foreground mb-1">{t.expenses.statApprovedTotal}</p>
-            <p className="relative text-xl font-semibold text-negative stat-number">{fmt(totalApproved)}</p>
+            <p className="relative text-xs text-muted-foreground mb-1">{t.expenses.statTotalAll}</p>
+            <p className="relative text-xl font-semibold text-negative stat-number">{fmt(totalAll)}</p>
             <p className="relative text-xs text-muted-foreground mt-1">
-              {format(t.expenses.expenseCount, { count: String(filtered.filter(e => e.status === "approved").length) })}
+              {format(t.expenses.expenseCount, { count: String(filtered.length) })}
             </p>
           </div>
           <div className="glass-card px-4 py-3">
-            <p className="relative text-xs text-muted-foreground mb-1">{t.expenses.statPending}</p>
-            <p className="relative text-xl font-semibold text-warn stat-number">{fmt(totalPending)}</p>
-            <p className="relative text-xs text-muted-foreground mt-1">
-              {format(t.expenses.expenseCount, { count: String(filtered.filter(e => e.status === "pending").length) })}
-            </p>
+            <p className="relative text-xs text-muted-foreground mb-1">{t.expenses.statOfficeRemaining}</p>
+            <p className="relative text-xl font-semibold text-warn stat-number">{fmt(officeRemainingThisMonth)}</p>
+            <p className="relative text-xs text-muted-foreground mt-1">{t.expenses.statOfficeRemainingSub}</p>
           </div>
           <div className="glass-card px-4 py-3">
             <p className="relative text-xs text-muted-foreground mb-1">{t.expenses.statOffice}</p>
             <p className="relative text-xl font-semibold stat-number">{fmt(officeTotal)}</p>
-            <p className="relative text-xs text-muted-foreground mt-1">{t.expenses.approved}</p>
+            <p className="relative text-xs text-muted-foreground mt-1">
+              {format(t.expenses.expenseCount, { count: String(expenses.filter(e => e.type === "office").length) })}
+            </p>
           </div>
           <div className="glass-card px-4 py-3">
             <p className="relative text-xs text-muted-foreground mb-1">{t.expenses.statOther}</p>
             <p className="relative text-xl font-semibold stat-number">{fmt(otherTotal)}</p>
-            <p className="relative text-xs text-muted-foreground mt-1">{t.expenses.approved}</p>
+            <p className="relative text-xs text-muted-foreground mt-1">
+              {format(t.expenses.expenseCount, { count: String(expenses.filter(e => e.type === "other").length) })}
+            </p>
           </div>
         </div>
 
@@ -499,7 +486,6 @@ export default function ExpensePage() {
                   <ResizableHead label={t.expenses.colUnitCost} width={colWidths.unitPrice} onResizeStart={startResize("unitPrice")} align="right" sortActive={sortKey === "unitPrice"} sortDir={sortDir} onSort={() => toggleSort("unitPrice")} />
                   <ResizableHead label={t.expenses.colSoldQty} width={colWidths.quantity} onResizeStart={startResize("quantity")} align="right" sortActive={sortKey === "quantity"} sortDir={sortDir} onSort={() => toggleSort("quantity")} />
                   <ResizableHead label={t.expenses.colTotalCost} width={colWidths.amount} onResizeStart={startResize("amount")} align="right" sortActive={sortKey === "amount"} sortDir={sortDir} onSort={() => toggleSort("amount")} />
-                  <ResizableHead label={t.expenses.colStatus} width={colWidths.status} onResizeStart={startResize("status")} sortActive={sortKey === "status"} sortDir={sortDir} onSort={() => toggleSort("status")} />
                   <TableHead className="text-right px-1.5 whitespace-nowrap text-xs uppercase tracking-wide font-semibold text-muted-foreground/80">{t.expenses.colActions}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -530,31 +516,23 @@ export default function ExpensePage() {
                     <TableCell className="px-1.5 text-right text-muted-foreground stat-number">{Number(exp.quantity).toLocaleString("mn-MN")}</TableCell>
                     <TableCell className="px-1.5 text-right font-medium text-negative stat-number">
                       {fmt(exp.amount)}
-                      {exp.paidAmount > 0 && (
-                        <p className="text-xs font-normal text-muted-foreground">
-                          {format(t.expenses.remainingLine, { remaining: fmt(Math.max(0, exp.amount - exp.paidAmount)) })}
-                        </p>
+                      {exp.type === "office" ? (
+                        exp.currentPeriod === thisPeriod && exp.paidAmount > 0 && (
+                          <p className="text-xs font-normal text-muted-foreground">
+                            {exp.paidAmount >= exp.amount
+                              ? t.expenses.paidThisMonth
+                              : format(t.expenses.remainingLine, { remaining: fmt(Math.max(0, exp.amount - exp.paidAmount)) })}
+                          </p>
+                        )
+                      ) : (
+                        exp.paidAmount > 0 && (
+                          <p className="text-xs font-normal text-muted-foreground">
+                            {exp.paidAmount >= exp.amount
+                              ? t.expenses.fullyPaid
+                              : format(t.expenses.remainingLine, { remaining: fmt(Math.max(0, exp.amount - exp.paidAmount)) })}
+                          </p>
+                        )
                       )}
-                    </TableCell>
-                    <TableCell className="px-1.5">
-                      <div className="relative inline-block">
-                        <button type="button"
-                          onClick={() => setOpenStatusId(openStatusId === exp._id ? null : exp._id!)}
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusMap[exp.status].cls}`}>
-                          {statusMap[exp.status].label}
-                          <ChevronDown className="w-3 h-3 opacity-60" />
-                        </button>
-                        {openStatusId === exp._id && (
-                          <div className="absolute top-full left-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-20 py-1 min-w-32">
-                            {(["pending", "approved", "rejected"] as const).map(s => (
-                              <button key={s} type="button" onClick={() => handleInlineStatusChange(exp, s)}
-                                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-secondary/50 text-left">
-                                <Badge className={statusMap[s].cls}>{statusMap[s].label}</Badge>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
                     </TableCell>
                     <TableCell className="px-1.5 text-right">
                       <div className="flex items-center justify-end gap-1">
@@ -815,15 +793,6 @@ export default function ExpensePage() {
                 <label className="text-xs font-medium text-muted-foreground">{t.expenses.date}</label>
                 <input type="date" className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                   value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">{t.expenses.status}</label>
-                <select className="h-9 px-3 text-sm rounded-lg border border-input bg-background focus:outline-none"
-                  value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value as any }))}>
-                  <option value="pending">{t.expenses.statusPending}</option>
-                  <option value="approved">{t.expenses.statusApproved}</option>
-                  <option value="rejected">{t.expenses.statusRejected}</option>
-                </select>
               </div>
               <div className="sm:col-span-2 flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.expenses.note}</label>

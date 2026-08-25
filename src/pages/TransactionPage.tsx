@@ -96,9 +96,24 @@ interface AssetOption {
 interface ExpenseOption {
   _id: string;
   description: string;
+  type: string;
   amount: number;
   paidAmount: number;
+  currentPeriod: string | null;
 }
+
+// type="office" (Тогтмол зардал) сар бүр дахин төлөгддөг тул зөвхөн
+// currentPeriod энэ сартай таарсан paidAmount-г тооцно (Saas Back-ийн
+// expenseRemaining-тэй яг ижил логик) — эс тэгвэл өнгөрсөн сард бүрэн
+// төлөгдсөн тогтмол зардал энэ сард "үлдэгдэлгүй" мэт санагдаж сонголтоос
+// алга болно.
+const thisPeriod = new Date().toISOString().slice(0, 7);
+const expenseRemaining = (e: ExpenseOption): number => {
+  if (e.type === "office") {
+    return e.currentPeriod === thisPeriod ? e.amount - e.paidAmount : e.amount;
+  }
+  return e.amount - e.paidAmount;
+};
 
 interface NewTx {
   date: string;
@@ -225,7 +240,7 @@ export default function TransactionPage() {
   // өөрөө холбогдсон зардлыг (editingExpenseId) хэдийн бүрэн хаасан ч
   // жагсаалтад орхиж, сонголт алга болохоос сэргийлнэ.
   const openExpenses = expenses.filter(
-    e => e.amount - e.paidAmount > 0 || e._id === newTx.expenseId
+    e => expenseRemaining(e) > 0 || e._id === newTx.expenseId
   );
   const selectedExpense = expenses.find(e => e._id === newTx.expenseId) ?? null;
 
@@ -838,20 +853,20 @@ export default function TransactionPage() {
                             expenseId: id,
                             expenseType: id ? "" : p.expenseType,
                             amount: exp
-                              ? formatAmount(String(Math.round(exp.amount - exp.paidAmount)))
+                              ? formatAmount(String(Math.round(expenseRemaining(exp))))
                               : p.amount,
                           }));
                         }}
                         options={openExpenses.map(e => ({
                           id: e._id,
-                          label: `${e.description} (${t.transactions.existingExpenseRemaining}: ₮${Math.round(e.amount - e.paidAmount).toLocaleString("mn-MN")})`,
+                          label: `${e.description} (${t.transactions.existingExpenseRemaining}: ₮${Math.round(expenseRemaining(e)).toLocaleString("mn-MN")})`,
                         }))}
                         placeholder={t.transactions.existingExpensePlaceholder}
                       />
                       {selectedExpense && (
                         <p className="text-xs text-muted-foreground">
                           {format(t.transactions.existingExpenseRemainingLine, {
-                            remaining: Math.round(selectedExpense.amount - selectedExpense.paidAmount).toLocaleString("mn-MN"),
+                            remaining: Math.round(expenseRemaining(selectedExpense)).toLocaleString("mn-MN"),
                             total: Math.round(selectedExpense.amount).toLocaleString("mn-MN"),
                           })}
                         </p>

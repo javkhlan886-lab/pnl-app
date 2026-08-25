@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CompanyLogo } from "@/components/CompanyLogo";
-import { getAssets, createAsset, updateAsset, disposeAsset } from "@/lib/asset";
+import { getAssets, getAssetImage, createAsset, updateAsset, disposeAsset } from "@/lib/asset";
+import { resizeImageToDataUrl } from "@/lib/imageUpload";
 import { getEmployees } from "@/lib/employee";
 import { toDateInputValue } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,7 +27,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Archive, ChevronLeft, Box, Download, Search } from "lucide-react";
+import { Plus, Pencil, Archive, ChevronLeft, Box, Download, Search, ImageIcon, X as XIcon } from "lucide-react";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { getRecent, addRecent } from "@/lib/recentValues";
 import { toast } from "@/lib/toast";
@@ -50,6 +51,7 @@ const EMPTY = {
   depMethod: "straight" as "straight" | "declining",
   purchaseDate: new Date().toISOString().split("T")[0],
   supplier: "", assignedTo: "", location: "", note: "", currency: "₮",
+  image: null as string | null,
 };
 
 const fmt = (n: number) => "₮" + Math.round(n).toLocaleString("mn-MN");
@@ -108,6 +110,12 @@ export default function AssetPage() {
   const [unitPriceDisplay, setUnitPriceDisplay] = useState("");
   const [quantityInput, setQuantityInput] = useState<number>(1);
   const [residualValueDisplay, setResidualValueDisplay] = useState("");
+  const [imageUploading, setImageUploading] = useState(false);
+  // "Одоо байгаа зургийг хэвээр үлдээх" гэдгийг тодорхой ялгахын тулд —
+  // хэрэглэгч зураг сонгоогүй/арилгаагүй л бол payload-д image талбарыг
+  // огт оруулахгүй (өөрчлөлт хийгээгүй үед сервер рүү null илгээвэл одоо
+  // байгаа зургийг устгачихна).
+  const [imageTouched, setImageTouched] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -209,20 +217,49 @@ export default function AssetPage() {
   const openCreate = () => {
     setForm({ ...EMPTY }); setEditing(null);
     setUnitPriceDisplay(""); setQuantityInput(1); setResidualValueDisplay(""); setOpen(true);
+    setImageUploading(false); setImageTouched(false);
   };
   const openEdit = (a: any) => {
-    setForm({ ...a, purchaseDate: toDateInputValue(a.purchaseDate) }); setEditing(a._id);
+    setForm({ ...a, purchaseDate: toDateInputValue(a.purchaseDate), image: null }); setEditing(a._id);
     setUnitPriceDisplay(a.unitPrice ? Number(a.unitPrice).toLocaleString("mn-MN") : "");
     setQuantityInput(a.quantity || 1);
     setResidualValueDisplay(a.residualValue ? Number(a.residualValue).toLocaleString("mn-MN") : "");
     setOpen(true);
+    setImageUploading(false); setImageTouched(false);
+    if (a.hasImage) {
+      getAssetImage(a._id).then(image => setForm(f => ({ ...f, image }))).catch(() => {});
+    }
+  };
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setImageUploading(true);
+    try {
+      const dataUrl = await resizeImageToDataUrl(file);
+      setForm(f => ({ ...f, image: dataUrl }));
+      setImageTouched(true);
+    } catch {
+      toast.error(t.assets.imageUploadError);
+    } finally {
+      setImageUploading(false);
+    }
+  };
+  const handleImageRemove = () => {
+    setForm(f => ({ ...f, image: null }));
+    setImageTouched(true);
   };
 
   const handleSave = async () => {
     const quantity = Math.max(1, Number(form.quantity || 1));
     const unitPrice = Number(form.unitPrice || 0);
     const price = Number(form.price || unitPrice * quantity);
-    const payload = { ...form, unitPrice, quantity, price };
+    const { image, ...formRest } = form;
+    const payload: any = { ...formRest, unitPrice, quantity, price };
+    // Хэрэглэгч зураг сонгоогүй/арилгаагүй л бол талбарыг огт илгээхгүй —
+    // эс тэгвэл засах үед одоо байгаа зургийг санамсаргүй устгачихна.
+    if (imageTouched) payload.image = image;
     if (!payload.name.trim()) { toast.error(t.assets.nameRequired); return; }
     setSaving(true);
     try {
@@ -490,7 +527,10 @@ export default function AssetPage() {
                       </TableCell>
                       <TableCell className="px-1.5 text-muted-foreground text-xs">{idx + 1}</TableCell>
                       <TableCell className="px-1.5">
-                        <div className="font-medium">{a.name}</div>
+                        <div className="font-medium flex items-center gap-1.5">
+                          {a.hasImage && <ImageIcon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />}
+                          {a.name}
+                        </div>
                         <div className="text-xs text-muted-foreground">{a.code}</div>
                       </TableCell>
                       <TableCell className="px-1.5 text-muted-foreground text-sm">{a.category}</TableCell>
@@ -570,6 +610,28 @@ export default function AssetPage() {
                   onChange={(v) => setForm(f => ({ ...f, name: v }))}
                   options={getRecent("assets", "name")}
                   placeholder={t.assets.namePlaceholder} />
+              </div>
+              <div className="sm:col-span-2 flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted-foreground">{t.assets.imageLabel}</label>
+                <div className="flex items-center gap-3">
+                  {form.image ? (
+                    <div className="relative shrink-0">
+                      <img src={form.image} alt="" className="w-16 h-16 rounded-lg object-cover border border-border" />
+                      <button type="button" onClick={handleImageRemove}
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center">
+                        <XIcon className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 shrink-0 rounded-lg border border-dashed border-border flex items-center justify-center text-muted-foreground">
+                      <ImageIcon className="w-6 h-6" />
+                    </div>
+                  )}
+                  <label className="h-9 px-3 text-xs rounded-lg border border-border bg-background hover:bg-secondary/50 cursor-pointer flex items-center gap-1.5">
+                    {imageUploading ? t.common.saving : t.assets.imageUpload}
+                    <input type="file" accept="image/*" className="hidden" disabled={imageUploading} onChange={handleImageSelect} />
+                  </label>
+                </div>
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">{t.assets.category}</label>

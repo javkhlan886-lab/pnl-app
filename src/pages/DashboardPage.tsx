@@ -324,7 +324,7 @@ export default function DashboardPage() {
     // цалин) мөр мөрөөр нь харуулахад хэрэгтэй — алдаа гарвал зөвхөн тэр
     // модал хоосон харагдана, самбарын үндсэн дүн (backend-ийн /summary)
     // үүнээс хамаардаггүй тул чимээгүй орхино.
-    getExpenses({ status: "approved" }).then(setExpenses).catch(() => {});
+    getExpenses().then(setExpenses).catch(() => {});
     getEmployees().then(setEmployees).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -459,7 +459,7 @@ export default function DashboardPage() {
   // тэнцүүлсэн — server талын proration-той адилхан.
   const opexBreakdown = useMemo(() => {
     // backend-ийн otherExpense-тэй ижил 4 төрөл (office тусад нь, бусад 3 нь
-    // "Бусад/Хувьсах зардал"-д хамрагдана) — өмнө нь зөвхөн office/other
+    // "Бусад зардал"-д хамрагдана) — өмнө нь зөвхөн office/other
     // шүүгдэж, productCost/marketing нийлбэрт орсон ч задаргаанд
     // харагдахгүй чимээгүй орхигддог байсан.
     const expenseRows = expenses
