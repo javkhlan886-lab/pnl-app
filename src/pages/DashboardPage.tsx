@@ -386,6 +386,13 @@ export default function DashboardPage() {
     r.incomeRows.filter((x) => x.received).reduce((s, x) => s + toMnt(Number(x.amount), r.currency, r.exchangeRate), 0);
   const totalExpenseOf = (r: PNLRecord) =>
     r.expenseRows.reduce((s, x) => s + toMnt(Number(x.amount), r.currency, r.exchangeRate), 0);
+  // totalExpenseOf-той адил гэхдээ зөвхөн received=true (Гүйлгээний дэвтэрт
+  // баталгаажсан) мөрүүдийг нэгтгэнэ — receivedIncomeOf-той хос, доорх
+  // computedSummary-д ("Ерөнхий үзүүлэлт" картын backend доголдсон үеийн
+  // fallback) ашиглана, эс тэгвэл төлөвлөсөн ч гүйлгээгээр хараахан
+  // төлөгдөөгүй тайлангийн зардал "Үйл ажиллагааны зардал"-д хиймлээр орно.
+  const receivedExpenseOf = (r: PNLRecord) =>
+    r.expenseRows.filter((x) => x.received).reduce((s, x) => s + toMnt(Number(x.amount), r.currency, r.exchangeRate), 0);
   const netProfit = (r: PNLRecord) => totalIncome(r) - totalExpenseOf(r);
 
   const computedSummary = useMemo(() => {
@@ -393,8 +400,8 @@ export default function DashboardPage() {
     // Үндсэн дүн зөвхөн идэвхтэй тайлангаас — backend-ийн /summary-тэй ижил
     // логик (хүлээгдэж буй, дуусан төслүүд тус бүрдээ доор задарна).
     const active = records.filter((r) => (r.status || "active") === "active");
-    const pnlIncome = active.reduce((sum, record) => sum + totalIncome(record), 0);
-    const totalOperatingExpense = active.reduce((sum, record) => sum + totalExpenseOf(record), 0);
+    const pnlIncome = active.reduce((sum, record) => sum + receivedIncomeOf(record), 0);
+    const totalOperatingExpense = active.reduce((sum, record) => sum + receivedExpenseOf(record), 0);
     const net = pnlIncome - totalOperatingExpense;
     const margin = pnlIncome > 0 ? Number(((net / pnlIncome) * 100).toFixed(1)) : 0;
     const completed = records.filter((r) => r.status === "closed");
