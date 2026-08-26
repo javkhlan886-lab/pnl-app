@@ -564,7 +564,20 @@ export default function DashboardPage() {
     const matches = records.filter((r) => (r.company || "") === companyPopup);
     const income = matches.reduce((sum, record) => sum + totalIncome(record), 0);
     const expense = matches.reduce((sum, record) => sum + totalExpenseOf(record), 0);
-    return { income, expense, net: income - expense, count: matches.length };
+    // Тус бүрээр нь задалж харуулахын тулд тайлан бүрийн өөрийн дүнг мөн
+    // тооцож жагсаана — огноогоор сүүлийнхээс нь эхэлж эрэмбэлнэ.
+    const rows = matches
+      .map((r) => ({
+        id: r._id,
+        contractNumber: r.contractNumber || "—",
+        date: r.date || r.createdAt,
+        status: r.status || "active",
+        income: totalIncome(r),
+        expense: totalExpenseOf(r),
+        net: totalIncome(r) - totalExpenseOf(r),
+      }))
+      .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+    return { income, expense, net: income - expense, count: matches.length, rows };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [records, companyPopup]);
 
@@ -1312,7 +1325,7 @@ export default function DashboardPage() {
       </Dialog>
 
       <Dialog open={!!companyPopup} onOpenChange={(o) => !o && setCompanyPopup(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle className="blur-number">{companyPopup}</DialogTitle>
             <DialogDescription>
@@ -1334,6 +1347,38 @@ export default function DashboardPage() {
                 {fmt(companyAggregate?.net ?? 0, "₮")}
               </p>
             </div>
+          </div>
+          <div className="max-h-[55vh] overflow-y-auto overflow-x-auto -mx-6 px-6">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t.dashboard.colContractNumber}</TableHead>
+                  <TableHead>{t.dashboard.colDate}</TableHead>
+                  <TableHead>{t.common.statusActive}</TableHead>
+                  <TableHead className="text-right">{t.dashboard.filteredIncome}</TableHead>
+                  <TableHead className="text-right">{t.dashboard.filteredExpense}</TableHead>
+                  <TableHead className="text-right">{t.dashboard.filteredNet}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(companyAggregate?.rows ?? []).map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell className="font-medium">{row.contractNumber}</TableCell>
+                    <TableCell className="text-muted-foreground">{fmtDate(row.date)}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {row.status === "closed" ? t.common.statusClosed
+                        : row.status === "pending" ? t.common.statusPending
+                        : t.common.statusActive}
+                    </TableCell>
+                    <TableCell className="text-right text-positive stat-number">{fmt(row.income, "₮")}</TableCell>
+                    <TableCell className="text-right text-negative stat-number">{fmt(row.expense, "₮")}</TableCell>
+                    <TableCell className={`text-right font-medium stat-number ${row.net >= 0 ? "text-positive" : "text-negative"}`}>
+                      {fmt(row.net, "₮")}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         </DialogContent>
       </Dialog>
