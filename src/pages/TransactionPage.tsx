@@ -15,6 +15,7 @@ import { getPNLList } from "@/lib/pnl";
 import { getProducts, type Product } from "@/lib/product";
 import { getAssets } from "@/lib/asset";
 import { getExpenses } from "@/lib/expense";
+import { getReceivables } from "@/lib/receivable";
 import { mergeCategories, addCustomCategory } from "@/lib/customCategories";
 import { getRecent, addRecent } from "@/lib/recentValues";
 import { toast } from "@/lib/toast";
@@ -115,6 +116,18 @@ const expenseRemaining = (e: ExpenseOption): number => {
   return e.amount - e.paidAmount;
 };
 
+// Зээл, Авлага менюгийн "Зээл" төрлийн мөрүүд (type="loan") — Зээл авах
+// (Орлого) эсвэл Зээл хаах (Зарлага) гүйлгээгээр холбогдоно. Хэсэгчилсэн
+// төлбөр хөтлөх талбар одоогоор байхгүй тул хаах үед бүтэн хаагдсан гэж
+// үзэж status автоматаар "paid" болно (@/lib/receivable, Saas Back-ийн
+// applyReceivableLoanLink-тэй ижил).
+interface ReceivableOption {
+  _id: string;
+  counterparty: string;
+  amount: number;
+  status: string;
+}
+
 interface NewTx {
   date: string;
   description: string;
@@ -126,6 +139,7 @@ interface NewTx {
   productId: string;
   assetId: string;
   expenseId: string;
+  receivableId: string;
   quantity: string;
   expenseType: string;
   pnlIncomeRowIndex: string;
@@ -143,6 +157,7 @@ const EMPTY_TX: NewTx = {
   productId: "",
   assetId: "",
   expenseId: "",
+  receivableId: "",
   quantity: "",
   expenseType: "",
   pnlIncomeRowIndex: "",
@@ -244,6 +259,15 @@ export default function TransactionPage() {
   );
   const selectedExpense = expenses.find(e => e._id === newTx.expenseId) ?? null;
 
+  const [receivables, setReceivables] = useState<ReceivableOption[]>([]);
+  useEffect(() => {
+    getReceivables({ type: "loan" }).then(setReceivables).catch(() => setReceivables([]));
+  }, []);
+  // Хаагдаагүй зээлүүд — засаж буй гүйлгээ өөрөө хэдийн хаасан зээлийг ч
+  // жагсаалтад орхиж, сонголт алга болохоос сэргийлнэ (openExpenses-тэй адил).
+  const openLoans = receivables.filter(r => r.status !== "paid" || r._id === newTx.receivableId);
+  const selectedLoan = receivables.find(r => r._id === newTx.receivableId) ?? null;
+
   // Сонгосон Гэрээний тайлангийн орох ёстой боловч Гүйлгээний дэвтэрт
   // хараахан баталгаажаагүй орлогын мөрүүд — засаж буй гүйлгээ өөрөө
   // тэмдэглэсэн мөрийг ("editingTxId"-тай тохирох receivedTransactionId)
@@ -321,6 +345,7 @@ export default function TransactionPage() {
   const productNameOf = (tx: Transaction) => products.find(p => p._id === tx.productId)?.name || "";
   const assetNameOf = (tx: Transaction) => assets.find(a => a._id === tx.assetId)?.name || "";
   const expenseNameOf = (tx: Transaction) => expenses.find(e => e._id === tx.expenseId)?.description || "";
+  const loanNameOf = (tx: Transaction) => receivables.find(r => r._id === tx.receivableId)?.counterparty || "";
 
   const toggleOne = (id: string) => {
     setSelected(prev => {
@@ -446,6 +471,7 @@ export default function TransactionPage() {
       const linkProduct = !!newTx.productId;
       const linkAsset = !linkProduct && !!newTx.assetId;
       const linkExpense = newTx.type === "expense" && !!newTx.expenseId;
+      const linkReceivable = !!newTx.receivableId;
       const payload = {
         date: newTx.date,
         description: newTx.description.trim(),
@@ -460,6 +486,7 @@ export default function TransactionPage() {
         assetId: linkAsset ? newTx.assetId : null,
         quantity: linkProduct || linkAsset ? Number(newTx.quantity) : null,
         expenseId: linkExpense ? newTx.expenseId : null,
+        receivableId: linkReceivable ? newTx.receivableId : null,
         expenseType: newTx.type === "expense" && !linkExpense ? (newTx.expenseType || null) : null,
         pnlIncomeRowIndex: newTx.type === "income" && newTx.pnlIncomeRowIndex !== ""
           ? Number(newTx.pnlIncomeRowIndex)
@@ -512,12 +539,13 @@ export default function TransactionPage() {
       productId: tx.productId ?? "",
       assetId: tx.assetId ?? "",
       expenseId: tx.expenseId ?? "",
+      receivableId: tx.receivableId ?? "",
       quantity: tx.quantity != null ? String(tx.quantity) : "",
       expenseType: tx.expenseType ?? "",
       pnlIncomeRowIndex: receivedRowIndex >= 0 ? String(receivedRowIndex) : "",
       pnlExpenseRowIndex: paidRowIndex >= 0 ? String(paidRowIndex) : "",
     });
-    setShowLinks(!!(tx.productId || tx.assetId || tx.expenseId || tx.contractNumber || tx.expenseType));
+    setShowLinks(!!(tx.productId || tx.assetId || tx.expenseId || tx.receivableId || tx.contractNumber || tx.expenseType));
     setSaveError("");
     setShowModal(true);
   };
@@ -817,6 +845,29 @@ export default function TransactionPage() {
                     </div>
                   )}
 
+                  {newTx.type === "income" && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">{t.transactions.loanTakeLabel}</Label>
+                      <SearchableSelect
+                        value={newTx.receivableId}
+                        onChange={(id) => {
+                          const loan = openLoans.find(r => r._id === id) ?? null;
+                          setNewTx(p => ({
+                            ...p,
+                            receivableId: id,
+                            amount: loan ? formatAmount(String(loan.amount)) : p.amount,
+                            description: loan?.counterparty ? loan.counterparty : p.description,
+                          }));
+                        }}
+                        options={openLoans.map(r => ({
+                          id: r._id,
+                          label: `${r.counterparty} — ₮${Math.round(r.amount).toLocaleString("mn-MN")}`,
+                        }))}
+                        placeholder={t.transactions.loanTakePlaceholder}
+                      />
+                    </div>
+                  )}
+
                   {newTx.type === "expense" && newTx.contractNumber && unpaidExpenseRows.length > 0 && (
                     <div className="space-y-1.5">
                       <Label className="text-xs">{t.transactions.pnlExpenseRowLabel}</Label>
@@ -840,6 +891,35 @@ export default function TransactionPage() {
                           </option>
                         ))}
                       </select>
+                    </div>
+                  )}
+
+                  {newTx.type === "expense" && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">{t.transactions.loanPayLabel}</Label>
+                      <SearchableSelect
+                        value={newTx.receivableId}
+                        onChange={(id) => {
+                          const loan = openLoans.find(r => r._id === id) ?? null;
+                          setNewTx(p => ({
+                            ...p,
+                            receivableId: id,
+                            amount: loan ? formatAmount(String(loan.amount)) : p.amount,
+                            description: loan?.counterparty ? loan.counterparty : p.description,
+                          }));
+                        }}
+                        options={openLoans.map(r => ({
+                          id: r._id,
+                          label: `${r.counterparty} — ₮${Math.round(r.amount).toLocaleString("mn-MN")}`,
+                        }))}
+                        placeholder={t.transactions.loanPayPlaceholder}
+                      />
+                      {selectedLoan && (
+                        <p className="text-xs text-muted-foreground">
+                          {format(t.transactions.loanAmountLine, { amount: Math.round(selectedLoan.amount).toLocaleString("mn-MN") })}
+                          {" · "}{t.transactions.loanPaidNotice}
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -1189,6 +1269,7 @@ export default function TransactionPage() {
                             : tx.expenseType === "marketing" ? t.expenses.typeMarketing
                             : tx.expenseType === "salary" ? t.transactions.expenseTypeSalary
                             : tx.expenseId ? expenseNameOf(tx)
+                            : tx.receivableId ? loanNameOf(tx)
                             : "—"}
                         </TableCell>
                         <TableCell className={`text-right font-medium stat-number ${tx.type === "income" ? "text-positive" : "text-negative"}`}>
