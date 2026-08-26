@@ -222,6 +222,9 @@ interface Props {
 export default function PNLForm({ initial, id }: Props) {
   const navigate = useNavigate();
   const { t } = useLocale();
+  // "Дуусан" тайлан бүрэн түгжигдсэн — backend (updatePnlStatement) мөн
+  // адил хориглодог, энд зөвхөн UX (оролдох боломжийг эхнээс нь харуулахгүй).
+  const readOnly = initial?.status === "closed";
 
   // "Гэрээний ангилал" урьд нь hardcoded 5 кодтой Select байсан (construction,
   // consulting, ...) — бусад бүх ангилалтай талбар шиг чөлөөт текст болгож,
@@ -313,6 +316,7 @@ export default function PNLForm({ initial, id }: Props) {
   }, []);
 
   const save = async () => {
+    if (readOnly) return;
     const normalizedRows = (rows: Row[]) => rows.map((row) => {
       const quantity = Math.max(1, Number(row.quantity || 1));
       const unitPrice = Number(row.unitPrice || 0);
@@ -366,6 +370,13 @@ export default function PNLForm({ initial, id }: Props) {
 
   return (
     <div className="space-y-6">
+      {readOnly && (
+        <div className="flex items-center gap-2 bg-muted/60 border border-border rounded-lg px-4 py-3 text-sm text-muted-foreground">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          {t.pnlForm.closedReadOnlyNotice}
+        </div>
+      )}
+      <fieldset disabled={readOnly} className="space-y-6 border-0 p-0 m-0 min-w-0">
       <Card>
         <CardHeader className="pb-4">
           <CardTitle className="text-base font-medium">{t.pnlForm.basicInfo}</CardTitle>
@@ -529,12 +540,15 @@ export default function PNLForm({ initial, id }: Props) {
           </div>
         </CardContent>
       </Card>
+      </fieldset>
 
       <div className="flex items-center gap-3">
-        <Button onClick={save} disabled={saving}>
-          <Save className="w-4 h-4 mr-1.5" />
-          {saving ? t.common.saving : t.common.save}
-        </Button>
+        {!readOnly && (
+          <Button onClick={save} disabled={saving}>
+            <Save className="w-4 h-4 mr-1.5" />
+            {saving ? t.common.saving : t.common.save}
+          </Button>
+        )}
         {saved && (
           <div className="flex items-center gap-1.5 text-green-600 text-sm">
             <CheckCircle2 className="w-4 h-4" />

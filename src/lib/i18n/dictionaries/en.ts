@@ -114,6 +114,7 @@ export const en: Dictionary = {
   pnlForm: {
     newTitle: "New P&L report",
     editTitle: "Edit P&L report",
+    closedReadOnlyNotice: "This report is Closed and is read-only — it can no longer be changed.",
     basicInfo: "Basic information",
     company: "Client organization",
     companyPlaceholder: "Organization name",

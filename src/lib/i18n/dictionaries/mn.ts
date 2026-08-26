@@ -115,6 +115,7 @@ export const mn = {
   pnlForm: {
     newTitle: "Шинэ P&L тайлан",
     editTitle: "P&L тайлан засах",
+    closedReadOnlyNotice: "Энэ тайлан Дуусан төлөвт орсон тул зөвхөн унших боломжтой — өөрчлөх боломжгүй.",
     basicInfo: "Үндсэн мэдээлэл",
     company: "Харилцагч байгууллага",
     companyPlaceholder: "Байгууллагын нэр",

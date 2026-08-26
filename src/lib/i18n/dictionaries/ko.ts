@@ -114,6 +114,7 @@ export const ko: Dictionary = {
   pnlForm: {
     newTitle: "새 P&L 보고서",
     editTitle: "P&L 보고서 수정",
+    closedReadOnlyNotice: "이 보고서는 종료 상태이며 읽기 전용입니다 — 더 이상 변경할 수 없습니다.",
     basicInfo: "기본 정보",
     company: "거래처",
     companyPlaceholder: "조직명",

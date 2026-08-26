@@ -113,6 +113,7 @@ export const zh: Dictionary = {
   pnlForm: {
     newTitle: "新建 P&L 报表",
     editTitle: "编辑 P&L 报表",
+    closedReadOnlyNotice: "此报表已结清，仅供查看 — 无法再进行修改。",
     basicInfo: "基本信息",
     company: "客户公司",
     companyPlaceholder: "公司名称",
