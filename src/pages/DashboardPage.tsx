@@ -401,7 +401,25 @@ export default function DashboardPage() {
     // логик (хүлээгдэж буй, дуусан төслүүд тус бүрдээ доор задарна).
     const active = records.filter((r) => (r.status || "active") === "active");
     const pnlIncome = active.reduce((sum, record) => sum + receivedIncomeOf(record), 0);
-    const totalOperatingExpense = active.reduce((sum, record) => sum + receivedExpenseOf(record), 0);
+    const pnlExpense = active.reduce((sum, record) => sum + receivedExpenseOf(record), 0);
+    // backend-ийн /summary-тэй яг ижил: Зардал menu-ийн office/бусад
+    // (other+productCost+marketing) төрлүүд болон идэвхтэй ажилтны цалин
+    // (энд хугацаагаар proration хийхгүй — энэ fallback зөвхөн "Бүх
+    // хугацаа" горимд ашиглагдана) — эс тэгвэл backend түр холбогдохгүй
+    // үед "Үйл ажиллагааны зардал" картаас Зардал menu-ийн дүн бүрмөсөн
+    // алга болдог байсан.
+    const officeExpense = expenses.filter((e) => e.type === "office").reduce((s, e) => s + Number(e.amount), 0);
+    const otherExpense = expenses
+      .filter((e) => e.type === "other" || e.type === "productCost" || e.type === "marketing")
+      .reduce((s, e) => s + Number(e.amount), 0);
+    const salaryExpense = employees
+      .filter((e) => e.status === "active")
+      .reduce((s, e) => {
+        const nd = Math.round((Number(e.baseSalary) * Number(e.ndRate)) / 100);
+        const ndsht = Math.round((Number(e.baseSalary) * Number(e.ndshtRate)) / 100);
+        return s + Number(e.baseSalary) + nd + ndsht;
+      }, 0);
+    const totalOperatingExpense = pnlExpense + officeExpense + otherExpense + salaryExpense;
     const net = pnlIncome - totalOperatingExpense;
     const margin = pnlIncome > 0 ? Number(((net / pnlIncome) * 100).toFixed(1)) : 0;
     const completed = records.filter((r) => r.status === "closed");
@@ -425,7 +443,7 @@ export default function DashboardPage() {
       pendingProfit: pendingIncome - pendingExpense,
       pendingCount: pending.length,
     };
-  }, [records]);
+  }, [records, expenses, employees]);
 
   const displaySummary = summary || computedSummary;
 

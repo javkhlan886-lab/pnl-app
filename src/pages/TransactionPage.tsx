@@ -803,6 +803,7 @@ export default function TransactionPage() {
                             ...p,
                             pnlIncomeRowIndex: idxStr,
                             amount: row ? formatAmount(String(row.row.amount)) : p.amount,
+                            description: row?.row.name ? row.row.name : p.description,
                           }));
                         }}
                         className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring">
@@ -828,6 +829,7 @@ export default function TransactionPage() {
                             ...p,
                             pnlExpenseRowIndex: idxStr,
                             amount: row ? formatAmount(String(row.row.amount)) : p.amount,
+                            description: row?.row.name ? row.row.name : p.description,
                           }));
                         }}
                         className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring">
