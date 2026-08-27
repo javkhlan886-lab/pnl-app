@@ -361,6 +361,7 @@ export const ko: Dictionary = {
     colAccruedInterest: "누적 이자",
     colDueDate: "만기일",
     colStatus: "상태",
+    colNote: "메모",
     colActions: "작업",
     statusCurrent: "정상",
     statusNear: "만기 임박",

@@ -362,6 +362,7 @@ export const mn = {
     colAccruedInterest: "Хуримтлагдсан хүү",
     colDueDate: "Хугацаа",
     colStatus: "Статус",
+    colNote: "Тэмдэглэл",
     colActions: "Үйлдэл",
     statusCurrent: "Хугацаандаа",
     statusNear: "Ойртсон",

@@ -301,7 +301,7 @@ export default function ReceivablePage() {
   };
 
   const { widths: colWidths, startResize } = useResizableColumns("receivables", {
-    index: 44, counterparty: 150, type: 110, amount: 130, interestRate: 120, accruedInterest: 130, dueDate: 120, status: 110,
+    index: 44, counterparty: 150, type: 110, amount: 130, interestRate: 120, accruedInterest: 130, dueDate: 120, status: 110, note: 180,
   });
 
   const headerActions = (
@@ -510,6 +510,7 @@ export default function ReceivablePage() {
                   <ResizableHead label={t.receivables.colAccruedInterest} width={colWidths.accruedInterest} onResizeStart={startResize("accruedInterest")} align="right" sortActive={sortKey === "accruedInterest"} sortDir={sortDir} onSort={() => toggleSort("accruedInterest")} />
                   <ResizableHead label={t.receivables.colDueDate} width={colWidths.dueDate} onResizeStart={startResize("dueDate")} sortActive={sortKey === "dueDate"} sortDir={sortDir} onSort={() => toggleSort("dueDate")} />
                   <ResizableHead label={t.receivables.colStatus} width={colWidths.status} onResizeStart={startResize("status")} sortActive={sortKey === "status"} sortDir={sortDir} onSort={() => toggleSort("status")} />
+                  <ResizableHead label={t.receivables.colNote} width={colWidths.note} onResizeStart={startResize("note")} />
                   <TableHead className="text-right px-1.5 whitespace-nowrap text-xs uppercase tracking-wide font-semibold text-muted-foreground/80">{t.receivables.colActions}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -565,6 +566,7 @@ export default function ReceivablePage() {
                         )}
                       </div>
                     </TableCell>
+                    <TableCell className="px-1.5 text-muted-foreground text-sm max-w-[180px] truncate">{item.note || "—"}</TableCell>
                     <TableCell className="px-1.5 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="icon" onClick={() => openEdit(item)}>

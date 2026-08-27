@@ -361,6 +361,7 @@ export const en: Dictionary = {
     colAccruedInterest: "Accrued interest",
     colDueDate: "Due date",
     colStatus: "Status",
+    colNote: "Note",
     colActions: "Actions",
     statusCurrent: "Current",
     statusNear: "Due soon",

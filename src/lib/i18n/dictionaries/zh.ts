@@ -360,6 +360,7 @@ export const zh: Dictionary = {
     colAccruedInterest: "累计利息",
     colDueDate: "到期日",
     colStatus: "状态",
+    colNote: "备注",
     colActions: "操作",
     statusCurrent: "正常",
     statusNear: "即将到期",
