@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { getEmployees, createEmployee, updateEmployee, deleteEmployee } from "@/lib/employee";
+import { getTimeLogs, upsertTimeLog, deleteTimeLog } from "@/lib/timelog";
 import { getTransactions } from "@/lib/transaction";
 import { toDateInputValue } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,7 +27,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Users, ChevronLeft, ChevronDown, Download, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, ChevronLeft, ChevronRight, ChevronDown, Download, Search, X } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import { getRecent, addRecent } from "@/lib/recentValues";
 import { toast } from "@/lib/toast";
@@ -45,6 +46,7 @@ interface Employee {
   ndshtRate: number;
   status: "active" | "leave" | "inactive";
   startDate: string;
+  expectedMonthlyHours?: number;
 }
 
 const EMPTY: Employee = {
@@ -57,6 +59,56 @@ const fmt = (n: number) => "₮" + Math.round(n).toLocaleString("mn-MN");
 
 function fmtInput(v: number) {
   return v === 0 ? "" : v.toLocaleString("mn-MN");
+}
+
+// ── Цагийн бүртгэл (EmployeeTimeLog) ── attendance.status-той адил 6 утга
+// (Saas Back-ийн timelogs.schemas.ts-той ижил байх ёстой).
+type TimeLogStatus = "present" | "absent" | "half_day" | "leave" | "sick" | "late";
+interface TimeLogRecord {
+  _id?: string;
+  employeeId: string;
+  date: string;
+  hours: number;
+  status: TimeLogStatus | null;
+  note: string | null;
+}
+const ALL_STATUSES: TimeLogStatus[] = ["present", "absent", "half_day", "leave", "sick", "late"];
+const WEEKDAY_LABELS_KEY = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+const dayCls: Record<TimeLogStatus, string> = {
+  present: "bg-positive/10 border-positive/30 text-positive hover:bg-positive/20",
+  absent: "bg-destructive/10 border-destructive/30 text-destructive hover:bg-destructive/20",
+  half_day: "bg-amber-400/10 border-amber-400/30 text-amber-500 hover:bg-amber-400/20",
+  leave: "bg-info/10 border-info/30 text-info hover:bg-info/20",
+  sick: "bg-fuchsia-400/10 border-fuchsia-400/30 text-fuchsia-500 hover:bg-fuchsia-400/20",
+  late: "bg-orange-400/10 border-orange-400/30 text-orange-500 hover:bg-orange-400/20",
+};
+const dayClsUnrecorded = "bg-background border-border text-muted-foreground hover:bg-secondary/40";
+
+function currentMonthStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+function addMonths(monthStr: string, delta: number) {
+  const [y, m] = monthStr.split("-").map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+function daysInMonth(monthStr: string) {
+  const [y, m] = monthStr.split("-").map(Number);
+  return new Date(y, m, 0).getDate();
+}
+function toDateStr(y: number, m: number, d: number) {
+  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+// Статусаас хамаарсан стандарт цаг — хэрэглэгчээс цаг гараар оруулуулахгүйн
+// тулд (зурган загварт цаг оруулах талбар байхгүй): бүтэн өдөр = сарын
+// дундаж хүлээгдэж буй цаг / сарын өдрийн тоо, хагас өдөр = түүний хагас,
+// бусад тохиолдолд ажилласан цаггүй.
+function defaultHoursFor(status: TimeLogStatus, expectedMonthlyHours: number, month: string): number {
+  const dailyHours = expectedMonthlyHours / daysInMonth(month);
+  if (status === "present") return Math.round(dailyHours * 100) / 100;
+  if (status === "half_day") return Math.round((dailyHours / 2) * 100) / 100;
+  return 0;
 }
 
 const PAGE_SIZE = 20;
@@ -89,6 +141,18 @@ export default function EmployeePage() {
     leave: { label: t.employees.statusLeave, cls: "bg-amber-400/15 text-amber-300 hover:bg-amber-400/15" },
     inactive: { label: t.employees.statusInactive, cls: "bg-muted text-muted-foreground hover:bg-muted" },
   };
+  const dayStatusLabel: Record<TimeLogStatus, string> = {
+    present: t.employees.dayStatusPresent,
+    absent: t.employees.dayStatusAbsent,
+    half_day: t.employees.dayStatusHalfDay,
+    leave: t.employees.dayStatusLeave,
+    sick: t.employees.dayStatusSick,
+    late: t.employees.dayStatusLate,
+  };
+  const weekdayLabel: Record<string, string> = {
+    mon: t.employees.weekdayMon, tue: t.employees.weekdayTue, wed: t.employees.weekdayWed,
+    thu: t.employees.weekdayThu, fri: t.employees.weekdayFri, sat: t.employees.weekdaySat, sun: t.employees.weekdaySun,
+  };
 
   const NAV_ITEMS = getNavItems(t, isAdmin);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -109,6 +173,29 @@ export default function EmployeePage() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [page, setPage] = useState(1);
   const [paidThisMonth, setPaidThisMonth] = useState<number | null>(null);
+
+  // ── Цагийн бүртгэл (тухайн засаж буй ажилтны сар бүрийн ирц) ──
+  const [month, setMonth] = useState(currentMonthStr());
+  const [timeLogs, setTimeLogs] = useState<TimeLogRecord[]>([]);
+  const [monthLoading, setMonthLoading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [dayStatus, setDayStatus] = useState<TimeLogStatus>("present");
+  const [dayNote, setDayNote] = useState("");
+  const [savingDay, setSavingDay] = useState(false);
+  const dayEditorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (selectedDate) dayEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [selectedDate]);
+
+  useEffect(() => {
+    if (!editing) { setTimeLogs([]); return; }
+    setMonthLoading(true);
+    getTimeLogs({ month, employeeId: editing })
+      .then(setTimeLogs)
+      .catch(() => setTimeLogs([]))
+      .finally(() => setMonthLoading(false));
+  }, [editing, month]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -203,11 +290,60 @@ export default function EmployeePage() {
   const openCreate = () => {
     setForm(EMPTY); setEditing(null);
     setSalaryDisplay(""); setOpen(true);
+    setMonth(currentMonthStr()); setSelectedDate(null);
   };
 
   const openEdit = (emp: Employee) => {
     setForm({ ...emp, startDate: toDateInputValue(emp.startDate) }); setEditing(emp._id!);
     setSalaryDisplay(fmtInput(emp.baseSalary)); setOpen(true);
+    setMonth(currentMonthStr()); setSelectedDate(null);
+  };
+
+  const editingByDate = useMemo(() => {
+    const map = new Map<string, TimeLogRecord>();
+    for (const log of timeLogs) map.set(log.date.slice(0, 10), log);
+    return map;
+  }, [timeLogs]);
+
+  const calendarCells = useMemo(() => {
+    const [y, m] = month.split("-").map(Number);
+    const offset = (new Date(y, m - 1, 1).getDay() + 6) % 7; // Monday-start
+    const total = daysInMonth(month);
+    return [...Array(offset).fill(null), ...Array.from({ length: total }, (_, i) => i + 1)];
+  }, [month]);
+
+  const openDay = (dateStr: string) => {
+    const existing = editingByDate.get(dateStr);
+    setSelectedDate(dateStr);
+    setDayStatus(existing?.status ?? "present");
+    setDayNote(existing?.note ?? "");
+  };
+
+  const handleSaveDay = async () => {
+    if (!editing || !selectedDate) return;
+    setSavingDay(true);
+    try {
+      const emp = employees.find(e => e._id === editing);
+      const hours = defaultHoursFor(dayStatus, emp?.expectedMonthlyHours ?? 176, month);
+      const saved = await upsertTimeLog({ employeeId: editing, date: selectedDate, hours, status: dayStatus, note: dayNote });
+      setTimeLogs(prev => [...prev.filter(l => l.date.slice(0, 10) !== selectedDate), saved]);
+      setSelectedDate(null);
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || t.employees.timeLogSaveError);
+    } finally { setSavingDay(false); }
+  };
+
+  const handleClearDay = async () => {
+    if (!selectedDate) return;
+    const existing = editingByDate.get(selectedDate);
+    if (!existing?._id) { setSelectedDate(null); return; }
+    try {
+      await deleteTimeLog(existing._id);
+      setTimeLogs(prev => prev.filter(l => l._id !== existing._id));
+      setSelectedDate(null);
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || t.employees.timeLogSaveError);
+    }
   };
 
   const handleSave = async () => {
@@ -583,7 +719,7 @@ export default function EmployeePage() {
     </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? t.employees.editEmployee : t.employees.addEmployee}</DialogTitle>
           </DialogHeader>
@@ -681,6 +817,71 @@ export default function EmployeePage() {
                   <span>{t.employees.totalCost}</span>
                   <span className="text-negative blur-number">{fmt(totalFormCost)}</span>
                 </div>
+              </div>
+            )}
+
+            {/* Цагийн бүртгэл — зөвхөн одоо байгаа ажилтанд (шинэ бол
+                employeeId хараахан байхгүй тул хамааралгүй). */}
+            {editing && (
+              <div className="flex flex-col gap-2 border-t border-border/50 pt-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t.employees.timeLogSectionTitle}</p>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => setMonth(m => addMonths(m, -1))} className="text-muted-foreground hover:text-foreground">
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="text-xs font-medium stat-number">{month}</span>
+                    <button type="button" onClick={() => setMonth(m => addMonths(m, 1))} className="text-muted-foreground hover:text-foreground">
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground">
+                  {WEEKDAY_LABELS_KEY.map(w => <span key={w}>{weekdayLabel[w]}</span>)}
+                </div>
+                <div className={`grid grid-cols-7 gap-1 ${monthLoading ? "opacity-50 pointer-events-none" : ""}`}>
+                  {calendarCells.map((day, idx) => {
+                    if (day === null) return <div key={`empty-${idx}`} />;
+                    const [y, m] = month.split("-").map(Number);
+                    const dateStr = toDateStr(y, m, day as number);
+                    const record = editingByDate.get(dateStr);
+                    return (
+                      <button key={dateStr} type="button" onClick={() => openDay(dateStr)}
+                        className={`aspect-square rounded-md text-xs font-medium border flex items-center justify-center transition-colors ${record ? dayCls[record.status ?? "present"] : dayClsUnrecorded} ${selectedDate === dateStr ? "ring-2 ring-ring" : ""}`}>
+                        {day}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {selectedDate && (
+                  <div ref={dayEditorRef} className="flex flex-col gap-2 bg-secondary/40 rounded-lg p-3 mt-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium stat-number">{selectedDate}</span>
+                      <button onClick={() => setSelectedDate(null)} className="text-muted-foreground hover:text-foreground">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="flex items-end gap-2 flex-wrap">
+                      <select className="h-9 px-2 text-sm rounded-lg border border-input bg-background focus:outline-none"
+                        value={dayStatus} onChange={e => setDayStatus(e.target.value as TimeLogStatus)}>
+                        {ALL_STATUSES.map(s => <option key={s} value={s}>{dayStatusLabel[s]}</option>)}
+                      </select>
+                      <input className="h-9 flex-1 min-w-24 px-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                        placeholder={t.employees.dayNotePlaceholder} value={dayNote} onChange={e => setDayNote(e.target.value)} />
+                    </div>
+                    <div className="flex items-center gap-2 justify-end">
+                      {editingByDate.get(selectedDate) && (
+                        <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={handleClearDay}>
+                          <Trash2 className="w-3.5 h-3.5 mr-1" /> {t.common.delete}
+                        </Button>
+                      )}
+                      <Button size="sm" onClick={handleSaveDay} disabled={savingDay}>
+                        {savingDay ? t.common.saving : t.common.save}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
